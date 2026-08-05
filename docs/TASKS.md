@@ -91,8 +91,9 @@
 - **Definition of Done (DoD)**: FE 병렬 개발을 위해 `GET /api/v1/places` Mock 응답 제공 REST 컨트롤러 작성.
 
 #### `TSK-BE-004` [P0] TourAPI Client & Public Data DTO Parser
+- **Status**: [x] COMPLETED
 - **도메인**: Backend | **소요 시간**: 2h | **선행 작업**: `TSK-BE-001`
-- **Definition of Done (DoD)**: 한국관광공사 TourAPI 반려동물 동반 장소 REST 응답 파싱 `TourApiClient` 구현 완료.
+- **Definition of Done (DoD)**: 한국관광공사 TourAPI 반려동물 정보 REST Client(`TourApiClient`), JSON Parser DTO 및 단위 테스트 작성 완료.
 
 #### `TSK-BE-005` [P0] Public Data Scheduled Ingestion Batch (`@Scheduled`)
 - **도메인**: Backend | **소요 시간**: 2h | **선행 작업**: `TSK-BE-004`, `TSK-INF-002`
