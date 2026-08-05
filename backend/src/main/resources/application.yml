@@ -1,0 +1,37 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: petspot-backend
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/petspot_db
+    username: petspot
+    password: petspot_password
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate # Use Flyway for schema migrations
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.spatial.dialect.postgis.PostgisDialect
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+jwt:
+  secret: petspot_super_secret_jwt_key_that_is_at_least_32_bytes_long_for_security
+  expiration-ms: 86400000 # 24 Hours
