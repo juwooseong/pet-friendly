@@ -96,8 +96,10 @@
 - **Definition of Done (DoD)**: 한국관광공사 TourAPI 반려동물 정보 REST Client(`TourApiClient`), JSON Parser DTO 및 단위 테스트 작성 완료.
 
 #### `TSK-BE-005` [P0] Public Data Scheduled Ingestion Batch (`@Scheduled`)
+- **Status**: [x] COMPLETED
 - **도메인**: Backend | **소요 시간**: 2h | **선행 작업**: `TSK-BE-004`, `TSK-INF-002`
-- **Definition of Done (DoD)**: 주기적 수집 및 `Place` 엔티티 정제, PostGIS Point 객체 변환 후 DB Upsert 로직 완성.
+- **Definition of Done (DoD)**: `@Scheduled` 기반 주기적 수집 배치(`TourDataBatch`) 및 수집 프로세서 서비스(`TourDataCollectorService`) 구축 및 단위 테스트 통과 완료.
+
 
 ---
 

@@ -84,7 +84,13 @@ class TourApiClientTest {
                 .andRespond(withSuccess(mockJsonResponse, MediaType.APPLICATION_JSON));
 
         // when
-        TourApiResponseDto responseDto = tourApiClient.fetchPetPlaces(10, 1);
+        int numOfRows = 10;
+        int pageNo = 1;
+        System.out.println("==================================================");
+        System.out.println("[TEST RUN] fetchPetPlaces_Success");
+        System.out.println("[CALL PARAMS] numOfRows: " + numOfRows + ", pageNo: " + pageNo);
+        
+        TourApiResponseDto responseDto = tourApiClient.fetchPetPlaces(numOfRows, pageNo);
 
         // then
         mockServer.verify();
@@ -95,6 +101,14 @@ class TourApiClientTest {
         assertThat(items).hasSize(1);
 
         TourApiPlaceItemDto item = items.get(0);
+        System.out.println("[RESULT OBJECT] Header ResultCode: " + responseDto.getResponse().getHeader().getResultCode());
+        System.out.println("[RESULT ITEM] ContentID: " + item.getContentId());
+        System.out.println("[RESULT ITEM] Title: " + item.getTitle());
+        System.out.println("[RESULT ITEM] FullAddress: " + item.getFullAddress());
+        System.out.println("[RESULT ITEM] Coordinates: (" + item.getLatitude() + ", " + item.getLongitude() + ")");
+        System.out.println("[RESULT ITEM] Pet Policy Text: " + item.getPetWeightLimitText());
+        System.out.println("==================================================");
+
         assertThat(item.getContentId()).isEqualTo("123456");
         assertThat(item.getTitle()).isEqualTo("댕댕이 힐링 카페");
         assertThat(item.getFullAddress()).isEqualTo("서울특별시 마포구 월드컵북로 100 1층");
@@ -138,10 +152,19 @@ class TourApiClientTest {
                 .andRespond(withSuccess(mockJsonResponse, MediaType.APPLICATION_JSON));
 
         // when
-        List<TourApiPlaceItemDto> items = publicDataIngestionService.fetchPetPlaces(1, 1);
+        int numOfRows = 1;
+        int pageNo = 1;
+        System.out.println("==================================================");
+        System.out.println("[TEST RUN] service_fetchPetPlaces_Success");
+        System.out.println("[CALL PARAMS] numOfRows: " + numOfRows + ", pageNo: " + pageNo);
+
+        List<TourApiPlaceItemDto> items = publicDataIngestionService.fetchPetPlaces(numOfRows, pageNo);
 
         // then
         assertThat(items).hasSize(1);
+        System.out.println("[RESULT ITEM] Title: " + items.get(0).getTitle());
+        System.out.println("[RESULT ITEM] Address: " + items.get(0).getFullAddress());
+        System.out.println("==================================================");
         assertThat(items.get(0).getTitle()).isEqualTo("애견 동반 파크");
     }
 

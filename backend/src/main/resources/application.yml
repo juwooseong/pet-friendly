@@ -35,3 +35,15 @@ spring:
 jwt:
   secret: petspot_super_secret_jwt_key_that_is_at_least_32_bytes_long_for_security
   expiration-ms: 86400000 # 24 Hours
+
+public-data:
+  tour-api:
+    service-key: test-service-key
+    baseUrl: https://apis.data.go.kr/B551011/KorPetTourService
+    mobile-os: ETC
+    mobile-app: PetSpot
+  batch:
+    enabled: true
+    cron: "0 0 3 * * *"
+    page-size: 100
+
