@@ -3,6 +3,7 @@ package com.petspot.infrastructure.publicdata.client;
 import com.petspot.infrastructure.publicdata.dto.TourApiResponseDto;
 import com.petspot.infrastructure.publicdata.exception.PublicDataException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -33,6 +34,7 @@ public class TourApiClient {
     @Value("${public-data.tour-api.mobile-app:PetSpot}")
     private String mobileApp;
 
+    @Autowired
     public TourApiClient(RestClient.Builder restClientBuilder) {
         this.restClient = restClientBuilder.build();
     }
