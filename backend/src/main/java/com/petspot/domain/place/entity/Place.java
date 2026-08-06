@@ -44,10 +44,10 @@ public class Place {
     @Column(name = "location", nullable = false, columnDefinition = "GEOMETRY(Point, 4326)")
     private Point location;
 
-    @Column(name = "latitude", nullable = false, precision = 10, scale = 7)
+    @Column(name = "latitude", nullable = false)
     private Double latitude;
 
-    @Column(name = "longitude", nullable = false, precision = 10, scale = 7)
+    @Column(name = "longitude", nullable = false)
     private Double longitude;
 
     @Column(name = "phone", length = 50)
