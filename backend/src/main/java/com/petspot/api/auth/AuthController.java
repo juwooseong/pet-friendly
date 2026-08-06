@@ -1,5 +1,7 @@
 package com.petspot.api.auth;
 
+import com.petspot.api.auth.dto.UserLoginRequestDto;
+import com.petspot.api.auth.dto.UserLoginResponseDto;
 import com.petspot.api.auth.dto.UserRegisterRequestDto;
 import com.petspot.api.auth.dto.UserRegisterResponseDto;
 import com.petspot.application.auth.AuthService;
@@ -41,5 +43,20 @@ public class AuthController {
         UserRegisterResponseDto result = authService.register(request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(result));
+    }
+
+    @Operation(
+            summary = "로그인 및 JWT 토큰 발급",
+            description = "이메일과 비밀번호를 검증하여 JWT Access Token을 발급합니다."
+    )
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<UserLoginResponseDto>> login(
+            @Valid @RequestBody UserLoginRequestDto request) {
+
+        log.info("POST /api/v1/auth/login called with email: {}", request.getEmail());
+
+        UserLoginResponseDto result = authService.login(request);
+
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 }

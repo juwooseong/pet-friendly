@@ -62,7 +62,7 @@ public class User {
     @Builder(access = AccessLevel.PROTECTED)
     protected User(UUID id, String email, String passwordHash, String nickname, String avatarUrl,
                    UserRole role, UserStatus status, OAuthProvider provider, ZonedDateTime withdrawAt) {
-        this.id = id;
+        this.id = id != null ? id : UUID.randomUUID();
         this.email = email;
         this.passwordHash = passwordHash;
         this.nickname = nickname;

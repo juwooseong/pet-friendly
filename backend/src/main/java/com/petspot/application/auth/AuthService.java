@@ -1,10 +1,15 @@
 package com.petspot.application.auth;
 
+import com.petspot.api.auth.dto.UserLoginRequestDto;
+import com.petspot.api.auth.dto.UserLoginResponseDto;
 import com.petspot.api.auth.dto.UserRegisterRequestDto;
 import com.petspot.api.auth.dto.UserRegisterResponseDto;
 import com.petspot.domain.user.entity.User;
+import com.petspot.domain.user.entity.UserStatus;
 import com.petspot.domain.user.repository.UserRepository;
 import com.petspot.global.error.exception.DuplicateEmailException;
+import com.petspot.global.error.exception.InvalidCredentialsException;
+import com.petspot.global.util.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,6 +26,7 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
 
     /**
      * 회원가입 비즈니스 로직 수행
@@ -50,5 +56,51 @@ public class AuthService {
 
         // 5. Response DTO 반환
         return UserRegisterResponseDto.from(savedUser);
+    }
+
+    /**
+     * 로그인 인증 처리 및 JWT 토큰 발급
+     *
+     * @param request 로그인 요청 DTO (email, password)
+     * @return JWT Access Token 응답 DTO
+     */
+    @Transactional(readOnly = true)
+    public UserLoginResponseDto login(UserLoginRequestDto request) {
+        log.info("[AUTH LOGIN] Login attempt for email: {}", request.getEmail());
+
+        // 1. 이메일 기반 회원 존재 여부 확인
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> {
+                    log.warn("[AUTH LOGIN FAILED] Email not found: {}", request.getEmail());
+                    return new InvalidCredentialsException("이메일 또는 비밀번호가 올바르지 않습니다.");
+                });
+
+        // 2. 계정 활성화 상태 확인 (ACTIVE 만 로그인 가능)
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            log.warn("[AUTH LOGIN FAILED] Inactive or withdrawn status: status={}, email={}", user.getStatus(), request.getEmail());
+            throw new InvalidCredentialsException("이메일 또는 비밀번호가 올바르지 않습니다.");
+        }
+
+        // 3. 비밀번호 BCrypt 검증
+        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            log.warn("[AUTH LOGIN FAILED] Password mismatch for email: {}", request.getEmail());
+            throw new InvalidCredentialsException("이메일 또는 비밀번호가 올바르지 않습니다.");
+        }
+
+        // 4. JWT Access Token 발급
+        String accessToken = jwtTokenProvider.generateToken(
+                user.getId().toString(),
+                user.getEmail(),
+                user.getRole().name()
+        );
+
+        log.info("[AUTH LOGIN SUCCESS] JWT Token generated for userId: {}", user.getId());
+
+        // 5. Response DTO 반환
+        return UserLoginResponseDto.builder()
+                .accessToken(accessToken)
+                .tokenType("Bearer")
+                .expiresIn(jwtTokenProvider.getExpirationMs() / 1000)
+                .build();
     }
 }
