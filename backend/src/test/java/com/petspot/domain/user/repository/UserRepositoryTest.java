@@ -89,4 +89,31 @@ class UserRepositoryTest {
         assertThat(foundUserOpt.get().getNickname()).isEqualTo("초코보호자");
         verify(userRepository).findByEmail(email);
     }
+
+    @Test
+    @DisplayName("회원 탈퇴 처리 시 status=WITHDRAWN 및 withdrawAt 시간 기록 검증")
+    void user_Withdraw_Success() {
+        // given
+        User user = User.register("withdraw@petspot.com", "pwd_hash", "탈퇴예정자");
+
+        // when
+        user.withdraw();
+
+        // then
+        assertThat(user.getStatus()).isEqualTo(UserStatus.WITHDRAWN);
+        assertThat(user.getWithdrawAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("이미 탈퇴한 회원에게 중복 withdraw() 호출 시 IllegalStateException 예외 발생")
+    void user_Withdraw_AlreadyWithdrawn_ThrowsException() {
+        // given
+        User user = User.register("withdraw@petspot.com", "pwd_hash", "탈퇴예정자");
+        user.withdraw();
+
+        // when & then
+        org.assertj.core.api.Assertions.assertThatThrownBy(user::withdraw)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("이미 탈퇴 처리된 회원입니다.");
+    }
 }

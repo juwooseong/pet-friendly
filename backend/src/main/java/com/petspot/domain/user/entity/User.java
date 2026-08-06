@@ -48,6 +48,9 @@ public class User {
     @Column(name = "provider", nullable = false, length = 20)
     private OAuthProvider provider;
 
+    @Column(name = "withdraw_at")
+    private ZonedDateTime withdrawAt;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private ZonedDateTime createdAt;
@@ -58,7 +61,7 @@ public class User {
 
     @Builder(access = AccessLevel.PROTECTED)
     protected User(UUID id, String email, String passwordHash, String nickname, String avatarUrl,
-                   UserRole role, UserStatus status, OAuthProvider provider) {
+                   UserRole role, UserStatus status, OAuthProvider provider, ZonedDateTime withdrawAt) {
         this.id = id;
         this.email = email;
         this.passwordHash = passwordHash;
@@ -67,6 +70,7 @@ public class User {
         this.role = role != null ? role : UserRole.USER;
         this.status = status != null ? status : UserStatus.ACTIVE;
         this.provider = provider != null ? provider : OAuthProvider.LOCAL;
+        this.withdrawAt = withdrawAt;
     }
 
     /**
@@ -138,6 +142,10 @@ public class User {
      * 회원 탈퇴 처리 (도메인 메서드)
      */
     public void withdraw() {
+        if (this.status == UserStatus.WITHDRAWN) {
+            throw new IllegalStateException("이미 탈퇴 처리된 회원입니다.");
+        }
         this.status = UserStatus.WITHDRAWN;
+        this.withdrawAt = ZonedDateTime.now();
     }
 }
