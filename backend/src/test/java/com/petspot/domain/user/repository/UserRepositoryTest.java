@@ -11,7 +11,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
@@ -28,25 +27,32 @@ class UserRepositoryTest {
     }
 
     @Test
-    @DisplayName("User Entity 도메인 객체 생성 및 기본값 검증")
-    void userEntity_Creation_Success() {
-        // given
-        User user = User.builder()
-                .email("test@petspot.com")
-                .password("hashed_password_1234")
-                .nickname("초코아빠")
-                .avatarUrl("https://example.com/avatar.jpg")
-                .role(UserRole.USER)
-                .status(UserStatus.ACTIVE)
-                .provider(OAuthProvider.LOCAL)
-                .build();
+    @DisplayName("User.register 정적 팩토리 메서드로 일반 회원가입 객체 생성 및 기본값 검증")
+    void userEntity_Register_Success() {
+        // when
+        User user = User.register("test@petspot.com", "hashed_password_1234", "초코아빠", "https://example.com/avatar.jpg");
 
         // then
         assertThat(user.getEmail()).isEqualTo("test@petspot.com");
         assertThat(user.getNickname()).isEqualTo("초코아빠");
+        assertThat(user.getAvatarUrl()).isEqualTo("https://example.com/avatar.jpg");
         assertThat(user.getRole()).isEqualTo(UserRole.USER);
         assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
         assertThat(user.getProvider()).isEqualTo(OAuthProvider.LOCAL);
+    }
+
+    @Test
+    @DisplayName("User.registerOAuth 정적 팩토리 메서드로 카카오 소셜 회원가입 객체 생성 검증")
+    void userEntity_RegisterOAuth_Success() {
+        // when
+        User user = User.registerOAuth("kakao_user@kakao.com", "카카오라이언", "https://example.com/kakao.jpg", OAuthProvider.KAKAO);
+
+        // then
+        assertThat(user.getEmail()).isEqualTo("kakao_user@kakao.com");
+        assertThat(user.getNickname()).isEqualTo("카카오라이언");
+        assertThat(user.getRole()).isEqualTo(UserRole.USER);
+        assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
+        assertThat(user.getProvider()).isEqualTo(OAuthProvider.KAKAO);
     }
 
     @Test
@@ -69,12 +75,7 @@ class UserRepositoryTest {
     void findByEmail_Success() {
         // given
         String email = "choco@petspot.com";
-        User user = User.builder()
-                .id(UUID.randomUUID())
-                .email(email)
-                .password("hashed_pwd")
-                .nickname("초코보호자")
-                .build();
+        User user = User.register(email, "hashed_pwd", "초코보호자");
 
         given(userRepository.findByEmail(email)).willReturn(Optional.of(user));
 

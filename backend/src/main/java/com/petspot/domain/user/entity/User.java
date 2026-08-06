@@ -56,9 +56,9 @@ public class User {
     @Column(name = "updated_at")
     private ZonedDateTime updatedAt;
 
-    @Builder
-    public User(UUID id, String email, String password, String nickname, String avatarUrl,
-                UserRole role, UserStatus status, OAuthProvider provider) {
+    @Builder(access = AccessLevel.PROTECTED)
+    protected User(UUID id, String email, String password, String nickname, String avatarUrl,
+                   UserRole role, UserStatus status, OAuthProvider provider) {
         this.id = id;
         this.email = email;
         this.password = password;
@@ -67,6 +67,41 @@ public class User {
         this.role = role != null ? role : UserRole.USER;
         this.status = status != null ? status : UserStatus.ACTIVE;
         this.provider = provider != null ? provider : OAuthProvider.LOCAL;
+    }
+
+    /**
+     * 자체 회원가입 전용 정적 팩토리 메서드 (Static Factory Method)
+     * 기본값 설정: role = USER, status = ACTIVE, provider = LOCAL
+     */
+    public static User register(String email, String passwordHash, String nickname) {
+        return register(email, passwordHash, nickname, null);
+    }
+
+    public static User register(String email, String passwordHash, String nickname, String avatarUrl) {
+        return User.builder()
+                .email(email)
+                .password(passwordHash)
+                .nickname(nickname)
+                .avatarUrl(avatarUrl)
+                .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
+                .provider(OAuthProvider.LOCAL)
+                .build();
+    }
+
+    /**
+     * 소셜(OAuth) 회원가입 전용 정적 팩토리 메서드
+     */
+    public static User registerOAuth(String email, String nickname, String avatarUrl, OAuthProvider provider) {
+        return User.builder()
+                .email(email)
+                .password("OAUTH_NO_PASSWORD_" + UUID.randomUUID())
+                .nickname(nickname)
+                .avatarUrl(avatarUrl)
+                .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
+                .provider(provider != null ? provider : OAuthProvider.LOCAL)
+                .build();
     }
 
     /**
