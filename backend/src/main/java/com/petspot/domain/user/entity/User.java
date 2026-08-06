@@ -28,7 +28,7 @@ public class User {
     private String email;
 
     @Column(name = "password_hash", nullable = false, length = 255)
-    private String password;
+    private String passwordHash;
 
     @Column(name = "nickname", nullable = false, length = 100)
     private String nickname;
@@ -57,11 +57,11 @@ public class User {
     private ZonedDateTime updatedAt;
 
     @Builder(access = AccessLevel.PROTECTED)
-    protected User(UUID id, String email, String password, String nickname, String avatarUrl,
+    protected User(UUID id, String email, String passwordHash, String nickname, String avatarUrl,
                    UserRole role, UserStatus status, OAuthProvider provider) {
         this.id = id;
         this.email = email;
-        this.password = password;
+        this.passwordHash = passwordHash;
         this.nickname = nickname;
         this.avatarUrl = avatarUrl;
         this.role = role != null ? role : UserRole.USER;
@@ -80,7 +80,7 @@ public class User {
     public static User register(String email, String passwordHash, String nickname, String avatarUrl) {
         return User.builder()
                 .email(email)
-                .password(passwordHash)
+                .passwordHash(passwordHash)
                 .nickname(nickname)
                 .avatarUrl(avatarUrl)
                 .role(UserRole.USER)
@@ -95,7 +95,7 @@ public class User {
     public static User registerOAuth(String email, String nickname, String avatarUrl, OAuthProvider provider) {
         return User.builder()
                 .email(email)
-                .password("OAUTH_NO_PASSWORD_" + UUID.randomUUID())
+                .passwordHash("OAUTH_NO_PASSWORD_" + UUID.randomUUID())
                 .nickname(nickname)
                 .avatarUrl(avatarUrl)
                 .role(UserRole.USER)
@@ -121,7 +121,7 @@ public class User {
      */
     public void changePassword(String newPasswordHash) {
         if (newPasswordHash != null && !newPasswordHash.isBlank()) {
-            this.password = newPasswordHash;
+            this.passwordHash = newPasswordHash;
         }
     }
 

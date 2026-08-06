@@ -34,6 +34,7 @@ class UserRepositoryTest {
 
         // then
         assertThat(user.getEmail()).isEqualTo("test@petspot.com");
+        assertThat(user.getPasswordHash()).isEqualTo("hashed_password_1234");
         assertThat(user.getNickname()).isEqualTo("초코아빠");
         assertThat(user.getAvatarUrl()).isEqualTo("https://example.com/avatar.jpg");
         assertThat(user.getRole()).isEqualTo(UserRole.USER);
