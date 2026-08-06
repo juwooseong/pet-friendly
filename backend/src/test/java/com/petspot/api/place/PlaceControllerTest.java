@@ -27,7 +27,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(PlaceController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, com.petspot.global.security.JwtAuthenticationFilter.class})
 class PlaceControllerTest {
 
     @Autowired
@@ -35,6 +35,15 @@ class PlaceControllerTest {
 
     @MockBean
     private PlaceQueryService placeQueryService;
+
+    @MockBean
+    private com.petspot.global.util.JwtTokenProvider jwtTokenProvider;
+
+    @MockBean
+    private com.petspot.global.security.CustomUserDetailsService customUserDetailsService;
+
+    @MockBean
+    private com.petspot.global.security.CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
 
     @Test
     @DisplayName("GET /api/v1/places/search 정상 호출시 200 OK 및 PageResponse 반환")

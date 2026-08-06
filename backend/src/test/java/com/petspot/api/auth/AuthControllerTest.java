@@ -28,7 +28,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AuthController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, com.petspot.global.security.JwtAuthenticationFilter.class})
 class AuthControllerTest {
 
     @Autowired
@@ -39,6 +39,15 @@ class AuthControllerTest {
 
     @MockBean
     private AuthService authService;
+
+    @MockBean
+    private com.petspot.global.util.JwtTokenProvider jwtTokenProvider;
+
+    @MockBean
+    private com.petspot.global.security.CustomUserDetailsService customUserDetailsService;
+
+    @MockBean
+    private com.petspot.global.security.CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
 
     @Test
     @DisplayName("POST /api/v1/auth/register 정상 호출 시 201 Created 및 UserRegisterResponseDto 반환")

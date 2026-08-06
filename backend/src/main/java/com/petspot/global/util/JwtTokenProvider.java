@@ -51,12 +51,24 @@ public class JwtTokenProvider {
         return parseClaims(token).getSubject();
     }
 
+    public String extractUserId(String token) {
+        return getUserIdFromToken(token);
+    }
+
     public String getEmailFromToken(String token) {
         return parseClaims(token).get("email", String.class);
     }
 
+    public String extractEmail(String token) {
+        return getEmailFromToken(token);
+    }
+
     public String getRoleFromToken(String token) {
         return parseClaims(token).get("role", String.class);
+    }
+
+    public String extractRole(String token) {
+        return getRoleFromToken(token);
     }
 
     public boolean validateToken(String token) {
