@@ -10,6 +10,8 @@ import com.querydsl.core.types.dsl.NumberTemplate;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collections;
@@ -31,10 +33,16 @@ public class PlaceRepositoryImpl implements PlaceRepositoryCustom {
 
     @Override
     public List<PlaceSearchResponseDto> searchPlaces(PlaceSearchCondition condition) {
+        return searchPlaces(condition, Pageable.unpaged()).getContent();
+    }
+
+    @Override
+    public Page<PlaceSearchResponseDto> searchPlaces(PlaceSearchCondition condition, Pageable pageable) {
         long startTime = System.currentTimeMillis();
-        log.debug("Executing QueryDSL place search with ST_DWithin condition: lat={}, lon={}, radiusKm={}, category={}, keyword={}",
+        log.debug("Executing QueryDSL place search with ST_DWithin & Pageable: lat={}, lon={}, radiusKm={}, page={}, size={}",
                 condition.getLatitude(), condition.getLongitude(), condition.getRadiusKm(),
-                condition.getCategory(), condition.getKeyword());
+                pageable.isPaged() ? pageable.getPageNumber() : 0,
+                pageable.isPaged() ? pageable.getPageSize() : "unpaged");
 
         QPlace place = QPlace.place;
 
@@ -46,7 +54,14 @@ public class PlaceRepositoryImpl implements PlaceRepositoryCustom {
                     place.location, condition.getLongitude(), condition.getLatitude());
         }
 
-        List<PlaceSearchResponseDto> results = queryFactory
+        BooleanExpression[] whereConditions = new BooleanExpression[]{
+                stDWithin(condition.getLatitude(), condition.getLongitude(), condition.getRadiusKmOrDefault()),
+                categoryEq(condition.getCategory()),
+                keywordContains(condition.getKeyword()),
+                maxWeightGte(condition.getMaxWeight())
+        };
+
+        var query = queryFactory
                 .select(new QPlaceSearchResponseDto(
                         place.id,
                         place.publicDataId,
@@ -65,23 +80,30 @@ public class PlaceRepositoryImpl implements PlaceRepositoryCustom {
                         distanceExpression != null ? distanceExpression : Expressions.asNumber((Double) null)
                 ))
                 .from(place)
-                .where(
-                        // 2. PostGIS ST_DWithin() 공간 인덱스(GIST) 필터링 적용
-                        stDWithin(condition.getLatitude(), condition.getLongitude(), condition.getRadiusKmOrDefault()),
-                        categoryEq(condition.getCategory()),
-                        keywordContains(condition.getKeyword()),
-                        maxWeightGte(condition.getMaxWeight())
-                )
+                .where(whereConditions)
                 .orderBy(
                         distanceExpression != null ? distanceExpression.asc() : place.rating.desc(),
                         place.reviewCount.desc()
-                )
-                .fetch();
+                );
 
+        if (pageable.isPaged()) {
+            query.offset(pageable.getOffset()).limit(pageable.getPageSize());
+        }
+
+        List<PlaceSearchResponseDto> content = query.fetch();
+
+        // 2. Total Count 쿼리
+        Long total = queryFactory
+                .select(place.count())
+                .from(place)
+                .where(whereConditions)
+                .fetchOne();
+
+        long totalCount = total != null ? total : 0L;
         long elapsedTime = System.currentTimeMillis() - startTime;
-        log.debug("[QUERYDSL SUCCESS] Search completed with ST_DWithin. Count: {}, Execution Time: {} ms", results.size(), elapsedTime);
+        log.debug("[QUERYDSL PAGE SUCCESS] Search completed. Total: {}, Time: {} ms", totalCount, elapsedTime);
 
-        return results != null ? results : Collections.emptyList();
+        return new org.springframework.data.domain.PageImpl<>(content, pageable.isPaged() ? pageable : Pageable.unpaged(), totalCount);
     }
 
     /**

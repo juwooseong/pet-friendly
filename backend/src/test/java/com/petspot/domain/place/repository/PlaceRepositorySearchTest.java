@@ -147,4 +147,37 @@ class PlaceRepositorySearchTest {
         assertThat(results).hasSize(1);
         assertThat(results.get(0).getName()).isEqualTo("합정 애견 공원");
     }
+
+    @Test
+    @DisplayName("5. Pageable 페이징 적용 반경 검색 Mock 테스트")
+    void searchPlaces_Pageable_Success() {
+        // given
+        PlaceSearchCondition condition = PlaceSearchCondition.builder()
+                .latitude(37.5567)
+                .longitude(126.9236)
+                .radiusKm(3.0)
+                .build();
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 10);
+
+        PlaceSearchResponseDto dto1 = new PlaceSearchResponseDto(
+                java.util.UUID.randomUUID(), "P-101", "홍대 멍멍 카페", "CAFE", "카페",
+                "서울특별시 마포구 홍익로 10", 37.5567, 126.9236, "02-111-2222", "10:00-22:00",
+                "https://example.com/img1.jpg", java.math.BigDecimal.valueOf(4.8), 15,
+                java.math.BigDecimal.valueOf(10.0), 0.05
+        );
+
+        org.springframework.data.domain.Page<PlaceSearchResponseDto> pageResult =
+                new org.springframework.data.domain.PageImpl<>(List.of(dto1), pageable, 1L);
+
+        given(placeRepository.searchPlaces(condition, pageable)).willReturn(pageResult);
+
+        // when
+        org.springframework.data.domain.Page<PlaceSearchResponseDto> result = placeRepository.searchPlaces(condition, pageable);
+
+        // then
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getTotalElements()).isEqualTo(1L);
+        assertThat(result.getNumber()).isEqualTo(0);
+        assertThat(result.getSize()).isEqualTo(10);
+    }
 }

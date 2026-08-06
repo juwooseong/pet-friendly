@@ -59,4 +59,39 @@ class PlaceQueryServiceTest {
         assertThat(results.get(0).getName()).isEqualTo("홍대 애견카페");
         verify(placeRepository).searchPlaces(condition);
     }
+
+    @Test
+    @DisplayName("PlaceQueryService Pageable 검색 요청 시 PlaceRepository.searchPlaces(condition, pageable) 호출 및 PageResponse 반환 검증")
+    void searchPlaces_Pageable_Success() {
+        // given
+        PlaceSearchCondition condition = PlaceSearchCondition.builder()
+                .latitude(37.5567)
+                .longitude(126.9236)
+                .radiusKm(3.0)
+                .category("CAFE")
+                .build();
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 10);
+
+        PlaceSearchResponseDto expectedDto = new PlaceSearchResponseDto(
+                UUID.randomUUID(), "P-001", "홍대 애견카페", "CAFE", "카페",
+                "서울특별시 마포구", 37.5567, 126.9236, "02-123-4567", "10:00-22:00",
+                "https://example.com/image.jpg", BigDecimal.valueOf(4.5), 10,
+                BigDecimal.valueOf(15.0), 0.1
+        );
+
+        org.springframework.data.domain.Page<PlaceSearchResponseDto> mockPage =
+                new org.springframework.data.domain.PageImpl<>(List.of(expectedDto), pageable, 1L);
+
+        given(placeRepository.searchPlaces(condition, pageable)).willReturn(mockPage);
+
+        // when
+        com.petspot.global.dto.PageResponse<PlaceSearchResponseDto> result = placeQueryService.searchPlaces(condition, pageable);
+
+        // then
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getTotalElements()).isEqualTo(1L);
+        assertThat(result.getPage()).isEqualTo(0);
+        assertThat(result.getSize()).isEqualTo(10);
+        verify(placeRepository).searchPlaces(condition, pageable);
+    }
 }

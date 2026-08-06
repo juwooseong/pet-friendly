@@ -2,6 +2,8 @@ package com.petspot.domain.place.repository;
 
 import com.petspot.domain.place.dto.PlaceSearchCondition;
 import com.petspot.domain.place.dto.PlaceSearchResponseDto;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -11,10 +13,12 @@ import java.util.List;
 public interface PlaceRepositoryCustom {
 
     /**
-     * 사용자 중심 위치 기준 반경 거리 N km 내 펫 동반 장소 다중 필터 검색
-     *
-     * @param condition 검색 조건 (위도, 경도, 반경, 키워드, 카테고리 등)
-     * @return 거리순 정렬된 PlaceSearchResponseDto 리스트
+     * 사용자 중심 위치 기준 반경 거리 N km 내 펫 동반 장소 다중 필터 검색 (리스트)
      */
     List<PlaceSearchResponseDto> searchPlaces(PlaceSearchCondition condition);
+
+    /**
+     * 사용자 중심 위치 기준 반경 거리 N km 내 펫 동반 장소 다중 필터 검색 (Spring Pageable 페이징)
+     */
+    Page<PlaceSearchResponseDto> searchPlaces(PlaceSearchCondition condition, Pageable pageable);
 }

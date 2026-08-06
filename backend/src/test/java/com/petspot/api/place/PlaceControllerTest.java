@@ -4,12 +4,14 @@ import com.petspot.application.place.PlaceQueryService;
 import com.petspot.domain.place.dto.PlaceSearchCondition;
 import com.petspot.domain.place.dto.PlaceSearchResponseDto;
 import com.petspot.global.config.SecurityConfig;
+import com.petspot.global.dto.PageResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -35,7 +37,7 @@ class PlaceControllerTest {
     private PlaceQueryService placeQueryService;
 
     @Test
-    @DisplayName("GET /api/v1/places/search 정상 호출시 200 OK 및 ApiResponse 반환")
+    @DisplayName("GET /api/v1/places/search 정상 호출시 200 OK 및 PageResponse 반환")
     void searchPlaces_Success() throws Exception {
         // given
         PlaceSearchResponseDto mockDto = new PlaceSearchResponseDto(
@@ -45,8 +47,10 @@ class PlaceControllerTest {
                 BigDecimal.valueOf(15.0), 0.2
         );
 
-        given(placeQueryService.searchPlaces(any(PlaceSearchCondition.class)))
-                .willReturn(List.of(mockDto));
+        PageResponse<PlaceSearchResponseDto> mockPageResponse = PageResponse.of(List.of(mockDto), 0, 20, 1L);
+
+        given(placeQueryService.searchPlaces(any(PlaceSearchCondition.class), any(Pageable.class)))
+                .willReturn(mockPageResponse);
 
         // when & then
         mockMvc.perform(get("/api/v1/places/search")
@@ -54,12 +58,19 @@ class PlaceControllerTest {
                         .param("longitude", "126.9236")
                         .param("radiusKm", "3.0")
                         .param("category", "CAFE")
+                        .param("page", "0")
+                        .param("size", "20")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success", is(true)))
-                .andExpect(jsonPath("$.data", hasSize(1)))
-                .andExpect(jsonPath("$.data[0].name", is("홍대 애견카페")))
-                .andExpect(jsonPath("$.data[0].category", is("CAFE")));
+                .andExpect(jsonPath("$.data.page", is(0)))
+                .andExpect(jsonPath("$.data.size", is(20)))
+                .andExpect(jsonPath("$.data.totalElements", is(1)))
+                .andExpect(jsonPath("$.data.totalPages", is(1)))
+                .andExpect(jsonPath("$.data.hasNext", is(false)))
+                .andExpect(jsonPath("$.data.content", hasSize(1)))
+                .andExpect(jsonPath("$.data.content[0].name", is("홍대 애견카페")))
+                .andExpect(jsonPath("$.data.content[0].category", is("CAFE")));
     }
 
     @Test
