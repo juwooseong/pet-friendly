@@ -116,8 +116,10 @@
 - **Definition of Done (DoD)**: QueryDSL 설정, `PlaceRepositoryCustom` 및 `PlaceRepositoryImpl` 구현 완료, 반경/카테고리/키워드/동반조건 복합 검색 쿼리 및 DTO Projection 적용, Unit Test 100% 통과 완료.
 
 #### `TSK-BE-008` [P0] Place Search REST Controller Endpoints
+- **Status**: [x] COMPLETED
 - **도메인**: Backend | **소요 시간**: 1.5h | **선행 작업**: `TSK-BE-007`
-- **Definition of Done (DoD)**: `GET /api/v1/places` (다중 필터 검색) 및 `GET /api/v1/places/{id}` 엔드포인트 테스트 통과.
+- **Definition of Done (DoD)**: `GET /api/v1/places/search` REST Controller, `PlaceQueryService`, Bean Validation 및 Exception Handler 연동, Swagger OpenAPI 문서화, WebMvcTest 및 Validation Test 100% 통과 완료.
+`GET /api/v1/places/{id}` 엔드포인트 테스트 통과.
 
 ---
 
