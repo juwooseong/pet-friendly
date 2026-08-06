@@ -116,4 +116,21 @@ class UserRepositoryTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("이미 탈퇴 처리된 회원입니다.");
     }
+
+    @Test
+    @DisplayName("활성 회원(ACTIVE) 상태만 조회하는 findByEmailAndStatus Mock 테스트")
+    void findByEmailAndStatus_ActiveUser_Success() {
+        // given
+        String email = "active@petspot.com";
+        User activeUser = User.register(email, "pwd_hash", "활성유저");
+        given(userRepository.findByEmailAndStatus(email, UserStatus.ACTIVE)).willReturn(Optional.of(activeUser));
+
+        // when
+        Optional<User> userOpt = userRepository.findByEmailAndStatus(email, UserStatus.ACTIVE);
+
+        // then
+        assertThat(userOpt).isPresent();
+        assertThat(userOpt.get().getStatus()).isEqualTo(UserStatus.ACTIVE);
+        verify(userRepository).findByEmailAndStatus(email, UserStatus.ACTIVE);
+    }
 }
