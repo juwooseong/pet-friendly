@@ -75,9 +75,12 @@ public class TourDataBatch {
     }
 
     /**
-     * 수집된 데이터를 후처리하는 확장 지점 (다음 Task인 TSK-BE-006 / TSK-BE-007 Entity 마이그레이션 연결용)
+     * 수집된 데이터를 Entity로 변환하고 DB에 저장/업데이트 수행
      */
     protected void processCollectedItems(List<TourApiPlaceItemDto> items) {
-        log.info("Processing {} collected items (Ready for DB Ingestion / Entity Mapping in TSK-BE-006)", items.size());
+        if (items != null && !items.isEmpty()) {
+            int[] persistResult = tourDataCollectorService.saveCollectedPlaces(items);
+            log.info("[BATCH INGESTION COMPLETE] Saved New: {}, Duplicates Updated: {}", persistResult[0], persistResult[1]);
+        }
     }
 }

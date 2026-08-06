@@ -1,9 +1,11 @@
 package com.petspot.infrastructure.publicdata.batch;
 
+import com.petspot.domain.place.repository.PlaceRepository;
 import com.petspot.infrastructure.publicdata.dto.TourApiPlaceItemDto;
 import com.petspot.infrastructure.publicdata.dto.TourApiResponseDto;
 import com.petspot.infrastructure.publicdata.exception.PublicDataException;
 import com.petspot.infrastructure.publicdata.client.TourApiClient;
+import com.petspot.infrastructure.publicdata.mapper.TourApiPlaceMapper;
 import com.petspot.infrastructure.publicdata.service.TourDataCollectorService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -27,12 +29,18 @@ class TourDataBatchTest {
     @Mock
     private TourApiClient tourApiClient;
 
+    @Mock
+    private TourApiPlaceMapper tourApiPlaceMapper;
+
+    @Mock
+    private PlaceRepository placeRepository;
+
     private TourDataCollectorService tourDataCollectorService;
     private TourDataBatch tourDataBatch;
 
     @BeforeEach
     void setUp() {
-        tourDataCollectorService = new TourDataCollectorService(tourApiClient);
+        tourDataCollectorService = new TourDataCollectorService(tourApiClient, tourApiPlaceMapper, placeRepository);
         tourDataBatch = new TourDataBatch(tourDataCollectorService);
     }
 

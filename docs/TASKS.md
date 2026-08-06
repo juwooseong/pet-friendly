@@ -105,8 +105,10 @@
 
 ### Feature 2.2 Place Spatial Search API (Backend)
 #### `TSK-BE-006` [P0] Place JPA Entity & Spatial Repository
+- **Status**: [x] COMPLETED
 - **도메인**: Backend | **소요 시간**: 1.5h | **선행 작업**: `TSK-INF-002`, `TSK-BE-001`
-- **Definition of Done (DoD)**: `Place` JPA 엔티티 내 `Point location` 필드 및 PostGIS Spatial Mapping 구현 완료.
+- **Definition of Done (DoD)**: `Place` JPA 엔티티내 PostGIS `Point location` 매핑, `PlaceRepository` 생성, DTO ↔ Entity `TourApiPlaceMapper` 작성, 중복 방지 저장/업데이트 서비스 구축 및 단위 테스트 통과 완료.
+
 
 #### `TSK-BE-007` [P0] QueryDSL Spatial Radius & Multi-Filter Query
 - **도메인**: Backend | **소요 시간**: 2h | **선행 작업**: `TSK-BE-006`
