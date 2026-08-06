@@ -32,7 +32,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HandlerMethodValidationException.class)
     public ResponseEntity<ApiResponse<Void>> handleHandlerMethodValidation(HandlerMethodValidationException ex) {
-        String errorMsg = ex.getAllErrors().isEmpty() ? "유효하지 않은 요청 파라미터입니다." : ex.getAllErrors().get(0).getDefaultMessage();
+        String errorMsg = "유효하지 않은 요청 파라미터입니다.";
+        if (!ex.getAllErrors().isEmpty() && ex.getAllErrors().get(0).getDefaultMessage() != null) {
+            errorMsg = ex.getAllErrors().get(0).getDefaultMessage();
+        }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(errorMsg));
     }
 

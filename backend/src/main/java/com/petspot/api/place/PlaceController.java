@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -37,7 +38,7 @@ public class PlaceController {
     )
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<List<PlaceSearchResponseDto>>> searchPlaces(
-            @Valid @ModelAttribute PlaceSearchCondition condition) {
+            @ParameterObject @Valid @ModelAttribute PlaceSearchCondition condition) {
 
         log.info("GET /api/v1/places/search called with condition: lat={}, lon={}, radiusKm={}, keyword={}, category={}",
                 condition.getLatitude(), condition.getLongitude(), condition.getRadiusKm(),
