@@ -111,8 +111,9 @@
 
 
 #### `TSK-BE-007` [P0] QueryDSL Spatial Radius & Multi-Filter Query
+- **Status**: [x] COMPLETED
 - **도메인**: Backend | **소요 시간**: 2h | **선행 작업**: `TSK-BE-006`
-- **Definition of Done (DoD)**: 반경 거리(`ST_DWithin`), 카테고리, 견종 크기, 실내동반 QueryDSL Repository 구현.
+- **Definition of Done (DoD)**: QueryDSL 설정, `PlaceRepositoryCustom` 및 `PlaceRepositoryImpl` 구현 완료, 반경/카테고리/키워드/동반조건 복합 검색 쿼리 및 DTO Projection 적용, Unit Test 100% 통과 완료.
 
 #### `TSK-BE-008` [P0] Place Search REST Controller Endpoints
 - **도메인**: Backend | **소요 시간**: 1.5h | **선행 작업**: `TSK-BE-007`

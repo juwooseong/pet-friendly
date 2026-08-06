@@ -11,7 +11,7 @@ import java.util.UUID;
  * 반려동물 동반 장소 Spring Data JPA Repository
  */
 @Repository
-public interface PlaceRepository extends JpaRepository<Place, UUID> {
+public interface PlaceRepository extends JpaRepository<Place, UUID>, PlaceRepositoryCustom {
 
     /**
      * 공공데이터 고유 ID(publicDataId)로 장소 존재 여부 및 조회 (중복 저장 방지용)
