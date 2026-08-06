@@ -63,6 +63,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(ApiResponse.error(ex.getMessage()));
     }
 
+    @ExceptionHandler(com.petspot.global.error.exception.DuplicateEmailException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDuplicateEmail(com.petspot.global.error.exception.DuplicateEmailException ex) {
+        log.warn("[CLIENT ERROR] DuplicateEmailException: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(ex.getMessage()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneric(Exception ex) {
         log.error("[SERVER INTERNAL ERROR] Unhandled Exception occurred: ", ex);
