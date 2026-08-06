@@ -17,6 +17,7 @@ import java.util.List;
 
 /**
  * QueryDSL + PostGIS 기반 커스텀 Place Repository 구현체
+ * PostGIS Spatial Index (GIST) 및 ST_DWithin() 기반 반경 거리 검색 최적화
  */
 @Slf4j
 @Repository
@@ -31,18 +32,18 @@ public class PlaceRepositoryImpl implements PlaceRepositoryCustom {
     @Override
     public List<PlaceSearchResponseDto> searchPlaces(PlaceSearchCondition condition) {
         long startTime = System.currentTimeMillis();
-        log.debug("Executing QueryDSL place search with condition: lat={}, lon={}, radiusKm={}, category={}, keyword={}",
+        log.debug("Executing QueryDSL place search with ST_DWithin condition: lat={}, lon={}, radiusKm={}, category={}, keyword={}",
                 condition.getLatitude(), condition.getLongitude(), condition.getRadiusKm(),
                 condition.getCategory(), condition.getKeyword());
 
         QPlace place = QPlace.place;
 
-        // 위경도 기반 Haversine 거리 계산 식 (PostGIS 함수 및 일반 SQL 공용 호환)
+        // 1. 위경도 기준 거리 계산 표현식 (ST_Distance geography 기반 거리(km) 계산)
         NumberTemplate<Double> distanceExpression = null;
         if (condition.getLatitude() != null && condition.getLongitude() != null) {
             distanceExpression = Expressions.numberTemplate(Double.class,
-                    "(6371 * acos(cos(radians({0})) * cos(radians({1})) * cos(radians({2}) - radians({3})) + sin(radians({0})) * sin(radians({1}))))",
-                    condition.getLatitude(), place.latitude, place.longitude, condition.getLongitude());
+                    "ST_Distance({0}::geography, ST_SetSRID(ST_MakePoint({1}, {2}), 4326)::geography) / 1000.0",
+                    place.location, condition.getLongitude(), condition.getLatitude());
         }
 
         List<PlaceSearchResponseDto> results = queryFactory
@@ -65,7 +66,8 @@ public class PlaceRepositoryImpl implements PlaceRepositoryCustom {
                 ))
                 .from(place)
                 .where(
-                        radiusWithin(distanceExpression, condition.getRadiusKmOrDefault()),
+                        // 2. PostGIS ST_DWithin() 공간 인덱스(GIST) 필터링 적용
+                        stDWithin(condition.getLatitude(), condition.getLongitude(), condition.getRadiusKmOrDefault()),
                         categoryEq(condition.getCategory()),
                         keywordContains(condition.getKeyword()),
                         maxWeightGte(condition.getMaxWeight())
@@ -77,19 +79,24 @@ public class PlaceRepositoryImpl implements PlaceRepositoryCustom {
                 .fetch();
 
         long elapsedTime = System.currentTimeMillis() - startTime;
-        log.debug("[QUERYDSL SUCCESS] Search completed. Count: {}, Execution Time: {} ms", results.size(), elapsedTime);
+        log.debug("[QUERYDSL SUCCESS] Search completed with ST_DWithin. Count: {}, Execution Time: {} ms", results.size(), elapsedTime);
 
         return results != null ? results : Collections.emptyList();
     }
 
     /**
-     * 반경 거리 이내 검색 조건 (거리 <= radiusKm)
+     * PostGIS ST_DWithin() 기반 공간 반경 필터 (PostgreSQL GIST 공간 인덱스 사용)
+     * ST_DWithin(location::geography, ST_SetSRID(ST_MakePoint(lon, lat), 4326)::geography, radiusMeters)
      */
-    private BooleanExpression radiusWithin(NumberTemplate<Double> distanceExpr, Double radiusKm) {
-        if (distanceExpr == null || radiusKm == null) {
+    private BooleanExpression stDWithin(Double latitude, Double longitude, Double radiusKm) {
+        if (latitude == null || longitude == null || radiusKm == null) {
             return null;
         }
-        return distanceExpr.loe(radiusKm);
+        double radiusMeters = radiusKm * METERS_PER_KM;
+        return Expressions.booleanTemplate(
+                "ST_DWithin({0}::geography, ST_SetSRID(ST_MakePoint({1}, {2}), 4326)::geography, {3}) = true",
+                QPlace.place.location, longitude, latitude, radiusMeters
+        );
     }
 
     /**
