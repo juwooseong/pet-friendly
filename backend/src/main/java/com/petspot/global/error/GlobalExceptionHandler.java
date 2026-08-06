@@ -75,6 +75,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(ex.getMessage()));
     }
 
+    @ExceptionHandler(com.petspot.global.error.exception.UserNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleUserNotFound(com.petspot.global.error.exception.UserNotFoundException ex) {
+        log.warn("[CLIENT ERROR] UserNotFoundException: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ex.getMessage()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneric(Exception ex) {
         log.error("[SERVER INTERNAL ERROR] Unhandled Exception occurred: ", ex);
