@@ -117,6 +117,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(ex.getMessage()));
     }
 
+    @ExceptionHandler(com.petspot.global.error.exception.FavoriteNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleFavoriteNotFound(com.petspot.global.error.exception.FavoriteNotFoundException ex) {
+        log.warn("[CLIENT ERROR] FavoriteNotFoundException: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(com.petspot.global.error.exception.DuplicateFavoriteException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDuplicateFavorite(com.petspot.global.error.exception.DuplicateFavoriteException ex) {
+        log.warn("[CLIENT ERROR] DuplicateFavoriteException: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(ex.getMessage()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneric(Exception ex) {
         log.error("[SERVER INTERNAL ERROR] Unhandled Exception occurred: ", ex);

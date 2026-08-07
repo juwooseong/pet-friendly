@@ -77,7 +77,7 @@ public class PlaceRepositoryImpl implements PlaceRepositoryCustom {
                         place.rating,
                         place.reviewCount,
                         place.maxWeightLimitKg,
-                        distanceExpression != null ? distanceExpression : Expressions.asNumber((Double) null)
+                        distanceExpression != null ? distanceExpression : Expressions.nullExpression(Double.class)
                 ))
                 .from(place)
                 .where(whereConditions)
