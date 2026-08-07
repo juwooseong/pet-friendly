@@ -81,6 +81,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ex.getMessage()));
     }
 
+    @ExceptionHandler(com.petspot.global.error.exception.PetNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handlePetNotFound(com.petspot.global.error.exception.PetNotFoundException ex) {
+        log.warn("[CLIENT ERROR] PetNotFoundException: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(com.petspot.global.error.exception.PetAccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handlePetAccessDenied(com.petspot.global.error.exception.PetAccessDeniedException ex) {
+        log.warn("[ACCESS DENIED] PetAccessDeniedException: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(ex.getMessage()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneric(Exception ex) {
         log.error("[SERVER INTERNAL ERROR] Unhandled Exception occurred: ", ex);
