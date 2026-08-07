@@ -36,16 +36,17 @@ public class MyPageQueryService {
      * (사용자 프로필, 대표 반려동물, 등록 펫 수, 즐겨찾기 수, 작성 리뷰 수 일괄 통합)
      */
     public MyPageResponseDto getMyPageSummary(UUID userId) {
-        log.info("[MYPAGE GET] Fetching my page summary for userId: {}", userId);
+        long startTime = System.currentTimeMillis();
+        log.info("[MYPAGE GET START] Requesting my page summary for userId: {}", userId);
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> {
-                    log.warn("[MYPAGE GET FAILED] User not found: {}", userId);
+                    log.warn("[MYPAGE GET FAILED] User not found with id: {}", userId);
                     return new UserNotFoundException("사용자를 찾을 수 없습니다.");
                 });
 
         if (user.getStatus() != UserStatus.ACTIVE) {
-            log.warn("[MYPAGE GET FAILED] User is not active: status={}, userId={}", user.getStatus(), userId);
+            log.warn("[MYPAGE GET FAILED] User is inactive: status={}, userId={}", user.getStatus(), userId);
             throw new UserNotFoundException("사용자를 찾을 수 없습니다.");
         }
 
@@ -57,9 +58,14 @@ public class MyPageQueryService {
         long favoriteCount = favoriteRepository.countByUserId(userId);
         long reviewCount = reviewRepository.countByUserIdAndDeletedFalse(userId);
 
-        log.info("[MYPAGE GET SUCCESS] userId: {}, petCount: {}, favoriteCount: {}, reviewCount: {}",
-                userId, petCount, favoriteCount, reviewCount);
+        log.debug("[MYPAGE DEBUG] userId: {}, repPetPresent: {}, petCount: {}, favoriteCount: {}, reviewCount: {}",
+                userId, representativePetOpt.isPresent(), petCount, favoriteCount, reviewCount);
 
-        return MyPageResponseDto.of(user, representativePetOpt.orElse(null), petCount, favoriteCount, reviewCount);
+        MyPageResponseDto result = MyPageResponseDto.of(user, representativePetOpt.orElse(null), petCount, favoriteCount, reviewCount);
+
+        long elapsedTime = System.currentTimeMillis() - startTime;
+        log.info("[MYPAGE GET COMPLETED] userId: {}, executionTime: {} ms", userId, elapsedTime);
+
+        return result;
     }
 }

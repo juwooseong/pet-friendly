@@ -98,8 +98,8 @@ class MyPageIntegrationTest {
         assertThat(summary.getEmail()).isEqualTo("e2e_user@petspot.com");
         assertThat(summary.getNickname()).isEqualTo("통합테스터");
         assertThat(summary.getRepresentativePet()).isNotNull();
-        assertThat(summary.getRepresentativePet().getName()).isEqualTo("대표개");
-        assertThat(summary.getRepresentativePet().isRepresentative()).isTrue();
+        assertThat(summary.getRepresentativePet().getPetName()).isEqualTo("대표개");
+        assertThat(summary.getRepresentativePet().getBreed()).isEqualTo("골든리트리버");
         assertThat(summary.getPetCount()).isEqualTo(2L);
         assertThat(summary.getFavoriteCount()).isEqualTo(2L);
         assertThat(summary.getReviewCount()).isEqualTo(1L);

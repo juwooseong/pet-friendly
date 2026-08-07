@@ -4,6 +4,7 @@ import com.petspot.api.user.dto.MyPageResponseDto;
 import com.petspot.domain.favorite.repository.FavoriteRepository;
 import com.petspot.domain.pet.entity.Pet;
 import com.petspot.domain.pet.entity.PetGender;
+import com.petspot.domain.pet.entity.PetSizeCategory;
 import com.petspot.domain.pet.repository.PetRepository;
 import com.petspot.domain.review.repository.ReviewRepository;
 import com.petspot.domain.user.entity.User;
@@ -74,7 +75,9 @@ class MyPageQueryServiceTest {
         assertThat(response.getNickname()).isEqualTo("마이페이지유저");
         assertThat(response.getRole()).isEqualTo(UserRole.USER);
         assertThat(response.getRepresentativePet()).isNotNull();
-        assertThat(response.getRepresentativePet().getName()).isEqualTo("초코");
+        assertThat(response.getRepresentativePet().getPetName()).isEqualTo("초코");
+        assertThat(response.getRepresentativePet().getBreed()).isEqualTo("푸들");
+        assertThat(response.getRepresentativePet().getSizeCategory()).isEqualTo(PetSizeCategory.SMALL);
         assertThat(response.getPetCount()).isEqualTo(2L);
         assertThat(response.getFavoriteCount()).isEqualTo(5L);
         assertThat(response.getReviewCount()).isEqualTo(3L);
@@ -87,7 +90,30 @@ class MyPageQueryServiceTest {
     }
 
     @Test
-    @DisplayName("존재하지 않는 회원 ID로 마이페이지 조회 시 UserNotFoundException 발생")
+    @DisplayName("대표 반려동물이 없는 경우 representativePet 필드가 null로 정상 조회")
+    void getMyPageSummary_NoRepresentativePet_Success() {
+        // given
+        UUID userId = mockUser.getId();
+
+        given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
+        given(petRepository.findRepresentativePet(userId)).willReturn(Optional.empty());
+        given(petRepository.countByOwnerId(userId)).willReturn(0L);
+        given(favoriteRepository.countByUserId(userId)).willReturn(1L);
+        given(reviewRepository.countByUserIdAndDeletedFalse(userId)).willReturn(0L);
+
+        // when
+        MyPageResponseDto response = myPageQueryService.getMyPageSummary(userId);
+
+        // then
+        assertThat(response).isNotNull();
+        assertThat(response.getRepresentativePet()).isNull();
+        assertThat(response.getPetCount()).isEqualTo(0L);
+        assertThat(response.getFavoriteCount()).isEqualTo(1L);
+        assertThat(response.getReviewCount()).isEqualTo(0L);
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 회원 ID로 마이페이지 조회 시 UserNotFoundException 발생 (404)")
     void getMyPageSummary_NonExistentUser_ThrowsException() {
         // given
         UUID nonExistentId = UUID.randomUUID();
