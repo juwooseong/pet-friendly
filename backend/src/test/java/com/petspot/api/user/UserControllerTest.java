@@ -1,8 +1,10 @@
 package com.petspot.api.user;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.petspot.api.user.dto.MyPageResponseDto;
 import com.petspot.api.user.dto.UserProfileResponseDto;
 import com.petspot.api.user.dto.UserProfileUpdateRequestDto;
+import com.petspot.application.user.MyPageQueryService;
 import com.petspot.application.user.UserProfileService;
 import com.petspot.domain.user.entity.User;
 import com.petspot.domain.user.entity.UserRole;
@@ -42,6 +44,9 @@ class UserControllerTest {
     private UserProfileService userProfileService;
 
     @MockBean
+    private MyPageQueryService myPageQueryService;
+
+    @MockBean
     private com.petspot.global.util.JwtTokenProvider jwtTokenProvider;
 
     @MockBean
@@ -68,19 +73,21 @@ class UserControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/v1/users/me 인증 유저 요청 시 200 OK 및 UserProfileResponseDto 반환")
-    void getMyProfile_Success() throws Exception {
+    @DisplayName("GET /api/v1/users/me 인증 유저 요청 시 200 OK 및 MyPageResponseDto 반환")
+    void getMyPageSummary_Success() throws Exception {
         // given
-        UserProfileResponseDto mockResponse = UserProfileResponseDto.builder()
-                .id(mockUser.getId())
+        MyPageResponseDto mockResponse = MyPageResponseDto.builder()
+                .userId(mockUser.getId())
                 .email("me@petspot.com")
                 .nickname("내닉네임")
                 .avatarUrl("https://example.com/avatar.jpg")
                 .role(UserRole.USER)
-                .status(UserStatus.ACTIVE)
+                .petCount(2)
+                .favoriteCount(5)
+                .reviewCount(3)
                 .build();
 
-        given(userProfileService.getMyProfile(mockUser.getId())).willReturn(mockResponse);
+        given(myPageQueryService.getMyPageSummary(mockUser.getId())).willReturn(mockResponse);
 
         // when & then
         mockMvc.perform(get("/api/v1/users/me")
@@ -88,7 +95,10 @@ class UserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success", is(true)))
                 .andExpect(jsonPath("$.data.email", is("me@petspot.com")))
-                .andExpect(jsonPath("$.data.nickname", is("내닉네임")));
+                .andExpect(jsonPath("$.data.nickname", is("내닉네임")))
+                .andExpect(jsonPath("$.data.petCount", is(2)))
+                .andExpect(jsonPath("$.data.favoriteCount", is(5)))
+                .andExpect(jsonPath("$.data.reviewCount", is(3)));
     }
 
     @Test

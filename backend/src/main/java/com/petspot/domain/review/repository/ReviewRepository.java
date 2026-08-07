@@ -27,6 +27,11 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
     List<Review> findAllByUserIdAndDeletedFalse(UUID userId);
 
     /**
+     * 특정 사용자의 삭제되지 않은 리뷰 총 개수 조회
+     */
+    long countByUserIdAndDeletedFalse(UUID userId);
+
+    /**
      * 특정 사용자가 특정 장소에 작성한 삭제되지 않은 리뷰 단건 조회
      */
     Optional<Review> findByUserIdAndPlaceIdAndDeletedFalse(UUID userId, UUID placeId);

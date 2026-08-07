@@ -35,4 +35,9 @@ public interface PetRepository extends JpaRepository<Pet, UUID> {
      * 특정 소유자에게 대표 반려동물이 존재하는지 여부 확인
      */
     boolean existsByOwnerIdAndRepresentativeTrue(UUID ownerId);
+
+    /**
+     * 특정 소유자가 등록한 반려동물 총 개수 조회
+     */
+    long countByOwnerId(UUID ownerId);
 }

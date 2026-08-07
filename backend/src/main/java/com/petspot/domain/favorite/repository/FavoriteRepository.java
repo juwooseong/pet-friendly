@@ -25,6 +25,11 @@ public interface FavoriteRepository extends JpaRepository<Favorite, UUID> {
     List<Favorite> findAllByUserId(UUID userId);
 
     /**
+     * 특정 사용자의 즐겨찾기 총 개수 조회
+     */
+    long countByUserId(UUID userId);
+
+    /**
      * 특정 사용자의 특정 장소 즐겨찾기 단건 조회
      */
     Optional<Favorite> findByUserIdAndPlaceId(UUID userId, UUID placeId);
