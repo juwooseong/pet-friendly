@@ -22,4 +22,14 @@ public interface PlaceRepository extends JpaRepository<Place, UUID>, PlaceReposi
      * 공공데이터 고유 ID(publicDataId) 존재 여부 확인
      */
     boolean existsByPublicDataId(String publicDataId);
+
+    /**
+     * 인기 장소 Top 10 조회 (평점 내림차순, 리뷰 수 내림차순)
+     */
+    java.util.List<Place> findTop10ByOrderByRatingDescReviewCountDesc();
+
+    /**
+     * 최근 등록 장소 Top 10 조회 (최신순)
+     */
+    java.util.List<Place> findTop10ByOrderByCreatedAtDesc();
 }
