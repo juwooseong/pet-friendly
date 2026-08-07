@@ -135,4 +135,12 @@ public class Place {
             this.categoryName = categoryName;
         }
     }
+
+    /**
+     * 리뷰 등록/수정/삭제 시 평균 평점 및 리뷰 개수를 갱신하는 도메인 메서드
+     */
+    public void updateRatingAndReviewCount(BigDecimal newRating, Integer newReviewCount) {
+        this.rating = newRating != null ? newRating : BigDecimal.valueOf(0.0);
+        this.reviewCount = newReviewCount != null ? newReviewCount : 0;
+    }
 }

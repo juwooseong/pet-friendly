@@ -93,6 +93,30 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(ex.getMessage()));
     }
 
+    @ExceptionHandler(com.petspot.global.error.exception.PlaceNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handlePlaceNotFound(com.petspot.global.error.exception.PlaceNotFoundException ex) {
+        log.warn("[CLIENT ERROR] PlaceNotFoundException: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(com.petspot.global.error.exception.ReviewNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleReviewNotFound(com.petspot.global.error.exception.ReviewNotFoundException ex) {
+        log.warn("[CLIENT ERROR] ReviewNotFoundException: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(com.petspot.global.error.exception.DuplicateReviewException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDuplicateReview(com.petspot.global.error.exception.DuplicateReviewException ex) {
+        log.warn("[CLIENT ERROR] DuplicateReviewException: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(com.petspot.global.error.exception.ReviewAccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleReviewAccessDenied(com.petspot.global.error.exception.ReviewAccessDeniedException ex) {
+        log.warn("[ACCESS DENIED] ReviewAccessDeniedException: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(ex.getMessage()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneric(Exception ex) {
         log.error("[SERVER INTERNAL ERROR] Unhandled Exception occurred: ", ex);
