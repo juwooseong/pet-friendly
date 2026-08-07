@@ -1,12 +1,11 @@
 # Task Breakdown & Implementation Roadmap (TASKS.md)
 
-이 문서는 `SYSTEM_DESIGN.md` 및 `docs/ROADMAP.md`를 바탕으로 **Spring Boot 3 + Vue 3 (TypeScript) + PostgreSQL/PostGIS** 기반 **PetSpot** 프로젝트를 2시간 이내 실행 가능한 작업(Task) 단위로 분해한 마스터 작업 명세서입니다.
+이 문서는 `SYSTEM_DESIGN.md` 및 `docs/ROADMAP.md`를 바탕으로 **Spring Boot 3 + Vue 3 (TypeScript) + PostgreSQL/PostGIS** 기반 **PetSpot** 프로젝트를 작업(Task) 단위로 분해한 마스터 작업 명세서 (v2.0)입니다.
 
 ---
 
 ## 📌 Task 분해 구조 규칙
 - **구조**: `Epic` ➔ `Feature` ➔ `Task`
-- **단위**: 최대 2시간 내 완료 가능한 단위 (1h ~ 2h)
 - **우선순위**:
   - `P0`: 블로커 및 핵심 필수 기능 (Core/Critical)
   - `P1`: 주요 기능 및 UX 향상 (High Priority)
@@ -14,238 +13,100 @@
 
 ---
 
-## 🗺️ Task Summary Dashboard (v1.1)
+## 🗺️ Sprint Overview Dashboard (v2.0)
 
-| Epic | Total Tasks | Backend Tasks | Frontend Tasks | QA/Infra Tasks |
-| :--- | :---: | :---: | :---: | :---: |
-| **Epic 1. Infra, DB & Scaffold** | 9 | 3 | 4 | 2 |
-| **Epic 2. Public Data & Place Search** | 10 | 6 | 4 | 0 |
-| **Epic 3. User Auth & Pet Profile** | 7 | 3 | 4 | 0 |
-| **Epic 4. Smart Pet-Matching Engine** | 5 | 2 | 3 | 0 |
-| **Epic 5. Social, Mobile UI & QA** | 7 | 2 | 3 | 2 |
-| **합계** | **38 Tasks** | **16 Tasks** | **18 Tasks** | **4 Tasks** |
-
----
-
-## Epic 1. Infra, DB & Project Scaffold (인프라 & 프로젝트 기반) [COMPLETED]
-
-### Feature 1.1 Database & PostGIS Setup
-#### `TSK-INF-001` [P0] PostgreSQL 15 + PostGIS Docker/Local Setup
-- **Status**: [x] COMPLETED
-- **도메인**: Infra / Database | **소요 시간**: 1h | **선행 작업**: None
-- **Definition of Done (DoD)**: PostgreSQL 15 컨테이너에 PostGIS 확장(`CREATE EXTENSION postgis;`) 적용 완료.
-
-#### `TSK-INF-002` [P0] Flyway DB Migration Scripts
-- **Status**: [x] COMPLETED
-- **도메인**: Infra / Database | **소요 시간**: 1.5h | **선행 작업**: `TSK-INF-001`
-- **Definition of Done (DoD)**: `V1__init_schema.sql` 스크립트로 `users`, `pets`, `places`, `place_reviews` 테이블 및 Spatial Index(`idx_places_location`) 생성 완료.
+| Sprint | Goal | Key Scope | Status |
+| :--- | :--- | :--- | :---: |
+| **Sprint 0** | Infrastructure | 개발 환경 구축, DB/PostGIS 초기화 & 프로젝트 스캐폴딩 | **[COMPLETED]** |
+| **Sprint 1** | Backend Core | 공공데이터 수집 파이프라인, PostGIS 반경/필터 검색 API | **[COMPLETED]** |
+| **Sprint 2** | Backend Complete | **User/Pet/Favorite/Review Core API, My Page API, Dashboard API, Integration Test & Swagger** | **[IN_PROGRESS]** |
+| **Sprint 3** | Frontend MVP | **Vue 3 + Vite Frontend 9개 화면 구축 및 백엔드 API 실서비스 100% 완전 연동** | **[NEXT]** |
+| **Sprint 4** | Advanced AI & Infra | OpenAI AI 추천, Redis Caching, Elasticsearch, AWS CI/CD 및 모니터링 | [PLANNED] |
 
 ---
 
-### Feature 1.2 Spring Boot 3 Backend Scaffold
-#### `TSK-BE-001` [P0] Spring Boot 3.2 Project Scaffold
-- **Status**: [x] COMPLETED
-- **도메인**: Backend | **소요 시간**: 1h | **선행 작업**: None
-- **Definition of Done (DoD)**: Spring Boot 3.2 Gradle 프로젝트 생성, JPA, QueryDSL, Hibernate Spatial, Security 의존성 설정 완료.
+## Sprint 1. Backend Core & Public Data Pipeline [COMPLETED]
 
-#### `TSK-BE-002` [P0] SecurityConfig & JWT Provider Implementation
-- **Status**: [x] COMPLETED
-- **도메인**: Backend | **소요 시간**: 2h | **선행 작업**: `TSK-BE-001`
-- **Definition of Done (DoD)**: JWT 토큰 생성/검증 `JwtTokenProvider` 및 `SecurityConfig` 무상태(Stateless) 세션 설정 완료.
-
-#### `TSK-BE-003` [P0] Global Exception Handler & Standard ApiResponse Wrapper
-- **Status**: [x] COMPLETED
-- **도메인**: Backend | **소요 시간**: 1h | **선행 작업**: `TSK-BE-001`
-- **Definition of Done (DoD)**: `@RestControllerAdvice` 기반 예외 처리기 및 `{ "success": true, "data": ... }` ApiResponse DTO 작성 완료.
+### Feature 1.1 DB & Spatial Core
+- [x] `TSK-INF-001` PostgreSQL 15 + PostGIS Docker Setup
+- [x] `TSK-INF-002` Flyway DB Migration (`V1` ~ `V6`)
+- [x] `TSK-BE-004` TourAPI Public Data Parser & Ingestion Batch (`@Scheduled`)
+- [x] `TSK-BE-006` Place JPA Entity & Spatial Repository
+- [x] `TSK-BE-007` QueryDSL Spatial Radius & Multi-Filter Query (Pageable)
+- [x] `TSK-BE-008` Place Search REST Controller (`GET /api/v1/places/search`, `GET /api/v1/places/{id}`)
 
 ---
 
-### Feature 1.3 Vue 3 + Vite + TypeScript Frontend Scaffold
-#### `TSK-FE-001` [P0] Vue 3 + Vite + TypeScript Project Scaffold
-- **Status**: [x] COMPLETED
-- **도메인**: Frontend | **소요 시간**: 1h | **선행 작업**: None
-- **Definition of Done (DoD)**: Vue 3 + TypeScript 프로젝트 생성 및 `vue-tsc` 타입 검사 설정 완료.
+## Sprint 2. Backend Feature Completion (백엔드 기능 완결) [IN_PROGRESS]
 
-#### `TSK-FE-002` [P0] TypeScript Core Interfaces Setup
-- **Status**: [x] COMPLETED
-- **도메인**: Frontend | **소요 시간**: 1h | **선행 작업**: `TSK-FE-001`
-- **Definition of Done (DoD)**: `@/types/user.ts`, `@/types/pet.ts`, `@/types/place.ts` 인터페이스 작성 완료.
+### Feature 2.1 User & Auth Domain [COMPLETED]
+- [x] `TSK-BE-009` User Entity (`register` 정적 팩토리, `passwordHash`, `withdrawAt`), UserRepository & Flyway V1~V3
+- [x] `TSK-BE-010` User Register API (`POST /api/v1/auth/register`) & DuplicateEmailException (409)
+- [x] `TSK-BE-011` User Login API (`POST /api/v1/auth/login`), JwtTokenProvider SHA-256 & InvalidCredentialsException (401)
+- [x] `TSK-BE-012` JwtAuthenticationFilter (OncePerRequestFilter), CustomUserDetails/Service & SecurityConfig 연동
 
-#### `TSK-FE-003` [P0] Pinia & Vue Router 4 Setup
-- **Status**: [x] COMPLETED
-- **도메인**: Frontend | **소요 시간**: 1.5h | **선행 작업**: `TSK-FE-002`
-- **Definition of Done (DoD)**: `useAuthStore`, `usePetStore`, `usePlaceStore` 전역 스토어 쉘 설정 완료.
+### Feature 2.2 User Profile & Pet Management Domain [COMPLETED]
+- [x] `TSK-BE-013` My Profile API (`GET /api/v1/users/me`, `PUT /api/v1/users/me`), UserProfileService & UserNotFoundException (404)
+- [x] `TSK-BE-014` Pet Entity, PetGender, PetSizeCategory (체중별 자동 계산), PetRepository & Flyway V4
+- [x] `TSK-BE-015` Pet CRUD REST API (`POST`, `GET`, `PUT`, `DELETE /api/v1/pets`), 대표 펫 삭제 승계 & Owner 권한 검증 (403)
+- [x] `TSK-BE-016` Representative Pet Switch API (`PATCH /api/v1/pets/{petId}/representative`) & Atomic Transaction
 
-#### `TSK-FE-004` [P1] Design System CSS Tokens & Font Setup
-- **Status**: [x] COMPLETED
-- **도메인**: Frontend | **소요 시간**: 1h | **선행 작업**: `TSK-FE-001`
-- **Definition of Done (DoD)**: `css/variables.css` 토큰 및 Remix Icons CDN 연결 완료.
+### Feature 2.3 Favorites & Review Domain [COMPLETED]
+- [x] `TSK-BE-017` Favorite Entity, FavoriteRepository & Flyway V5 (`favorites` N:M 해소 엔티티)
+- [x] `TSK-BE-018` Review Entity (Soft Delete `deleted`), ReviewRepository & Flyway V6 (`reviews` 엔티티)
+- [x] `TSK-BE-019` Review Service & REST API (`POST`, `GET`, `PUT`, `DELETE /api/v1/reviews`), Place rating & reviewCount 자동 갱신, 409 Conflict 중복 방지
 
----
+### Feature 2.4 My Page & Dashboard Summary API [IN_PROGRESS]
+- [ ] `TSK-BE-020` [P0] My Page Summary API (`GET /api/v1/users/me/summary`)
+  - **DoD**: 사용자 정보, 대표 반려동물, 즐겨찾기 목록, 내 리뷰 목록, 내 반려동물 목록 일괄 통합 응답 DTO 및 서비스 구현.
+- [ ] `TSK-BE-021` [P0] Dashboard Home API (`GET /api/v1/dashboard`)
+  - **DoD**: 홈 화면용 추천 장소, 인기 장소, 최근 등록 장소, 대표 반려동물 통합 조회 REST API 구현.
 
-## Epic 2. Public Data Ingestion & Place Search (공공데이터 수집 & 장소 조회)
+### Feature 2.5 Integration Test & API Documentation [IN_PROGRESS]
+- [ ] `TSK-BE-022` [P0] Full Flow End-to-End Integration Test (`BackendE2EFlowIntegrationTest`)
+  - **DoD**: 회원가입 ➔ 로그인 ➔ JWT 발급 ➔ Pet 등록 ➔ Favorite 등록 ➔ Review 작성 ➔ Place Rating 변경 ➔ 마이페이지 조회 전체 파이프라인 검증 테스트 통과.
+- [ ] `TSK-BE-023` [P0] Swagger / OpenAPI 3.0 Documentation Consolidation
+  - **DoD**: Swagger Tag 정리, Request/Response Example 및 Error Response 명세 작성 완료.
 
-### Feature 2.1 Public Data Batch Ingestion Pipeline (Backend)
-#### `TSK-BE-008M` [P0] Place Mock REST Controller Endpoint (v1.1 신설)
-- **도메인**: Backend | **소요 시간**: 1h | **선행 작업**: `TSK-BE-003`
-- **Definition of Done (DoD)**: FE 병렬 개발을 위해 `GET /api/v1/places` Mock 응답 제공 REST 컨트롤러 작성.
-
-#### `TSK-BE-004` [P0] TourAPI Client & Public Data DTO Parser
-- **Status**: [x] COMPLETED
-- **도메인**: Backend | **소요 시간**: 2h | **선행 작업**: `TSK-BE-001`
-- **Definition of Done (DoD)**: 한국관광공사 TourAPI 반려동물 정보 REST Client(`TourApiClient`), JSON Parser DTO 및 단위 테스트 작성 완료.
-
-#### `TSK-BE-005` [P0] Public Data Scheduled Ingestion Batch (`@Scheduled`)
-- **Status**: [x] COMPLETED
-- **도메인**: Backend | **소요 시간**: 2h | **선행 작업**: `TSK-BE-004`, `TSK-INF-002`
-- **Definition of Done (DoD)**: `@Scheduled` 기반 주기적 수집 배치(`TourDataBatch`) 및 수집 프로세서 서비스(`TourDataCollectorService`) 구축 및 단위 테스트 통과 완료.
-
+> [!NOTE]
+> **Sprint 2 종료 후 Refactoring Sprint 수용 항목 (기술부채)**:
+> `ST_DWithin` 적용, Pagination 최적화, QueryDSL 개선, Domain/Application Layer 정제, Exception 개선, Service/Repository 리팩토링, Performance Optimization.
 
 ---
 
-### Feature 2.2 Place Spatial Search API (Backend)
-#### `TSK-BE-006` [P0] Place JPA Entity & Spatial Repository
-- **Status**: [x] COMPLETED
-- **도메인**: Backend | **소요 시간**: 1.5h | **선행 작업**: `TSK-INF-002`, `TSK-BE-001`
-- **Definition of Done (DoD)**: `Place` JPA 엔티티내 PostGIS `Point location` 매핑, `PlaceRepository` 생성, DTO ↔ Entity `TourApiPlaceMapper` 작성, 중복 방지 저장/업데이트 서비스 구축 및 단위 테스트 통과 완료.
+## Sprint 3. Frontend MVP Development (Vue 3 프론트엔드 실서비스 구축) [NEXT]
 
+### Feature 3.1 Frontend Architecture & Design Specification
+- [ ] `TSK-FE-001` [P0] Frontend System Architecture & Layout Specification Document
+- [ ] `TSK-FE-002` [P0] Pinia Store & Axios Interceptor Architecture Setup (`authStore`, `petStore`, `placeStore`, `favoriteStore`)
 
-#### `TSK-BE-007` [P0] QueryDSL Spatial Radius & Multi-Filter Query
-- **Status**: [x] COMPLETED
-- **도메인**: Backend | **소요 시간**: 2h | **선행 작업**: `TSK-BE-006`
-- **Definition of Done (DoD)**: QueryDSL 설정, `PlaceRepositoryCustom` 및 `PlaceRepositoryImpl` 구현 완료, 반경/카테고리/키워드/동반조건 복합 검색 쿼리 및 DTO Projection 적용, Unit Test 100% 통과 완료.
+### Feature 3.2 Authentication & User Screens
+- [ ] `TSK-FE-003` [P0] Login View (`/login`): Form Validation, JWT Token Storage, Auto-login, Logout
+- [ ] `TSK-FE-004` [P0] Signup View (`/signup`): Email Duplicate Check & User Registration Flow
 
-#### `TSK-BE-008` [P0] Place Search REST Controller Endpoints
-- **Status**: [x] COMPLETED
-- **도메인**: Backend | **소요 시간**: 1.5h | **선행 작업**: `TSK-BE-007`
-- **Definition of Done (DoD)**: `GET /api/v1/places/search` REST Controller, `PlaceQueryService`, Bean Validation 및 Exception Handler 연동, Swagger OpenAPI 문서화, WebMvcTest 및 Validation Test 100% 통과 완료.
-`GET /api/v1/places/{id}` 엔드포인트 테스트 통과.
+### Feature 3.3 Main Discovery & Search Screens
+- [ ] `TSK-FE-005` [P0] Home View (`/`): Recommended Places, Popular Places, Recent Places, Active Pet Chip
+- [ ] `TSK-FE-006` [P0] Place Search View (`/places`): Keyword Search, Category Filter, Pet Size Condition, Distance Sort
+- [ ] `TSK-FE-007` [P0] Interactive Map View (`/map`): Kakao Map / Leaflet Integration, Current Location Marker, Detail Drawer
 
----
+### Feature 3.4 Place Detail & Engagement Screens
+- [ ] `TSK-FE-008` [P0] Place Detail View/Modal (`/places/{id}`): Info, Photos, Pet Policy Checklist, Review Form, Favorite Toggle
+- [ ] `TSK-FE-009` [P0] Favorites View (`/favorites`): Saved Place Grid & Quick Delete
 
-### Feature 2.3 Place Discovery & Map Components (Frontend)
-#### `TSK-FE-005` [P0] Leaflet Map Component (`MapContainer.vue`)
-- **도메인**: Frontend | **소요 시간**: 2h | **선행 작업**: `TSK-FE-003`
-- **Definition of Done (DoD)**: OpenStreetMap + Leaflet.js 커스텀 아이콘 마커 생성 및 Click/FlyTo 이벤트 구현 완료.
-
-#### `TSK-FE-006` [P0] Search Box & Category Filter Pills (`FilterBar.vue`)
-- **도메인**: Frontend | **소요 시간**: 1.5h | **선행 작업**: `TSK-FE-003`
-- **Definition of Done (DoD)**: 키워드 검색어 입력 및 카테고리 필터 클릭 시 `usePlaceStore` 상태 업데이트.
-
-#### `TSK-FE-007` [P1] Sub-Filter Tag Component (`SubFilterTags.vue`)
-- **도메인**: Frontend | **소요 시간**: 1h | **선행 작업**: `TSK-FE-006`
-- **Definition of Done (DoD)**: 소형견/중형견/대형견, 실내동반, 오프리시 존 다중 선택 태그 컴포넌트 완성.
-
-#### `TSK-FE-008` [P0] Place Card & List Component (`PlaceCard.vue` & `PlaceList.vue`)
-- **도메인**: Frontend | **소요 시간**: 2h | **선행 작업**: `TSK-FE-005`, `TSK-FE-006`
-- **Definition of Done (DoD)**: 장소 카드 및 지도 마커 하이라이팅 연동.
+### Feature 3.5 Pet & My Page Screens
+- [ ] `TSK-FE-010` [P0] My Pets Management View (`/pets`): Pet Multi-CRUD, Weight Input, Representative Pet Toggle
+- [ ] `TSK-FE-011` [P0] My Page View (`/mypage`): Profile Summary, Favorites Tab, My Reviews Tab, My Pets Tab
 
 ---
 
-## Epic 3. User Auth & Pet Profile Management (회원가입 & 펫 관리)
+## Sprint 4. Advanced AI, Infra & Production (고급 기능 & 인프라) [PLANNED]
 
-### Feature 3.1 User Auth API (Backend)
-#### `TSK-BE-009` [P0] User Entity & Auth REST Controller
-- **도메인**: Backend | **소요 시간**: 1.5h | **선행 작업**: `TSK-BE-002`
-- **Definition of Done (DoD)**: 회원가입(`POST /api/v1/auth/register`), 로그인(`POST /api/v1/auth/login`) API 통과.
+### Feature 4.1 AI Recommendation & Advanced Search
+- [ ] `TSK-AI-001` OpenAI Pet-Tailored AI Place Recommendation Pipeline
+- [ ] `TSK-INF-003` Redis Caching for Geo-search & JWT Tokens
+- [ ] `TSK-INF-004` Elasticsearch Full-Text Search Integration
 
----
-
-### Feature 3.2 Pet Profile CRUD API (Backend)
-#### `TSK-BE-010` [P0] Pet Entity & Size Category Auto-Calculator
-- **도메인**: Backend | **소요 시간**: 1.5h | **선행 작업**: `TSK-BE-009`
-- **Definition of Done (DoD)**: `Pet` 엔티티 작성 및 체중에 따른 크기 카테고리 자동 산출 로직 구현.
-
-#### `TSK-BE-011` [P0] Pet Controller REST Endpoints
-- **도메인**: Backend | **소요 시간**: 1.5h | **선행 작업**: `TSK-BE-010`
-- **Definition of Done (DoD)**: `POST /api/v1/pets`, `GET /api/v1/pets`, `DELETE /api/v1/pets/{id}` REST API 구현.
-
----
-
-### Feature 3.3 User & Pet Profile Components (Frontend)
-#### `TSK-FE-009` [P0] User Auth Modal (`AuthModal.vue`)
-- **도메인**: Frontend | **소요 시간**: 1.5h | **선행 작업**: `TSK-FE-003`
-- **Definition of Done (DoD)**: 회원가입 및 로그인 폼 탭 전환 및 JWT 토큰 Pinia 저장 구현.
-
-#### `TSK-FE-010` [P0] Pet Grid & Selection Component (`PetGrid.vue`)
-- **도메인**: Frontend | **소요 시간**: 1.5h | **선행 작업**: `TSK-FE-009`
-- **Definition of Done (DoD)**: 등록된 펫 카드 목록 표시 및 '대표 펫으로 설정' 클릭 시 전역 상태 변경.
-
-#### `TSK-FE-011` [P0] Add Pet Form Modal (`AddPetModal.vue`)
-- **도메인**: Frontend | **소요 시간**: 1.5h | **선행 작업**: `TSK-FE-010`
-- **Definition of Done (DoD)**: 이름, 견종, 체중(kg), 나이, 예방접종 여부 입력 폼 및 유효성 검사 구현.
-
-#### `TSK-FE-012` [P0] Active Pet Header Chip (`ActivePetChip.vue`)
-- **도메인**: Frontend | **소요 시간**: 1h | **선행 작업**: `TSK-FE-010`
-- **Definition of Done (DoD)**: 상단 헤더에 현재 선택된 대표 펫 칩 시각화 및 클릭 시 펫 관리 모달 팝업.
-
----
-
-## Epic 4. Smart Pet-Matching Engine (스마트 매칭 Engine)
-
-### Feature 4.1 Smart Pet-Matching Evaluator (Backend)
-#### `TSK-BE-012` [P0] Smart Pet-Matching Service Evaluator Logic
-- **도메인**: Backend | **소요 시간**: 1.5h | **선행 작업**: `TSK-BE-006`
-- **Definition of Done (DoD)**: `evaluatePetMatch(Pet, Place)` 로직 구현 및 `PASS`, `WARN`, `DENY` 반환 단위 테스트 통과.
-
-#### `TSK-BE-013` [P0] Place Match Evaluation REST Endpoint
-- **도메인**: Backend | **소요 시간**: 1h | **선행 작업**: `TSK-BE-012`, `TSK-BE-008`
-- **Definition of Done (DoD)**: `POST /api/v1/places/{id}/evaluate` 엔드포인트 구현 완료.
-
----
-
-### Feature 4.2 Frontend Smart Matching Engine & Badge Visualizer (Frontend)
-#### `TSK-FE-013` [P0] Client-Side Match Evaluator Helper (`evaluatePetMatch.ts`)
-- **도메인**: Frontend | **소요 시간**: 1h | **선행 작업**: `TSK-FE-002`
-- **Definition of Done (DoD)**: 프론트엔드 전용 순수 매칭 평가 헬퍼 함수 구현 및 단위 테스트 작성.
-
-#### `TSK-FE-014` [P0] Smart Match Badge Component (`SmartMatchTag.vue`)
-- **도메인**: Frontend | **소요 시간**: 1.5h | **선행 작업**: `TSK-FE-013`, `TSK-FE-008`
-- **Definition of Done (DoD)**: `PASS` (초록), `WARN` (노랑), `DENY` (빨강) 스타일 뱃지 컴포넌트 구현 및 카드 연동.
-
-#### `TSK-FE-015` [P0] Place Detail Modal Component (`PlaceDetailModal.vue`)
-- **도메인**: Frontend | **소요 시간**: 2h | **선행 작업**: `TSK-FE-014`
-- **Definition of Done (DoD)**: 이미지, 주소, 전화번호, 동반 수칙 체크리스트, 매칭 뱃지 및 카카오맵 길찾기 버튼 모달 완성.
-
----
-
-## Epic 5. Social, Mobile UI & QA (리뷰, 모바일 UI & 검증)
-
-### Feature 5.1 Review & Bookmark (Backend & Frontend)
-#### `TSK-BE-014` [P1] PlaceReview Entity & REST Endpoints
-- **도메인**: Backend | **소요 시간**: 1.5h | **선행 작업**: `TSK-BE-008`, `TSK-BE-009`
-- **Definition of Done (DoD)**: `GET /api/v1/places/{id}/reviews` 및 `POST /api/v1/places/{id}/reviews` API 구현.
-
-#### `TSK-BE-015` [P1] Favorites / Bookmark REST Endpoints (v1.1 신설)
-- **도메인**: Backend | **소요 시간**: 1h | **선행 작업**: `TSK-BE-008`, `TSK-BE-009`
-- **Definition of Done (DoD)**: `POST/DELETE /api/v1/bookmarks/{placeId}` 즐겨찾기 CRUD 엔드포인트 구현.
-
-#### `TSK-FE-016` [P1] Favorites / Bookmark Pinia Store & Heart Button
-- **도메인**: Frontend | **소요 시간**: 1h | **선행 작업**: `TSK-FE-008`
-- **Definition of Done (DoD)**: 카드 내 하트 클릭 시 즐겨찾기 저장/해제 및 LocalStorage/Store 보존.
-
-#### `TSK-FE-017` [P1] Place Review Form & List Component (`ReviewSection.vue`)
-- **도메인**: Frontend | **소요 시간**: 1.5h | **선행 작업**: `TSK-FE-015`
-- **Definition of Done (DoD)**: 상세 모달 내 별점 선택, 리뷰 텍스트 등록 폼 및 작성된 리뷰 리스트 시각화.
-
----
-
-### Feature 5.2 Mobile Responsive Layout & Polish (Frontend)
-#### `TSK-FE-018` [P0] Mobile Bottom Navigation Bar & Drawer Sheet (`AppLayout.vue`)
-- **도메인**: Frontend | **소요 시간**: 2h | **선행 작업**: `TSK-FE-004`, `TSK-FE-005`
-- **Definition of Done (DoD)**: 900px 이하 모바일 Viewport 시 하단 탭 바 및 뷰 전환 적용.
-
-#### `TSK-FE-019` [P2] Dark Mode Theme Switcher (`ThemeToggle.vue`)
-- **도메인**: Frontend | **소요 시간**: 1h | **선행 작업**: `TSK-FE-004`
-- **Definition of Done (DoD)**: `data-theme="dark"` 토글 및 다크모드 색상 변수 적용.
-
----
-
-### Feature 5.3 QA & Performance Verification (QA / Test)
-#### `TSK-QA-001` [P0] PostGIS Spatial Radius Query Latency Test
-- **도메인**: QA / Performance | **소요 시간**: 1.5h | **선행 작업**: `TSK-BE-007`
-- **Definition of Done (DoD)**: 위치 기반 반경 쿼리 응답 속도가 **P95 < 50ms** 조건 충족 보고서 작성.
-
-#### `TSK-QA-002` [P0] Smart Pet-Matching Scenario E2E Test
-- **도메인**: QA / Testing | **소요 시간**: 1.5h | **선행 작업**: `TSK-FE-014`, `TSK-BE-012`
-- **Definition of Done (DoD)**: 소형견(초코 4.2kg) ➔ 대형견(빅터 28.5kg) 대표 펫 전환 시 카드 뱃지가 `PASS` ➔ `DENY`로 즉시 바뀌는지 E2E 검증 완료.
+### Feature 4.2 Production Infra & Monitoring
+- [ ] `TSK-INF-005` Docker Compose Production Environment Setup
+- [ ] `TSK-INF-006` AWS Cloud Deployment & GitHub Actions CI/CD Pipeline
+- [ ] `TSK-INF-007` Prometheus & Grafana Monitoring & APM Setup

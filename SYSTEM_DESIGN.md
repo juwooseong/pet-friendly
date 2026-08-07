@@ -198,3 +198,13 @@ public MatchResult evaluatePetMatch(Pet pet, Place place) {
    - Spring Boot + PostGIS 인덱싱 쿼리 (`ST_DWithin`)로 위치 기반 조회 속도 **P95 < 50ms** 달성.
 4. **가용성 (Availability)**:
    - Spring Cache + Redis 및 클라이언트 파이프라인으로 외부 API 장애 시에도 서비스 99.99% 이용 보장.
+
+---
+
+## 8. Sprint Execution Roadmap v2.0 (실서비스 MVP 우선구축 체계)
+
+- **Sprint 1 (Backend Core)**: PostgreSQL/PostGIS 초기화, Flyway V1~V6, TourAPI 파이프라인, 반경/필터 검색 API 완성.
+- **Sprint 2 (Backend Feature Completion)**: User/Pet/Favorite/Review Core API, Review-Place rating/reviewCount 실시간 동기화, My Page API, Dashboard API, E2E Integration Test & Swagger OpenAPI 3.0 명세 완성. (기술부채는 Refactoring Sprint로 관리)
+- **Sprint 3 (Frontend MVP)**: Vue 3 + Vite + TailwindCSS 기반 9개 핵심 화면 구축 및 Spring Boot 백엔드 REST API 완전 연동 MVP 서비스 완성.
+- **Sprint 4 (Advanced AI & Production)**: OpenAI AI 추천, Redis Caching, Elasticsearch, AWS 배포 및 CI/CD 파이프라인 가동.
+

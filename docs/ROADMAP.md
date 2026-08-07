@@ -1,6 +1,6 @@
 # Project Roadmap & Documentation Guide (ROADMAP.md)
 
-Staff Software Architect 관점에서 작성한 **PetSpot 프로젝트의 문서별 역할 및 단계별 실행 로드맵** 문서입니다.
+Staff Software Architect 관점에서 작성한 **PetSpot 프로젝트의 문서별 역할 및 단계별 실행 로드맵 (v2.0)** 문서입니다.
 
 ---
 
@@ -15,74 +15,71 @@ pet-friendly/
     ├── DOMAIN.md          ─── [도메인/비즈니스 로직] 데이터 모델 (TS Types) & 스마트 매칭 계산 규칙
     ├── TECH_STACK.md      ─── [인프라/아키텍처] Vue 3, Spring Boot 3, PostGIS, Redis 스펙 및 C4 구조
     ├── RULES.md           ─── [컨벤션/가이드라인] TypeScript Strict 규칙, Vue3/Spring 코드 구조 & UI 규정
-    ├── TASKS.md           ─── [진행 상태 관리] Phase별 마일스톤 및 설계/구현 검증 체크리스트
+    ├── TASKS.md           ─── [진행 상태 관리] Phase/Sprint별 마일스톤 및 설계/구현 검증 체크리스트
     ├── DECISIONS.md       ─── [아키텍처 이력] ADR (대표 펫 매칭, Vue3/Spring3/TS 채택 사유 등)
     └── ROADMAP.md         ─── [실행 로드맵] 문서 역할 및 Step-by-Step 프로젝트 진행 가이드
 ```
 
-### 각 문서의 상세 역할
-- **`SYSTEM_DESIGN.md`**: 제품의 모든 기술 및 비즈니스 명세를 한 번에 조망할 수 있는 **마스터 종합 참조 문서**입니다.
-- **`docs/PRODUCT.md`**: **"무엇을(What) 왜(Why) 만드는가?"**를 정의합니다. 소형견/대형견/응급진료 집사의 Pain Point와 유저 스토리 명세가 포함됩니다.
-- **`docs/DOMAIN.md`**: **"어떤 비즈니스 규칙과 데이터 구조인가?"**를 정의합니다. DB 스키마, 프론트엔드 TypeScript Interface, 3단계 매칭 알고리즘(`PASS`/`WARN`/`DENY`)을 명시합니다.
-- **`docs/TECH_STACK.md`**: **"어떤 기술로(How) 가동할 것인가?"**를 정의합니다. Vue 3 + Vite, Spring Boot 3 + JPA/QueryDSL, PostGIS, Redis 아키텍처 및 NFR 성능 목표(P95 < 50ms)를 담고 있습니다.
-- **`docs/RULES.md`**: **"개발팀이 따라야 할 코딩 규칙은 무엇인가?"**를 정의합니다. TypeScript No `any` 정책, Component `<script setup lang="ts">`, Spring Boot 레이어드 패키지 구조, REST API 응답 규격을 규정합니다.
-- **`docs/TASKS.md`**: **"지금 어떤 단계이며 무엇을 검증해야 하는가?"**를 추적합니다. Phase 1~4 진행도 및 검증 항목을 관리합니다.
-- **`docs/DECISIONS.md`**: **"과거에 왜 이러한 아키텍처 선택을 했는가?"**를 기록하는 ADR(Architecture Decision Record) 모음입니다.
-- **`docs/ROADMAP.md`**: **"어떤 순서로 프로젝트를 실행 및 검증하는가?"**를 정의하는 단계별 실행 가이드입니다.
-
 ---
 
-## 2. 단계별 프로젝트 진행 로드맵 (Execution Roadmap)
+## 2. 단계별 프로젝트 진행 로드맵 (Execution Roadmap v2.0)
 
-아키텍트 관점에서 **"설계 검증 ➔ 백엔드/데이터 파이프라인 ➔ 프론트엔드 ➔ 통합 검증"** 순서로 진행합니다.
+실제 서비스 MVP 조기 가동을 위해 **"백엔드 기능 완결(Sprint 2) ➔ 프론트엔드 MVP 실서비스 구축(Sprint 3) ➔ 고도화 및 AI/인프라(Sprint 4)"** 순서로 로드맵을 재구성했습니다.
 
 ```mermaid
 flowchart LR
-    Step1["[Step 1] 설계 검증 및 API 인터페이스 확정"] --> Step2["[Step 2] 백엔드 & DB 구축 (Spring Boot + PostGIS)"]
-    Step2 --> Step3["[Step 3] 프론트엔드 구축 (Vue 3 + TypeScript)"]
-    Step3 --> Step4["[Step 4] E2E 통합 테스트 & 배포"]
+    Sprint1["[Sprint 1] 백엔드 기반 & 장소 검색"] --> Sprint2["[Sprint 2] 백엔드 기능 완결 & 통합 검증"]
+    Sprint2 --> Sprint3["[Sprint 3] Vue 3 프론트엔드 MVP 연동"]
+    Sprint3 --> Sprint4["[Sprint 4] 고급 기능, AI 추천 & 인프라"]
 ```
 
 ---
 
-### 📍 Step 1: 설계 검증 및 OpenAPI 계약 확정 (Design & API Contract)
-1. **공공데이터 OpenAPI 스펙 매핑**:
-   - 한국관광공사 TourAPI 및 공공데이터포털 장소 데이터 표준 컬럼을 `Place` 엔티티 구조와 1:1 매핑 검증.
-2. **REST API Swagger/OpenAPI 스펙 작성**:
-   - `/api/v1/places` (검색 및 반경 조회)
-   - `/api/v1/pets` (펫 프로필 CRUD)
-   - `/api/v1/places/{id}/evaluate` (매칭 알고리즘 API)
+### 📍 Sprint 1: 백엔드 기반 & 장소 공간 검색 (COMPLETED)
+1. **인프라 & 스키마 초기화**: PostgreSQL + PostGIS Docker 설정, Flyway DDL 적용 (`users`, `pets`, `places`).
+2. **공공데이터 파이프라인**: TourAPI REST Client 및 파싱 배치 기능 구축.
+3. **장소 검색 API**: QueryDSL Spatial 기반 반경/카테고리/동반 수칙 다중 필터 및 Pageable 페이징 API 구축.
 
 ---
 
-### 📍 Step 2: 백엔드 & 공공데이터 파이프라인 구축 (Spring Boot 3 + PostGIS)
-1. **PostgreSQL & PostGIS 데이터베이스 설정**:
-   - `GEOMETRY(Point, 4326)` Spatial Index 및 JPA/Hibernate Spatial 연동.
-2. **공공데이터 배치 인제스천 서비스 (`@Scheduled`)**:
-   - 공공데이터포털 API 파싱 ➔ 펫 동반 정책 데이터 정제 및 DB Upsert 파이프라인.
-3. **Spring Boot 핵심 REST API 구현**:
-   - QueryDSL 기반 위치/카테고리/견종 크기 다중 필터링 쿼리.
-   - Spring Security + JWT 인증 및 펫 매칭 서비스 로직 구현.
+### 📍 Sprint 2: 백엔드 기능 완결 & 통합 검증 (Backend Feature Completion)
+1. **Review Service & REST API**:
+   - Review CUD, `Place` 평균 평점 (`rating`) 및 리뷰 수 (`reviewCount`) 실시간 동기화, Swagger 문서화 및 409 Conflict 중복 방지.
+2. **My Page API**:
+   - 사용자 프로필, 대표 반려동물, 즐겨찾기 목록, 내 리뷰 목록, 내 반려동물 목록 일괄 조회 API.
+3. **Dashboard API**:
+   - 메인 홈 화면용 추천 장소, 인기 장소, 최근 등록 장소, 대표 반려동물 통합 조회 API.
+4. **Integration Test (통합 테스트)**:
+   - 회원가입 ➔ 로그인 ➔ JWT 발급 ➔ Pet 등록 ➔ Favorite 등록 ➔ Review 작성 ➔ Place Rating 변경 ➔ 마이페이지 조회 전체 E2E Flow 검증.
+5. **API Documentation**:
+   - Swagger OpenAPI 3.0 명세 정리, API Tag 분류, Request/Response/Error 명확한 예시 작성.
+
+> [!NOTE]
+> **Sprint 2 종료 후 기술부채(Refactoring Sprint) 관리 항목**:
+> `ST_DWithin` 최적화, Pagination 확장, QueryDSL 개선, Domain/Application Layer 정제, Exception 구조 개편, Performance Tuning은 별도 리팩토링 스프린트에서 수행합니다.
 
 ---
 
-### 📍 Step 3: 프론트엔드 구축 (Vue 3 + TypeScript)
-1. **Vue 3 + Vite + TypeScript 프로젝트 초기화**:
-   - `@/types/` 하위 타입 정의 (`user.ts`, `place.ts`, `pet.ts`).
-2. **Pinia 전역 스토어 구축**:
-   - `useAuthStore` (회원 로그인/JWT 관리)
-   - `usePetStore` (펫 프로필 등록 및 대표 펫 변경 이벤트)
-   - `usePlaceStore` (필터링 및 지도 마커 상태)
-3. **컴포넌트 개발 & UI 구현**:
-   - 듀얼 레이아웃 (데스크톱 Split View / 모바일 Bottom Nav + Sheet Drawer).
-   - Leaflet/카카오맵 지도 마커 동기화 및 스마트 매칭 뱃지 리렌더링.
+### 📍 Sprint 3: 프론트엔드 MVP 실서비스 구축 (Frontend MVP Sprint)
+- **목표**: Vue 3 + Vite 기반 프론트엔드 개발 및 백엔드 API와의 완전한 연동을 통해 실제 동작하는 MVP 서비스 구축.
+- **기술 스택**: Vue 3 (Composition API), Vite, Pinia, Vue Router 4, Axios, TailwindCSS, JWT Authentication, 반응형 UI.
+- **Frontend 설계 문서 작성**: Frontend Architecture, Component Tree, API Mapping, Routing, Pinia Store, Axios 구조, 공통 Layout 설계.
+- **구현 대상 화면**:
+  1. 로그인 (`/login`): JWT 저장, 자동 로그인, 로그아웃
+  2. 회원가입 (`/signup`): Validation, 이메일 중복 확인
+  3. 홈 (`/`): 추천 장소, 인기 장소, 최근 등록 장소, 대표 반려동물 렌더링
+  4. 장소 검색 (`/places`): 키워드 검색, 카테고리 필터, 반려동물 조건, 거리순 정렬
+  5. 지도 (`/map`): Kakao Map / Leaflet 연동, 현재 위치 마커, 장소 상세 모달/페이지 이동
+  6. 장소 상세 (`/places/{id}`): 기본 정보, 사진, 리뷰 목록, 즐겨찾기 토글, 리뷰 작성
+  7. 즐겨찾기 (`/favorites`): 즐겨찾기 장소 목록 및 삭제
+  8. 내 반려동물 (`/pets`): 펫 CRUD 및 대표 반려동물 스위칭 설정
+  9. 마이페이지 (`/mypage`): 회원 정보, 즐겨찾기 탭, 내 리뷰 탭, 내 반려동물 탭
 
 ---
 
-### 📍 Step 4: 통합 테스트 & NFR 검증 (E2E & Performance Test)
-1. **스마트 매칭 로직 검증**:
-   - 소형견(초코 4.2kg) vs 대형견(빅터 28.5kg) 전환 시 UI 뱃지 실시간 변경 검증.
-2. **성능 테스트 (PostGIS Spatial Query Latency)**:
-   - 위치 기반 반경 검색 쿼리 **P95 < 50ms** 검증.
-3. **반응형 UI 검증**:
-   - 데스크톱(1440px) 및 모바일 브라우저(375px) 전환 시 Layout 레이아웃 검증.
+### 📍 Sprint 4: 고급 기능, AI 추천 & 인프라 (Advanced AI & Infra Sprint)
+- **주요 구현 항목**:
+  - OpenAI / AI 기반 펫 맞춤형 추천 알고리즘
+  - Redis Cache (장소 검색 및 세션/토큰 캐싱)
+  - Elasticsearch (초고속 전문 검색 엔진)
+  - AWS 인프라 배포, Docker Compose Production 구축, CI/CD 파이프라인 및 Prometheus/Grafana 모니터링
