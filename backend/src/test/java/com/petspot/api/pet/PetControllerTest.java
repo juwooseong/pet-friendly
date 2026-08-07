@@ -175,4 +175,26 @@ class PetControllerTest {
         mockMvc.perform(get("/api/v1/pets"))
                 .andExpect(status().isUnauthorized());
     }
+
+    @Test
+    @DisplayName("PATCH /api/v1/pets/{petId}/representative 대표 반려동물 변경 성공 시 200 OK 반환")
+    void setRepresentativePet_Success() throws Exception {
+        // given
+        UUID petId = UUID.randomUUID();
+        PetResponseDto response = PetResponseDto.builder()
+                .id(petId)
+                .name("새대표")
+                .representative(true)
+                .build();
+
+        given(petService.setRepresentativePet(mockOwner.getId(), petId)).willReturn(response);
+
+        // when & then
+        mockMvc.perform(patch("/api/v1/pets/" + petId + "/representative")
+                        .with(authentication(mockAuth)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success", is(true)))
+                .andExpect(jsonPath("$.data.representative", is(true)))
+                .andExpect(jsonPath("$.data.name", is("새대표")));
+    }
 }

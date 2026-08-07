@@ -116,4 +116,21 @@ public class PetController {
 
         return ResponseEntity.ok(ApiResponse.success(null));
     }
+
+    @Operation(
+            summary = "대표 반려동물 변경",
+            description = "선택한 반려동물을 대표 반려동물로 지정합니다. 기존 대표 반려동물은 자동으로 해제됩니다.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @PatchMapping("/{petId}/representative")
+    public ResponseEntity<ApiResponse<PetResponseDto>> setRepresentativePet(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable UUID petId) {
+
+        log.info("PATCH /api/v1/pets/{}/representative called by userId: {}", petId, userDetails.getId());
+
+        PetResponseDto result = petService.setRepresentativePet(userDetails.getId(), petId);
+
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
 }

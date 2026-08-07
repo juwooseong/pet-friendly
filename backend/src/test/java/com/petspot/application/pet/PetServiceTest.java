@@ -164,4 +164,25 @@ class PetServiceTest {
         verify(petRepository).delete(repPet);
         assertThat(secondPet.isRepresentative()).isTrue();
     }
+
+    @Test
+    @DisplayName("대표 반려동물 변경 성공 - 기존 대표 펫 해제 및 신규 펫 대표 지정")
+    void setRepresentativePet_Success() {
+        // given
+        UUID userId = mockUser.getId();
+        Pet oldRepPet = Pet.create(mockUser, "기존대표", "푸들", PetGender.MALE, null, new BigDecimal("5.0"), true, true, null);
+        Pet newRepPet = Pet.create(mockUser, "새대표", "말티즈", PetGender.FEMALE, null, new BigDecimal("3.0"), false, false, null);
+
+        given(petRepository.findById(newRepPet.getId())).willReturn(Optional.of(newRepPet));
+        given(petRepository.findByOwnerIdAndRepresentativeTrue(userId)).willReturn(Optional.of(oldRepPet));
+
+        // when
+        PetResponseDto response = petService.setRepresentativePet(userId, newRepPet.getId());
+
+        // then
+        assertThat(oldRepPet.isRepresentative()).isFalse();
+        assertThat(newRepPet.isRepresentative()).isTrue();
+        assertThat(response.isRepresentative()).isTrue();
+        assertThat(response.getName()).isEqualTo("새대표");
+    }
 }

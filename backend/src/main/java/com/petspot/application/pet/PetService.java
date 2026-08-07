@@ -140,6 +140,36 @@ public class PetService {
     }
 
     /**
+     * 대표 반려동물 변경
+     * 하나의 트랜잭션 내에서 기존 대표 펫의 representative 상태를 해제하고 targetPet을 대표 펫으로 설정
+     */
+    @Transactional
+    public PetResponseDto setRepresentativePet(UUID userId, UUID petId) {
+        log.info("[PET SET REPRESENTATIVE] Setting petId: {} as representative for userId: {}", petId, userId);
+
+        Pet targetPet = findPetAndValidateOwner(userId, petId);
+
+        // 이미 대표 펫인 경우 추가 변경 없이 그대로 반환 (멱등성 보장)
+        if (targetPet.isRepresentative()) {
+            log.info("[PET SET REPRESENTATIVE] petId: {} is already representative for userId: {}", petId, userId);
+            return PetResponseDto.from(targetPet);
+        }
+
+        // 기존 대표 반려동물 조회 및 해제
+        petRepository.findByOwnerIdAndRepresentativeTrue(userId)
+                .ifPresent(currentRep -> {
+                    currentRep.changeRepresentative(false);
+                    log.info("[PET UNSET REPRESENTATIVE] Unset representative for petId: {}", currentRep.getId());
+                });
+
+        // 선택한 펫을 대표 반려동물로 설정
+        targetPet.changeRepresentative(true);
+        log.info("[PET SET REPRESENTATIVE SUCCESS] petId: {} is now representative for userId: {}", petId, userId);
+
+        return PetResponseDto.from(targetPet);
+    }
+
+    /**
      * 반려동물 존재 확인 및 소유자(Owner) 권한 검증 헬퍼 메서드
      */
     private Pet findPetAndValidateOwner(UUID userId, UUID petId) {
