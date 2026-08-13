@@ -1,18 +1,26 @@
 package com.petspot.api.auth;
 
+import com.petspot.api.auth.dto.ChangePasswordRequestDto;
+import com.petspot.api.auth.dto.FindIdRequestDto;
+import com.petspot.api.auth.dto.FindIdResponseDto;
+import com.petspot.api.auth.dto.FindPasswordRequestDto;
 import com.petspot.api.auth.dto.UserLoginRequestDto;
 import com.petspot.api.auth.dto.UserLoginResponseDto;
 import com.petspot.api.auth.dto.UserRegisterRequestDto;
 import com.petspot.api.auth.dto.UserRegisterResponseDto;
 import com.petspot.application.auth.AuthService;
 import com.petspot.global.dto.ApiResponse;
+import com.petspot.global.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -58,5 +66,52 @@ public class AuthController {
         UserLoginResponseDto result = authService.login(request);
 
         return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    @Operation(
+            summary = "아이디(이메일) 찾기",
+            description = "가입 시 등록한 닉네임으로 계정을 조회하여 마스킹된 이메일 주소를 반환합니다. 일치하는 계정이 없으면 404를 반환합니다."
+    )
+    @PostMapping("/find-id")
+    public ResponseEntity<ApiResponse<FindIdResponseDto>> findId(
+            @Valid @RequestBody FindIdRequestDto request) {
+
+        log.info("POST /api/v1/auth/find-id called");
+
+        FindIdResponseDto result = authService.findId(request);
+
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    @Operation(
+            summary = "비밀번호 찾기 (임시 비밀번호 발급)",
+            description = "이메일로 임시 비밀번호를 생성하여 발송합니다. 계정 존재 여부와 무관하게 항상 동일한 성공 응답을 반환합니다."
+    )
+    @PostMapping("/find-password")
+    public ResponseEntity<ApiResponse<Void>> findPassword(
+            @Valid @RequestBody FindPasswordRequestDto request) {
+
+        log.info("POST /api/v1/auth/find-password called");
+
+        authService.findPassword(request);
+
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @Operation(
+            summary = "비밀번호 변경",
+            description = "현재 로그인한 사용자의 비밀번호를 변경합니다. 임시 비밀번호로 로그인한 사용자는 다른 API 이용 전 반드시 호출해야 합니다.",
+            security = @SecurityRequirement(name = "BearerAuth")
+    )
+    @PatchMapping("/password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Valid @RequestBody ChangePasswordRequestDto request) {
+
+        log.info("PATCH /api/v1/auth/password called by userId: {}", userDetails.getId());
+
+        authService.changePassword(userDetails.getId(), request);
+
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 }

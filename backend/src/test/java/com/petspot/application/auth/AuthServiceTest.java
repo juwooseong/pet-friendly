@@ -1,5 +1,13 @@
 package com.petspot.application.auth;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import com.petspot.api.auth.dto.ChangePasswordRequestDto;
+import com.petspot.api.auth.dto.FindIdRequestDto;
+import com.petspot.api.auth.dto.FindIdResponseDto;
+import com.petspot.api.auth.dto.FindPasswordRequestDto;
 import com.petspot.api.auth.dto.UserLoginRequestDto;
 import com.petspot.api.auth.dto.UserLoginResponseDto;
 import com.petspot.api.auth.dto.UserRegisterRequestDto;
@@ -10,21 +18,30 @@ import com.petspot.domain.user.entity.UserStatus;
 import com.petspot.domain.user.repository.UserRepository;
 import com.petspot.global.error.exception.DuplicateEmailException;
 import com.petspot.global.error.exception.InvalidCredentialsException;
+import com.petspot.global.error.exception.UserNotFoundException;
 import com.petspot.global.util.JwtTokenProvider;
+import com.petspot.global.util.TemporaryPasswordGenerator;
+import com.petspot.infrastructure.email.EmailSender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 class AuthServiceTest {
@@ -37,6 +54,12 @@ class AuthServiceTest {
 
     @Mock
     private JwtTokenProvider jwtTokenProvider;
+
+    @Mock
+    private TemporaryPasswordGenerator temporaryPasswordGenerator;
+
+    @Mock
+    private EmailSender emailSender;
 
     @InjectMocks
     private AuthService authService;
@@ -198,5 +221,225 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(InvalidCredentialsException.class)
                 .hasMessage("이메일 또는 비밀번호가 올바르지 않습니다.");
+    }
+
+    @Test
+    @DisplayName("임시 비밀번호로 로그인한 사용자는 requiresPasswordChange=true 로 응답한다")
+    void login_TemporaryPasswordUser_RequiresPasswordChangeTrue() {
+        // given
+        UserLoginRequestDto request = UserLoginRequestDto.builder()
+                .email("temp@petspot.com")
+                .password("TempPassw0rd!")
+                .build();
+
+        User tempPasswordUser = User.register("temp@petspot.com", "bcrypt_temp_hash", "임시유저");
+        tempPasswordUser.issueTemporaryPassword("bcrypt_temp_hash");
+
+        given(userRepository.findByEmail("temp@petspot.com")).willReturn(Optional.of(tempPasswordUser));
+        given(passwordEncoder.matches("TempPassw0rd!", "bcrypt_temp_hash")).willReturn(true);
+        given(jwtTokenProvider.generateToken(any(), any(), any())).willReturn("mock.jwt.access.token");
+        given(jwtTokenProvider.getExpirationMs()).willReturn(86400000L);
+
+        // when
+        UserLoginResponseDto response = authService.login(request);
+
+        // then
+        assertThat(response.isRequiresPasswordChange()).isTrue();
+    }
+
+    @Test
+    @DisplayName("일반 비밀번호로 로그인한 사용자는 requiresPasswordChange=false 로 응답한다")
+    void login_NormalUser_RequiresPasswordChangeFalse() {
+        // given
+        UserLoginRequestDto request = UserLoginRequestDto.builder()
+                .email("active@petspot.com")
+                .password("password1234!")
+                .build();
+
+        User activeUser = User.register("active@petspot.com", "bcrypt_pwd_hash", "활성유저");
+
+        given(userRepository.findByEmail("active@petspot.com")).willReturn(Optional.of(activeUser));
+        given(passwordEncoder.matches("password1234!", "bcrypt_pwd_hash")).willReturn(true);
+        given(jwtTokenProvider.generateToken(any(), any(), any())).willReturn("mock.jwt.access.token");
+        given(jwtTokenProvider.getExpirationMs()).willReturn(86400000L);
+
+        // when
+        UserLoginResponseDto response = authService.login(request);
+
+        // then
+        assertThat(response.isRequiresPasswordChange()).isFalse();
+    }
+
+    @Test
+    @DisplayName("가입된 닉네임으로 아이디 찾기 요청 시 마스킹된 이메일을 반환한다")
+    void findId_Success_ReturnsMaskedEmail() {
+        // given
+        FindIdRequestDto request = FindIdRequestDto.builder()
+                .nickname("뽀삐아빠")
+                .build();
+
+        User user = User.register("jjoodaeng2@gmail.com", "bcrypt_pwd_hash", "뽀삐아빠");
+
+        given(userRepository.findFirstByNicknameAndStatus("뽀삐아빠", UserStatus.ACTIVE))
+                .willReturn(Optional.of(user));
+
+        // when
+        FindIdResponseDto response = authService.findId(request);
+
+        // then
+        assertThat(response.getMaskedEmail()).isEqualTo("j*********@gmail.com");
+    }
+
+    @Test
+    @DisplayName("일치하는 닉네임이 없으면 UserNotFoundException 발생")
+    void findId_NicknameNotFound_ThrowsException() {
+        // given
+        FindIdRequestDto request = FindIdRequestDto.builder()
+                .nickname("존재하지않는닉네임")
+                .build();
+
+        given(userRepository.findFirstByNicknameAndStatus("존재하지않는닉네임", UserStatus.ACTIVE))
+                .willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> authService.findId(request))
+                .isInstanceOf(UserNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("가입된 이메일로 비밀번호 찾기 요청 시 임시 비밀번호를 BCrypt 암호화하여 저장하고 메일을 발송한다")
+    void findPassword_ExistingEmail_IssuesTemporaryPasswordAndSendsEmail() {
+        // given
+        FindPasswordRequestDto request = FindPasswordRequestDto.builder()
+                .email("active@petspot.com")
+                .build();
+
+        User user = User.register("active@petspot.com", "old_bcrypt_hash", "활성유저");
+
+        given(userRepository.findActiveByEmail("active@petspot.com")).willReturn(Optional.of(user));
+        given(temporaryPasswordGenerator.generate()).willReturn("Temp1234!@#$");
+        given(passwordEncoder.encode("Temp1234!@#$")).willReturn("new_bcrypt_temp_hash");
+
+        // when
+        authService.findPassword(request);
+
+        // then: DB에는 BCrypt 해시만 저장되고 강제 변경 상태로 전환된다
+        assertThat(user.getPasswordHash()).isEqualTo("new_bcrypt_temp_hash");
+        assertThat(user.isPasswordChangeRequired()).isTrue();
+
+        // 메일에는 평문 임시 비밀번호가 전달된다 (해시가 아님)
+        ArgumentCaptor<String> passwordCaptor = ArgumentCaptor.forClass(String.class);
+        verify(emailSender).sendTemporaryPassword(org.mockito.ArgumentMatchers.eq("active@petspot.com"), passwordCaptor.capture());
+        assertThat(passwordCaptor.getValue()).isEqualTo("Temp1234!@#$");
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 이메일로 비밀번호 찾기 요청 시 예외 없이 조용히 종료하고 메일을 발송하지 않는다")
+    void findPassword_NonExistentEmail_NoSideEffects() {
+        // given
+        FindPasswordRequestDto request = FindPasswordRequestDto.builder()
+                .email("none@petspot.com")
+                .build();
+
+        given(userRepository.findActiveByEmail("none@petspot.com")).willReturn(Optional.empty());
+
+        // when & then: 예외가 발생하지 않아야 한다 (계정 존재 여부 노출 방지)
+        authService.findPassword(request);
+
+        verify(emailSender, never()).sendTemporaryPassword(anyString(), anyString());
+        verify(temporaryPasswordGenerator, never()).generate();
+    }
+
+    @Test
+    @DisplayName("비밀번호 찾기 처리 중 평문 임시 비밀번호는 로그에 출력되지 않는다")
+    void findPassword_TemporaryPasswordNeverAppearsInLogs() throws Exception {
+        // given
+        FindPasswordRequestDto request = FindPasswordRequestDto.builder()
+                .email("active@petspot.com")
+                .build();
+
+        User user = User.register("active@petspot.com", "old_bcrypt_hash", "활성유저");
+        String plainTemporaryPassword = "SuperSecret1!";
+
+        given(userRepository.findActiveByEmail("active@petspot.com")).willReturn(Optional.of(user));
+        given(temporaryPasswordGenerator.generate()).willReturn(plainTemporaryPassword);
+        given(passwordEncoder.encode(plainTemporaryPassword)).willReturn("hashed_value");
+
+        Logger authServiceLogger = (Logger) LoggerFactory.getLogger(AuthService.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        authServiceLogger.addAppender(appender);
+        authServiceLogger.setLevel(Level.ALL);
+
+        try {
+            // when
+            authService.findPassword(request);
+
+            // then
+            List<String> logMessages = appender.list.stream()
+                    .map(ILoggingEvent::getFormattedMessage)
+                    .toList();
+            assertThat(logMessages).noneMatch(message -> message.contains(plainTemporaryPassword));
+        } finally {
+            authServiceLogger.detachAppender(appender);
+        }
+    }
+
+    @Test
+    @DisplayName("정상 비밀번호 변경 요청 시 새 비밀번호로 갱신되고 강제 변경 상태가 해제된다")
+    void changePassword_Success() {
+        // given
+        User user = User.register("active@petspot.com", "old_bcrypt_hash", "활성유저");
+        user.issueTemporaryPassword("temp_bcrypt_hash");
+        UUID userId = user.getId();
+
+        ChangePasswordRequestDto request = ChangePasswordRequestDto.builder()
+                .newPassword("NewPassw0rd!")
+                .confirmPassword("NewPassw0rd!")
+                .build();
+
+        given(userRepository.findById(userId)).willReturn(Optional.of(user));
+        given(passwordEncoder.encode("NewPassw0rd!")).willReturn("new_bcrypt_hash");
+
+        // when
+        authService.changePassword(userId, request);
+
+        // then
+        assertThat(user.getPasswordHash()).isEqualTo("new_bcrypt_hash");
+        assertThat(user.isPasswordChangeRequired()).isFalse();
+    }
+
+    @Test
+    @DisplayName("새 비밀번호와 확인 비밀번호가 일치하지 않으면 IllegalArgumentException 발생")
+    void changePassword_Mismatch_ThrowsException() {
+        // given
+        UUID userId = UUID.randomUUID();
+        ChangePasswordRequestDto request = ChangePasswordRequestDto.builder()
+                .newPassword("NewPassw0rd!")
+                .confirmPassword("Different1!")
+                .build();
+
+        // when & then
+        assertThatThrownBy(() -> authService.changePassword(userId, request))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        verify(userRepository, never()).findById(any());
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 사용자 ID로 비밀번호 변경 시 UserNotFoundException 발생")
+    void changePassword_UserNotFound_ThrowsException() {
+        // given
+        UUID userId = UUID.randomUUID();
+        ChangePasswordRequestDto request = ChangePasswordRequestDto.builder()
+                .newPassword("NewPassw0rd!")
+                .confirmPassword("NewPassw0rd!")
+                .build();
+
+        given(userRepository.findById(userId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> authService.changePassword(userId, request))
+                .isInstanceOf(UserNotFoundException.class);
     }
 }

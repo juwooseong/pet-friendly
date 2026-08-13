@@ -5,6 +5,7 @@ import com.petspot.global.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -57,6 +58,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(customAuthenticationEntryPoint))
                 .authorizeHttpRequests(auth -> auth
+                        // 비밀번호 변경은 /api/v1/auth/** 하위 경로이지만 JWT 인증이 필요하므로 permitAll보다 먼저 명시
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/auth/password").authenticated()
                         // 2. "/favicon.ico" 경로를 permitAll에 추가하여 인증 로그 에러 방지
                         .requestMatchers("/api/v1/auth/**", "/api/v1/places/**", "/h2-console/**", "/error", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/favicon.ico").permitAll()
                         .anyRequest().authenticated()

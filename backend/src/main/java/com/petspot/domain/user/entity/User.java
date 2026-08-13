@@ -51,6 +51,9 @@ public class User {
     @Column(name = "withdraw_at")
     private ZonedDateTime withdrawAt;
 
+    @Column(name = "password_change_required", nullable = false)
+    private boolean passwordChangeRequired;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private ZonedDateTime createdAt;
@@ -127,6 +130,24 @@ public class User {
         if (newPasswordHash != null && !newPasswordHash.isBlank()) {
             this.passwordHash = newPasswordHash;
         }
+    }
+
+    /**
+     * 비밀번호 찾기를 통한 임시 비밀번호 발급.
+     * 발급 즉시 강제 비밀번호 변경 상태로 전환한다.
+     */
+    public void issueTemporaryPassword(String temporaryPasswordHash) {
+        this.passwordHash = temporaryPasswordHash;
+        this.passwordChangeRequired = true;
+    }
+
+    /**
+     * 사용자 본인의 비밀번호 변경 완료 처리.
+     * 강제 비밀번호 변경 상태를 해제한다.
+     */
+    public void completePasswordChange(String newPasswordHash) {
+        this.passwordHash = newPasswordHash;
+        this.passwordChangeRequired = false;
     }
 
     /**

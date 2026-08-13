@@ -35,4 +35,9 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     default Optional<User> findActiveByEmail(String email) {
         return findByEmailAndStatus(email, UserStatus.ACTIVE);
     }
+
+    /**
+     * 닉네임 및 상태 조건 기반 회원 단건 조회 (아이디 찾기용)
+     */
+    Optional<User> findFirstByNicknameAndStatus(String nickname, UserStatus status);
 }

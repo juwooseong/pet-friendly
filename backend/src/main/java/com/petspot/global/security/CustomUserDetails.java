@@ -23,6 +23,7 @@ public class CustomUserDetails implements UserDetails {
     private final String passwordHash;
     private final UserRole role;
     private final UserStatus status;
+    private final boolean passwordChangeRequired;
     private final Collection<? extends GrantedAuthority> authorities;
 
     public CustomUserDetails(User user) {
@@ -31,6 +32,7 @@ public class CustomUserDetails implements UserDetails {
         this.passwordHash = user.getPasswordHash();
         this.role = user.getRole();
         this.status = user.getStatus();
+        this.passwordChangeRequired = user.isPasswordChangeRequired();
         this.authorities = Collections.singletonList(
                 new SimpleGrantedAuthority("ROLE_" + (user.getRole() != null ? user.getRole().name() : "USER"))
         );
