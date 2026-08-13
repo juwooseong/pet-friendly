@@ -5,23 +5,74 @@ import BaseInput from '@/components/common/BaseInput.vue';
 import BaseButton from '@/components/common/BaseButton.vue';
 import ErrorMessage from '@/components/common/ErrorMessage.vue';
 import apiClient, { extractErrorMessage } from '@/api/apiClient';
+import { isValidPassword, doPasswordsMatch } from '@/utils/validators';
 
 const router = useRouter();
 
 const email = ref('');
 const password = ref('');
+const passwordConfirm = ref('');
 const nickname = ref('');
 const loading = ref(false);
 const errorMessage = ref('');
+const emailError = ref('');
+const nicknameError = ref('');
+const passwordError = ref('');
+const passwordConfirmError = ref('');
+
+const emailInputRef = ref<InstanceType<typeof BaseInput> | null>(null);
+const nicknameInputRef = ref<InstanceType<typeof BaseInput> | null>(null);
+const passwordInputRef = ref<InstanceType<typeof BaseInput> | null>(null);
+const passwordConfirmInputRef = ref<InstanceType<typeof BaseInput> | null>(null);
+
+const validateRequiredFields = (): boolean => {
+  if (!email.value) {
+    emailError.value = '이메일을 입력해주세요.';
+    emailInputRef.value?.focus();
+    return false;
+  }
+  if (!nickname.value) {
+    nicknameError.value = '닉네임을 입력해주세요.';
+    nicknameInputRef.value?.focus();
+    return false;
+  }
+  if (!password.value) {
+    passwordError.value = '비밀번호를 입력해주세요.';
+    passwordInputRef.value?.focus();
+    return false;
+  }
+  if (!passwordConfirm.value) {
+    passwordConfirmError.value = '비밀번호 확인을 입력해주세요.';
+    passwordConfirmInputRef.value?.focus();
+    return false;
+  }
+  return true;
+};
 
 const handleSignup = async () => {
-  if (!email.value || !password.value || !nickname.value) {
-    errorMessage.value = '모든 필드를 입력해주세요.';
+  emailError.value = '';
+  nicknameError.value = '';
+  passwordError.value = '';
+  passwordConfirmError.value = '';
+  errorMessage.value = '';
+
+  if (!validateRequiredFields()) {
+    return;
+  }
+
+  if (!isValidPassword(password.value)) {
+    passwordError.value = '비밀번호는 8자 이상, 영문/숫자/특수문자를 모두 포함해야 합니다.';
+    passwordInputRef.value?.focus();
+    return;
+  }
+
+  if (!doPasswordsMatch(password.value, passwordConfirm.value)) {
+    passwordConfirmError.value = '비밀번호가 일치하지 않습니다.';
+    passwordConfirmInputRef.value?.focus();
     return;
   }
 
   loading.value = true;
-  errorMessage.value = '';
 
   try {
     const response = await apiClient.post('/auth/register', {
@@ -55,23 +106,42 @@ const handleSignup = async () => {
 
     <form @submit.prevent="handleSignup" class="space-y-4">
       <BaseInput
+        ref="emailInputRef"
         v-model="email"
         label="이메일 주소"
         placeholder="example@petspot.com"
         type="email"
+        :error="emailError"
+        @update:modelValue="emailError = ''"
       />
 
       <BaseInput
+        ref="nicknameInputRef"
         v-model="nickname"
         label="닉네임"
         placeholder="뽀삐아빠"
+        :error="nicknameError"
+        @update:modelValue="nicknameError = ''"
       />
 
       <BaseInput
+        ref="passwordInputRef"
         v-model="password"
         label="비밀번호"
         placeholder="8자 이상 영문/숫자/특수문자"
         type="password"
+        :error="passwordError"
+        @update:modelValue="passwordError = ''"
+      />
+
+      <BaseInput
+        ref="passwordConfirmInputRef"
+        v-model="passwordConfirm"
+        label="비밀번호 확인"
+        placeholder="비밀번호를 다시 입력해주세요"
+        type="password"
+        :error="passwordConfirmError"
+        @update:modelValue="passwordConfirmError = ''"
       />
 
       <BaseButton type="submit" variant="primary" size="lg" :loading="loading" class="w-full mt-2">
