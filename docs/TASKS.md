@@ -86,8 +86,22 @@
 ### Feature 3.2 Authentication & User Screens [거의 완료]
 - [x] `TSK-FE-003` [P0] Login View (`/login`): Form Validation, JWT Token Storage, Auto-login, Logout
   - 로그인 API 연동, JWT LocalStorage 저장(자동 로그인), 에러 메시지 처리 완료. CORS 및 에러 필드 버그 수정 완료 (2026-08-13).
-- [ ] `TSK-FE-004` [P0] Signup View (`/signup`): Email Duplicate Check & User Registration Flow
-  - 회원가입 API 연동 및 필수값 검증 완료. **잔여**: 실시간 이메일 중복 확인(타이핑 중 체크) 미구현 — 현재는 제출 후 409 에러로만 확인됨.
+  - 로그인 응답에 `user` 정보가 누락되어 LocalStorage가 손상되고 앱이 크래시하던 버그 수정 (2026-08-13) — 백엔드가 이제 `UserSummaryDto`를 포함해 응답.
+  - `/find-id`, `/find-password` 이동 버튼 연결 완료.
+- [x] `TSK-FE-004` [P0] Signup View (`/signup`): Email Duplicate Check & User Registration Flow
+  - 회원가입 API 연동, 필수값 검증, 비밀번호 확인 필드, 비밀번호 패턴(영문/숫자/특수문자) 검증, 필수값 누락 시 해당 입력란 자동 포커스, Caps Lock 감지, 비밀번호 필드 한글 입력 차단 완료 (2026-08-13).
+  - 이메일/닉네임 중복 시 서버 409 응답을 해당 입력란에 인라인 표시하도록 완료.
+  - **잔여**: 실시간 중복 확인(타이핑 중 체크)은 미구현 — 현재는 제출 후 409 에러로만 확인됨.
+
+### Feature 3.6 Account Recovery & Forced Password Change [COMPLETED] (Sprint 3 확장 스코프, 2026-08-13 추가)
+- [x] `TSK-BE-024` [P0] Find ID API (`POST /api/v1/auth/find-id`): 닉네임 기반 마스킹 이메일 조회, 미일치 시 404
+- [x] `TSK-BE-025` [P0] Find Password API (`POST /api/v1/auth/find-password`): SecureRandom 임시 비밀번호 생성 → BCrypt 저장 → `EmailSender` 추상화를 통한 발송, 계정 존재 여부 비노출
+- [x] `TSK-BE-026` [P0] Change Password API (`PATCH /api/v1/auth/password`, JWT 인증): 새 비밀번호 정책/확인 일치 검증, `passwordChangeRequired` 해제
+  - `PasswordChangeRequiredInterceptor`로 강제 변경 미완료 사용자의 일반 API 접근 차단 (`/auth/**`, `/places/**` 제외)
+  - Flyway `V7__add_password_change_required.sql`, 로그인 응답에 `requiresPasswordChange` 포함
+- [x] `TSK-BE-027` [P1] 회원가입 닉네임 중복 검증 (`DuplicateNicknameException`, 409)
+- [x] `TSK-FE-012` [P0] Find ID / Find Password Views (`/find-id`, `/find-password`) 및 로그인 화면 연결
+  - 커밋: `ba050db`, `936551d`, `abf94a5`, `8a49270`, `dfc49d8`
 
 ### Feature 3.3 Main Discovery & Search Screens [부분 진행]
 - [x] `TSK-FE-005` [P0] Home View (`/`): Recommended Places, Popular Places, Recent Places, Active Pet Chip

@@ -66,6 +66,7 @@
 - **Sprint Goal**: Vue 3 + Vite + TailwindCSS 기반 프론트엔드 구축 및 Spring Boot 백엔드 API와의 100% 완전한 연동을 통해 실사용 가능한 MVP 서비스 완성.
 - **기술 스택**: Vue 3 (Composition API), Vite, Pinia, Vue Router 4, Axios, TailwindCSS, Spring Boot API 연동, JWT Auth, 반응형 UI.
 - **진행 현황 (2026-08-13 기준)**: 상세 Task 체크리스트는 `docs/TASKS.md`의 Sprint 3 섹션 참조.
+- **스코프 확장**: 원래 9개 화면 계획에 더해 계정 복구(아이디/비밀번호 찾기, 임시 비밀번호 강제 변경) 기능이 Sprint 3 범위로 추가되어 완료됨.
 
 ### Frontend 설계 문서 수립 항목
 - [x] Frontend Architecture Spec / Common Layout / UI 컴포넌트 7종
@@ -75,8 +76,8 @@
 - [ ] Component Tree Taxonomy / API Endpoint Mapping Table 문서화
 
 ### 9개 구현 화면 명세 및 진행 상태
-1. **로그인 (`/login`)** ✅ 완료: JWT 저장, LocalStorage 관리, 자동 로그인, 로그아웃, CORS/에러 필드 버그 수정 완료
-2. **회원가입 (`/signup`)** 🔶 거의 완료: Form Validation 완료 / 이메일 중복 확인은 제출 후 서버 응답(409)으로만 확인, 실시간 체크 미구현
+1. **로그인 (`/login`)** ✅ 완료: JWT 저장, LocalStorage 관리, 자동 로그인, 로그아웃, CORS/에러 필드 버그 수정 완료, 로그인 응답 `user` 누락 크래시 버그 수정, 아이디/비밀번호 찾기 이동 버튼 연결
+2. **회원가입 (`/signup`)** ✅ 사실상 완료: Form Validation, 비밀번호 확인/패턴 검증, 필수값 자동 포커스, Caps Lock 감지, 비밀번호 한글 입력 차단, 이메일/닉네임 중복 시 인라인 에러 표시 완료 / 실시간 중복 확인만 미구현
 3. **홈 (`/`)** ✅ 완료: 추천 장소, 인기 장소, 최근 등록 장소, 대표 반려동물 카드 렌더링 (Dashboard API 연동)
 4. **장소 검색 (`/places`)** 🔶 부분 완료: 키워드 검색, 카테고리 필터 완료 / 반려동물 크기 조건, 거리순 정렬 미구현
 5. **지도 (`/map`)** ❌ 미착수: 라우트조차 미등록, Kakao Map/Leaflet 연동 없음
@@ -84,6 +85,12 @@
 7. **즐겨찾기 (`/favorites`)** 🔶 스캐폴딩: 목록 조회만 구현 / 삭제 기능 미구현
 8. **내 반려동물 (`/pets`)** 🔶 스캐폴딩: 목록 조회만 구현 / CRUD, 대표 반려동물 스위칭 미구현
 9. **마이페이지 (`/mypage`)** 🔶 스캐폴딩: 프로필 요약(펫/즐겨찾기/리뷰 카운트)만 표시 / 즐겨찾기·내 리뷰·내 반려동물 탭 미구현
+
+### 계획 외 추가 구현: 계정 복구 (Account Recovery) [COMPLETED]
+- **아이디 찾기 (`/find-id`)**: 닉네임 → 마스킹된 이메일 조회 (`POST /api/v1/auth/find-id`)
+- **비밀번호 찾기 (`/find-password`)**: 이메일 → 임시 비밀번호 발급/발송, 계정 존재 여부 비노출 (`POST /api/v1/auth/find-password`)
+- **강제 비밀번호 변경**: 임시 비밀번호 로그인 시 `requiresPasswordChange=true` 응답, 변경 전까지 일반 API 접근 차단, `PATCH /api/v1/auth/password`로 변경
+- **닉네임 중복 검증**: 회원가입 시 이메일과 동일하게 닉네임 중복도 409로 차단
 
 ---
 
