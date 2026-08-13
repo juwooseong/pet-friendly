@@ -20,7 +20,7 @@
 | **Sprint 0** | Infrastructure | 개발 환경 구축, DB/PostGIS 초기화 & 프로젝트 스캐폴딩 | **[COMPLETED]** |
 | **Sprint 1** | Backend Core | 공공데이터 수집 파이프라인, PostGIS 반경/필터 검색 API | **[COMPLETED]** |
 | **Sprint 2** | Backend Complete | **User/Pet/Favorite/Review Core API, My Page API, Dashboard API, Integration Test & Swagger** | **[IN_PROGRESS]** |
-| **Sprint 3** | Frontend MVP | **Vue 3 + Vite Frontend 9개 화면 구축 및 백엔드 API 실서비스 100% 완전 연동** | **[NEXT]** |
+| **Sprint 3** | Frontend MVP | **Vue 3 + Vite Frontend 9개 화면 구축 및 백엔드 API 실서비스 100% 완전 연동** | **[IN_PROGRESS]** |
 | **Sprint 4** | Advanced AI & Infra | OpenAI AI 추천, Redis Caching, Elasticsearch, AWS CI/CD 및 모니터링 | [PLANNED] |
 
 ---
@@ -74,28 +74,40 @@
 
 ---
 
-## Sprint 3. Frontend MVP Development (Vue 3 프론트엔드 실서비스 구축) [NEXT]
+## Sprint 3. Frontend MVP Development (Vue 3 프론트엔드 실서비스 구축) [IN_PROGRESS]
 
-### Feature 3.1 Frontend Architecture & Design Specification
-- [ ] `TSK-FE-001` [P0] Frontend System Architecture & Layout Specification Document
-- [ ] `TSK-FE-002` [P0] Pinia Store & Axios Interceptor Architecture Setup (`authStore`, `petStore`, `placeStore`, `favoriteStore`)
+### Feature 3.1 Frontend Architecture & Design Specification [COMPLETED]
+- [x] `TSK-FE-001` [P0] Frontend System Architecture & Layout Specification Document
+  - Vue 3 + Vite + TS + Pinia + Vue Router 4 + Axios + TailwindCSS v4 초기 아키텍처, 공통 Layout(Main/Auth) 및 UI 컴포넌트 7종 구축 완료 (2026-08-07).
+- [x] `TSK-FE-002` [P0] Pinia Store & Axios Interceptor Architecture Setup (`authStore`, `petStore`, `placeStore`)
+  - `authStore`(JWT/User 영속화), `petStore`(대표 펫), `placeStore`(검색 필터 상태) 기본 구조 및 Axios Interceptor(401 처리, 에러 메시지 추출) 구축 완료.
+  - **잔여**: `favoriteStore` 미구현. 각 페이지가 store action을 거치지 않고 `apiClient`를 직접 호출 중 (store는 상태 컨테이너 역할만, 데이터 페칭 로직 미위임) — 리팩토링 필요.
 
-### Feature 3.2 Authentication & User Screens
-- [ ] `TSK-FE-003` [P0] Login View (`/login`): Form Validation, JWT Token Storage, Auto-login, Logout
+### Feature 3.2 Authentication & User Screens [거의 완료]
+- [x] `TSK-FE-003` [P0] Login View (`/login`): Form Validation, JWT Token Storage, Auto-login, Logout
+  - 로그인 API 연동, JWT LocalStorage 저장(자동 로그인), 에러 메시지 처리 완료. CORS 및 에러 필드 버그 수정 완료 (2026-08-13).
 - [ ] `TSK-FE-004` [P0] Signup View (`/signup`): Email Duplicate Check & User Registration Flow
+  - 회원가입 API 연동 및 필수값 검증 완료. **잔여**: 실시간 이메일 중복 확인(타이핑 중 체크) 미구현 — 현재는 제출 후 409 에러로만 확인됨.
 
-### Feature 3.3 Main Discovery & Search Screens
-- [ ] `TSK-FE-005` [P0] Home View (`/`): Recommended Places, Popular Places, Recent Places, Active Pet Chip
+### Feature 3.3 Main Discovery & Search Screens [부분 진행]
+- [x] `TSK-FE-005` [P0] Home View (`/`): Recommended Places, Popular Places, Recent Places, Active Pet Chip
+  - Dashboard API(`GET /api/v1/dashboard`) 연동 완료.
 - [ ] `TSK-FE-006` [P0] Place Search View (`/places`): Keyword Search, Category Filter, Pet Size Condition, Distance Sort
+  - 키워드/카테고리 검색 연동 완료. **잔여**: 반려동물 크기 조건 필터, 거리순 정렬 미구현.
 - [ ] `TSK-FE-007` [P0] Interactive Map View (`/map`): Kakao Map / Leaflet Integration, Current Location Marker, Detail Drawer
+  - **미착수**. 라우터(`router/index.ts`)에 `/map` 경로 자체가 아직 등록되지 않음.
 
-### Feature 3.4 Place Detail & Engagement Screens
+### Feature 3.4 Place Detail & Engagement Screens [스캐폴딩 수준]
 - [ ] `TSK-FE-008` [P0] Place Detail View/Modal (`/places/{id}`): Info, Photos, Pet Policy Checklist, Review Form, Favorite Toggle
+  - 기본 정보 조회(`GET /places/{id}`)만 연동. **잔여**: 사진, 반려동물 동반 수칙, 리뷰 목록/작성, 즐겨찾기 토글 전부 미구현.
 - [ ] `TSK-FE-009` [P0] Favorites View (`/favorites`): Saved Place Grid & Quick Delete
+  - 즐겨찾기 목록 조회만 연동. **잔여**: 삭제(Quick Delete) 기능 미구현.
 
-### Feature 3.5 Pet & My Page Screens
+### Feature 3.5 Pet & My Page Screens [스캐폴딩 수준]
 - [ ] `TSK-FE-010` [P0] My Pets Management View (`/pets`): Pet Multi-CRUD, Weight Input, Representative Pet Toggle
+  - 반려동물 목록 조회만 연동. **잔여**: 등록/수정/삭제 폼, 대표 반려동물 스위칭 UI 전부 미구현("+ 반려동물 등록" 버튼 동작 없음).
 - [ ] `TSK-FE-011` [P0] My Page View (`/mypage`): Profile Summary, Favorites Tab, My Reviews Tab, My Pets Tab
+  - `GET /users/me` 기반 프로필 요약(펫/즐겨찾기/리뷰 카운트)만 표시. **잔여**: 즐겨찾기/내 리뷰/내 반려동물 탭 UI 전부 미구현.
 
 ---
 

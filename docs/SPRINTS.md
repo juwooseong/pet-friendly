@@ -32,7 +32,7 @@
 | **Sprint 0** | Infrastructure | 개발 환경 구축, DB/PostGIS 초기화 & 프로젝트 스캐폴딩 | **[COMPLETED]** |
 | **Sprint 1** | Backend Core | 공공데이터 수집 파이프라인, PostGIS 위치 검색 API & 기초 모델 | **[COMPLETED]** |
 | **Sprint 2** | Backend Complete | **Review Service/API, My Page API, Dashboard API, E2E Integration Test & Swagger** | **[IN_PROGRESS]** |
-| **Sprint 3** | Frontend MVP | **Vue 3 + Vite Frontend 9개 화면 구현 & Spring Boot 백엔드 API 실서비스 완전 연동** | **[NEXT]** |
+| **Sprint 3** | Frontend MVP | **Vue 3 + Vite Frontend 9개 화면 구현 & Spring Boot 백엔드 API 실서비스 완전 연동** | **[IN_PROGRESS]** |
 | **Sprint 4** | Advanced AI & Infra | OpenAI AI 추천, Redis Caching, Elasticsearch, AWS & Docker CI/CD | [PLANNED] |
 
 ---
@@ -61,30 +61,29 @@
 
 ---
 
-## 🚀 Sprint 3: Frontend MVP (Vue 3 프론트엔드 실서비스 구축) [NEXT]
+## 🚀 Sprint 3: Frontend MVP (Vue 3 프론트엔드 실서비스 구축) [IN_PROGRESS]
 
 - **Sprint Goal**: Vue 3 + Vite + TailwindCSS 기반 프론트엔드 구축 및 Spring Boot 백엔드 API와의 100% 완전한 연동을 통해 실사용 가능한 MVP 서비스 완성.
 - **기술 스택**: Vue 3 (Composition API), Vite, Pinia, Vue Router 4, Axios, TailwindCSS, Spring Boot API 연동, JWT Auth, 반응형 UI.
+- **진행 현황 (2026-08-13 기준)**: 상세 Task 체크리스트는 `docs/TASKS.md`의 Sprint 3 섹션 참조.
 
 ### Frontend 설계 문서 수립 항목
-- Frontend Architecture Spec
-- Component Tree Taxonomy
-- API Endpoint Mapping Table
-- Vue Router 4 Routing Specification
-- Pinia Global Store State Architecture
-- Axios Interceptor & Auth Token Manager
-- Common Response & Screen Layout System
+- [x] Frontend Architecture Spec / Common Layout / UI 컴포넌트 7종
+- [x] Vue Router 4 Routing Specification (단, `/map` 라우트는 미등록)
+- [x] Pinia Global Store 기본 구조 (`authStore`, `petStore`, `placeStore`) — `favoriteStore` 및 store 경유 데이터 페칭은 미완
+- [x] Axios Interceptor & Auth Token Manager (401 처리, 에러 메시지 추출)
+- [ ] Component Tree Taxonomy / API Endpoint Mapping Table 문서화
 
-### 9개 구현 화면 명세
-1. **로그인 (`/login`)**: JWT 저장, LocalStorage 관리, 자동 로그인, 로그아웃
-2. **회원가입 (`/signup`)**: Form Validation, 이메일 중복 확인
-3. **홈 (`/`)**: 추천 장소, 인기 장소, 최근 등록 장소, 대표 반려동물 카드 렌더링
-4. **장소 검색 (`/places`)**: 키워드 검색, 카테고리 필터, 반려동물 크기 조건, 거리순 정렬
-5. **지도 (`/map`)**: Kakao Map / Leaflet 지도연동, 현재 위치 마커, 장소 상세 모달/페이지 이동
-6. **장소 상세 (`/places/{id}`)**: 사진, 기본 정보, 리뷰 목록, 즐겨찾기 토글, 리뷰 작성 폼
-7. **즐겨찾기 (`/favorites`)**: 즐겨찾기한 장소 목록 및 삭제
-8. **내 반려동물 (`/pets`)**: 반려동물 CRUD 및 대표 반려동물 스위칭 설정
-9. **마이페이지 (`/mypage`)**: 회원 정보, 즐겨찾기 탭, 내 리뷰 탭, 내 반려동물 탭
+### 9개 구현 화면 명세 및 진행 상태
+1. **로그인 (`/login`)** ✅ 완료: JWT 저장, LocalStorage 관리, 자동 로그인, 로그아웃, CORS/에러 필드 버그 수정 완료
+2. **회원가입 (`/signup`)** 🔶 거의 완료: Form Validation 완료 / 이메일 중복 확인은 제출 후 서버 응답(409)으로만 확인, 실시간 체크 미구현
+3. **홈 (`/`)** ✅ 완료: 추천 장소, 인기 장소, 최근 등록 장소, 대표 반려동물 카드 렌더링 (Dashboard API 연동)
+4. **장소 검색 (`/places`)** 🔶 부분 완료: 키워드 검색, 카테고리 필터 완료 / 반려동물 크기 조건, 거리순 정렬 미구현
+5. **지도 (`/map`)** ❌ 미착수: 라우트조차 미등록, Kakao Map/Leaflet 연동 없음
+6. **장소 상세 (`/places/{id}`)** 🔶 스캐폴딩: 기본 정보만 표시 / 사진, 리뷰 목록/작성, 즐겨찾기 토글 미구현
+7. **즐겨찾기 (`/favorites`)** 🔶 스캐폴딩: 목록 조회만 구현 / 삭제 기능 미구현
+8. **내 반려동물 (`/pets`)** 🔶 스캐폴딩: 목록 조회만 구현 / CRUD, 대표 반려동물 스위칭 미구현
+9. **마이페이지 (`/mypage`)** 🔶 스캐폴딩: 프로필 요약(펫/즐겨찾기/리뷰 카운트)만 표시 / 즐겨찾기·내 리뷰·내 반려동물 탭 미구현
 
 ---
 
