@@ -1,9 +1,20 @@
 import { defineStore } from 'pinia';
 import type { User } from '@/types/user';
 
+function loadStoredUser(): User | null {
+  const raw = localStorage.getItem('user');
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as User;
+  } catch {
+    localStorage.removeItem('user');
+    return null;
+  }
+}
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    currentUser: JSON.parse(localStorage.getItem('user') || 'null') as User | null,
+    currentUser: loadStoredUser(),
     token: localStorage.getItem('accessToken') || localStorage.getItem('petspot_token') || '',
   }),
   getters: {
@@ -11,11 +22,13 @@ export const useAuthStore = defineStore('auth', {
     userNickname: (state) => state.currentUser?.nickname || '사용자',
   },
   actions: {
-    setAuth(token: string, user: User) {
+    setAuth(token: string, user?: User) {
       this.token = token;
-      this.currentUser = user;
       localStorage.setItem('accessToken', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      if (user) {
+        this.currentUser = user;
+        localStorage.setItem('user', JSON.stringify(user));
+      }
     },
     setUser(user: User, token?: string) {
       this.currentUser = user;

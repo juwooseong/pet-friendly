@@ -88,7 +88,17 @@ const handleSignup = async () => {
       errorMessage.value = response.data.error || '회원가입 실패';
     }
   } catch (err: any) {
-    errorMessage.value = extractErrorMessage(err, '회원가입 처리 중 오류가 발생했습니다.');
+    const message = extractErrorMessage(err, '회원가입 처리 중 오류가 발생했습니다.');
+
+    if (message.includes('닉네임')) {
+      nicknameError.value = message;
+      nicknameInputRef.value?.focus();
+    } else if (message.includes('이메일')) {
+      emailError.value = message;
+      emailInputRef.value?.focus();
+    } else {
+      errorMessage.value = message;
+    }
   } finally {
     loading.value = false;
   }

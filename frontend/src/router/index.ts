@@ -21,6 +21,18 @@ const routes: Array<RouteRecordRaw> = [
     meta: { layout: 'auth' },
   },
   {
+    path: '/find-id',
+    name: 'FindId',
+    component: () => import('@/pages/FindIdPage.vue'),
+    meta: { layout: 'auth' },
+  },
+  {
+    path: '/find-password',
+    name: 'FindPassword',
+    component: () => import('@/pages/FindPasswordPage.vue'),
+    meta: { layout: 'auth' },
+  },
+  {
     path: '/search',
     name: 'Search',
     component: () => import('@/pages/SearchPage.vue'),

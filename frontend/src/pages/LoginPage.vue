@@ -74,6 +74,12 @@ const handleLogin = async () => {
       </BaseButton>
     </form>
 
+    <div class="flex justify-center gap-4 text-xs text-stone-500">
+      <router-link to="/find-id" class="hover:underline hover:text-amber-600">아이디 찾기</router-link>
+      <span class="text-stone-300">|</span>
+      <router-link to="/find-password" class="hover:underline hover:text-amber-600">비밀번호 찾기</router-link>
+    </div>
+
     <div class="text-center text-xs text-stone-500 pt-2 border-t border-stone-100">
       계정이 없으신가요?
       <router-link to="/signup" class="text-amber-600 font-bold hover:underline">회원가입하기</router-link>
