@@ -42,4 +42,16 @@ apiClient.interceptors.response.use(
   }
 );
 
+/**
+ * 백엔드 ApiResponse({ success, data, error, timestamp })에서 비즈니스 오류 메시지를 추출한다.
+ * 서버가 내려준 메시지를 우선 사용하고, 없을 때만 fallback 문구를 사용한다.
+ */
+export const extractErrorMessage = (err: any, fallback: string): string => {
+  const body = err?.response?.data;
+  if (typeof body?.error === 'string' && body.error.trim()) {
+    return body.error;
+  }
+  return fallback;
+};
+
 export default apiClient;

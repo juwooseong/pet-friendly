@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 import BaseInput from '@/components/common/BaseInput.vue';
 import BaseButton from '@/components/common/BaseButton.vue';
 import ErrorMessage from '@/components/common/ErrorMessage.vue';
-import apiClient from '@/api/apiClient';
+import apiClient, { extractErrorMessage } from '@/api/apiClient';
 
 const router = useRouter();
 
@@ -34,10 +34,10 @@ const handleSignup = async () => {
       alert('회원가입이 완료되었습니다! 로그인해주세요.');
       router.push('/login');
     } else {
-      errorMessage.value = response.data.message || '회원가입 실패';
+      errorMessage.value = response.data.error || '회원가입 실패';
     }
   } catch (err: any) {
-    errorMessage.value = err.response?.data?.message || '회원가입 처리 중 오류가 발생했습니다.';
+    errorMessage.value = extractErrorMessage(err, '회원가입 처리 중 오류가 발생했습니다.');
   } finally {
     loading.value = false;
   }

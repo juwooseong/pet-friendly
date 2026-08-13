@@ -5,7 +5,7 @@ import { useAuthStore } from '@/stores/authStore';
 import BaseInput from '@/components/common/BaseInput.vue';
 import BaseButton from '@/components/common/BaseButton.vue';
 import ErrorMessage from '@/components/common/ErrorMessage.vue';
-import apiClient from '@/api/apiClient';
+import apiClient, { extractErrorMessage } from '@/api/apiClient';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -35,10 +35,10 @@ const handleLogin = async () => {
       authStore.setAuth(accessToken, user);
       router.push('/');
     } else {
-      errorMessage.value = response.data.message || '로그인에 실패했습니다.';
+      errorMessage.value = response.data.error || '로그인에 실패했습니다.';
     }
   } catch (err: any) {
-    errorMessage.value = err.response?.data?.message || '로그인 처리 중 오류가 발생했습니다.';
+    errorMessage.value = extractErrorMessage(err, '로그인 처리 중 오류가 발생했습니다.');
   } finally {
     loading.value = false;
   }
