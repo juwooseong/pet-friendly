@@ -121,6 +121,28 @@ class AuthServiceTest {
     }
 
     @Test
+    @DisplayName("이미 존재(중복)하는 닉네임으로 회원가입 시 DuplicateNicknameException 예외 발생")
+    void register_DuplicateNickname_ThrowsException() {
+        // given
+        UserRegisterRequestDto request = UserRegisterRequestDto.builder()
+                .email("newuser2@petspot.com")
+                .password("password1234!")
+                .nickname("중복닉네임")
+                .build();
+
+        given(userRepository.existsByEmail("newuser2@petspot.com")).willReturn(false);
+        given(userRepository.existsByNickname("중복닉네임")).willReturn(true);
+
+        // when & then
+        assertThatThrownBy(() -> authService.register(request))
+                .isInstanceOf(com.petspot.global.error.exception.DuplicateNicknameException.class)
+                .hasMessage("이미 사용 중인 닉네임입니다.");
+
+        verify(userRepository).existsByNickname("중복닉네임");
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
     @DisplayName("정상 이메일 및 비밀번호 로그인 시 JWT Access Token 발급 성공")
     void login_Success() {
         // given

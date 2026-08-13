@@ -12,6 +12,7 @@ import com.petspot.domain.user.entity.User;
 import com.petspot.domain.user.entity.UserStatus;
 import com.petspot.domain.user.repository.UserRepository;
 import com.petspot.global.error.exception.DuplicateEmailException;
+import com.petspot.global.error.exception.DuplicateNicknameException;
 import com.petspot.global.error.exception.InvalidCredentialsException;
 import com.petspot.global.error.exception.UserNotFoundException;
 import com.petspot.global.util.EmailMasker;
@@ -54,6 +55,12 @@ public class AuthService {
         if (userRepository.existsByEmail(request.getEmail())) {
             log.warn("[AUTH REGISTER FAILED] Duplicate email: {}", request.getEmail());
             throw new DuplicateEmailException("이미 사용 중인 이메일입니다.");
+        }
+
+        // 1-1. 닉네임 중복 검사
+        if (userRepository.existsByNickname(request.getNickname())) {
+            log.warn("[AUTH REGISTER FAILED] Duplicate nickname: {}", request.getNickname());
+            throw new DuplicateNicknameException("이미 사용 중인 닉네임입니다.");
         }
 
         // 2. 비밀번호 BCrypt 암호화
@@ -108,12 +115,13 @@ public class AuthService {
 
         log.info("[AUTH LOGIN SUCCESS] JWT Token generated for userId: {}", user.getId());
 
-        // 5. Response DTO 반환 (임시 비밀번호 로그인인 경우 강제 비밀번호 변경 필요 여부 포함)
+        // 5. Response DTO 반환 (임시 비밀번호 로그인인 경우 강제 비밀번호 변경 필요 여부 및 사용자 정보 포함)
         return UserLoginResponseDto.builder()
                 .accessToken(accessToken)
                 .tokenType("Bearer")
                 .expiresIn(jwtTokenProvider.getExpirationMs() / 1000)
                 .requiresPasswordChange(user.isPasswordChangeRequired())
+                .user(UserLoginResponseDto.UserSummaryDto.from(user))
                 .build();
     }
 

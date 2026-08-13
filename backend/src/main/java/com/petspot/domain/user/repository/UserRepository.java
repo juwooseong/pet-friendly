@@ -20,6 +20,11 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsByEmail(String email);
 
     /**
+     * 닉네임 기반 회원 존재 여부 확인 (닉네임 중복 방지용)
+     */
+    boolean existsByNickname(String nickname);
+
+    /**
      * 이메일 기반 전체 회원 조회 (상태 구분 없음)
      */
     Optional<User> findByEmail(String email);

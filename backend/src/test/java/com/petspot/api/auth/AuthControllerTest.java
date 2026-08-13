@@ -149,6 +149,28 @@ class AuthControllerTest {
     }
 
     @Test
+    @DisplayName("중복 닉네임 회원가입 요청 시 409 Conflict 반환 (DuplicateNicknameException)")
+    void register_DuplicateNickname_Conflict() throws Exception {
+        // given
+        UserRegisterRequestDto duplicateRequest = UserRegisterRequestDto.builder()
+                .email("newemail@petspot.com")
+                .password("password1234!")
+                .nickname("중복닉네임")
+                .build();
+
+        given(authService.register(any(UserRegisterRequestDto.class)))
+                .willThrow(new com.petspot.global.error.exception.DuplicateNicknameException("이미 사용 중인 닉네임입니다."));
+
+        // when & then
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(duplicateRequest)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.error", is("이미 사용 중인 닉네임입니다.")));
+    }
+
+    @Test
     @DisplayName("POST /api/v1/auth/login 정상 호출 시 200 OK 및 JWT Access Token 반환")
     void login_Success() throws Exception {
         // given
