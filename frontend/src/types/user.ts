@@ -11,6 +11,8 @@ export interface Pet {
   sizeCategory: SizeCategory;
   ageYears: number;
   isVaccinated: boolean;
+  /** 대표 반려동물 여부 (백엔드 PetResponseDto.representative) */
+  representative?: boolean;
   photoUrl?: string;
   notes?: string;
   createdAt?: string;

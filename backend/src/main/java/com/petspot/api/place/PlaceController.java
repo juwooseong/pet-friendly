@@ -34,7 +34,8 @@ public class PlaceController {
 
     @Operation(
             summary = "반려동물 동반 장소 반경 및 복합 조건 검색 (페이징)",
-            description = "사용자의 현재 위도/경도 위치 기준 반경 N km 이내, 카테고리, 장소명/주소 키워드, 동반 체중 제한 조건과 Pageable 페이징(page, size)을 적용하여 장소 목록을 검색합니다."
+            description = "사용자의 현재 위도/경도 위치 기준 반경 N km 이내, 카테고리, 장소명/주소 키워드, 동반 체중 제한, 반려동물 크기(sizeCategory) 조건과 " +
+                    "Pageable 페이징(page, size)을 적용하여 장소 목록을 검색합니다. 위도/경도가 주어지면 결과는 거리(distanceKm) 오름차순으로 정렬됩니다."
     )
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<PageResponse<PlaceSearchResponseDto>>> searchPlaces(

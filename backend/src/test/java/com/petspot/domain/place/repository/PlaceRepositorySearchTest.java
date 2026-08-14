@@ -46,14 +46,14 @@ class PlaceRepositorySearchTest {
                 java.util.UUID.randomUUID(), "P-101", "홍대 멍멍 카페", "CAFE", "카페",
                 "서울특별시 마포구 홍익로 10", 37.5567, 126.9236, "02-111-2222", "10:00-22:00",
                 "https://example.com/img1.jpg", java.math.BigDecimal.valueOf(4.8), 15,
-                java.math.BigDecimal.valueOf(10.0), 0.05
+                java.math.BigDecimal.valueOf(10.0), java.util.List.of("SMALL", "MEDIUM", "LARGE"), 0.05
         );
 
         PlaceSearchResponseDto dto2 = new PlaceSearchResponseDto(
                 java.util.UUID.randomUUID(), "P-102", "합정 애견 공원", "PARK", "공원",
                 "서울특별시 마포구 합정동 100", 37.5495, 126.9138, "02-333-4444", "24시간",
                 "https://example.com/img2.jpg", java.math.BigDecimal.valueOf(5.0), 42,
-                java.math.BigDecimal.valueOf(30.0), 1.25
+                java.math.BigDecimal.valueOf(30.0), java.util.List.of("MEDIUM", "LARGE"), 1.25
         );
 
         given(placeRepository.searchPlaces(condition)).willReturn(List.of(dto1, dto2));
@@ -80,7 +80,7 @@ class PlaceRepositorySearchTest {
                 java.util.UUID.randomUUID(), "P-101", "홍대 멍멍 카페", "CAFE", "카페",
                 "서울특별시 마포구 홍익로 10", 37.5567, 126.9236, "02-111-2222", "10:00-22:00",
                 "https://example.com/img1.jpg", java.math.BigDecimal.valueOf(4.8), 15,
-                java.math.BigDecimal.valueOf(10.0), null
+                java.math.BigDecimal.valueOf(10.0), java.util.List.of("SMALL", "MEDIUM", "LARGE"), null
         );
 
         given(placeRepository.searchPlaces(condition)).willReturn(List.of(dto1));
@@ -106,7 +106,7 @@ class PlaceRepositorySearchTest {
                 java.util.UUID.randomUUID(), "P-101", "홍대 멍멍 카페", "CAFE", "카페",
                 "서울특별시 마포구 홍익로 10", 37.5567, 126.9236, "02-111-2222", "10:00-22:00",
                 "https://example.com/img1.jpg", java.math.BigDecimal.valueOf(4.8), 15,
-                java.math.BigDecimal.valueOf(10.0), null
+                java.math.BigDecimal.valueOf(10.0), java.util.List.of("SMALL", "MEDIUM", "LARGE"), null
         );
 
         given(placeRepository.searchPlaces(condition)).willReturn(List.of(dto1));
@@ -135,7 +135,7 @@ class PlaceRepositorySearchTest {
                 java.util.UUID.randomUUID(), "P-102", "합정 애견 공원", "PARK", "공원",
                 "서울특별시 마포구 합정동 100", 37.5495, 126.9138, "02-333-4444", "24시간",
                 "https://example.com/img2.jpg", java.math.BigDecimal.valueOf(5.0), 42,
-                java.math.BigDecimal.valueOf(30.0), 1.25
+                java.math.BigDecimal.valueOf(30.0), java.util.List.of("MEDIUM", "LARGE"), 1.25
         );
 
         given(placeRepository.searchPlaces(condition)).willReturn(List.of(dto2));
@@ -163,7 +163,7 @@ class PlaceRepositorySearchTest {
                 java.util.UUID.randomUUID(), "P-101", "홍대 멍멍 카페", "CAFE", "카페",
                 "서울특별시 마포구 홍익로 10", 37.5567, 126.9236, "02-111-2222", "10:00-22:00",
                 "https://example.com/img1.jpg", java.math.BigDecimal.valueOf(4.8), 15,
-                java.math.BigDecimal.valueOf(10.0), 0.05
+                java.math.BigDecimal.valueOf(10.0), java.util.List.of("SMALL", "MEDIUM", "LARGE"), 0.05
         );
 
         org.springframework.data.domain.Page<PlaceSearchResponseDto> pageResult =

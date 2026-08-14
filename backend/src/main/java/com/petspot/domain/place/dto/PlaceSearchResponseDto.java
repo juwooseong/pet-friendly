@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -28,6 +29,7 @@ public class PlaceSearchResponseDto {
     private BigDecimal rating;
     private Integer reviewCount;
     private BigDecimal maxWeightLimitKg;
+    private List<String> allowedSizes; // 동반 가능 반려동물 크기 목록 ('SMALL', 'MEDIUM', 'LARGE')
     private Double distanceKm; // 중심 사용자 위치 기준 직선 거리(km)
 
     @QueryProjection
@@ -35,7 +37,7 @@ public class PlaceSearchResponseDto {
                                   String categoryName, String address, Double latitude,
                                   Double longitude, String phone, String operatingHours,
                                   String imageUrl, BigDecimal rating, Integer reviewCount,
-                                  BigDecimal maxWeightLimitKg, Double distanceKm) {
+                                  BigDecimal maxWeightLimitKg, List<String> allowedSizes, Double distanceKm) {
         this.id = id;
         this.publicDataId = publicDataId;
         this.name = name;
@@ -50,6 +52,7 @@ public class PlaceSearchResponseDto {
         this.rating = rating;
         this.reviewCount = reviewCount;
         this.maxWeightLimitKg = maxWeightLimitKg;
+        this.allowedSizes = allowedSizes;
         this.distanceKm = distanceKm != null ? Math.round(distanceKm * 100.0) / 100.0 : null; // 소수점둘째자리
     }
 }

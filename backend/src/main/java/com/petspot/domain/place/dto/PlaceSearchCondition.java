@@ -33,6 +33,9 @@ public class PlaceSearchCondition {
     @jakarta.validation.constraints.PositiveOrZero(message = "체중 제한은 0 이상이어야 합니다.")
     private Double maxWeight;  // 동반 가능 최대 체중 (kg)
 
+    @jakarta.validation.constraints.Pattern(regexp = "SMALL|MEDIUM|LARGE", message = "sizeCategory는 SMALL, MEDIUM, LARGE 중 하나여야 합니다.")
+    private String sizeCategory; // 반려동물 크기 조건 ('SMALL', 'MEDIUM', 'LARGE') - 장소의 allowedSizes에 포함되어야 함
+
     public Double getRadiusKmOrDefault() {
         return (radiusKm != null && radiusKm > 0) ? radiusKm : 3.0;
     }

@@ -5,12 +5,15 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 import org.locationtech.jts.geom.Point;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -71,6 +74,14 @@ public class Place {
     @Column(name = "max_weight_limit_kg", precision = 4, scale = 1)
     private BigDecimal maxWeightLimitKg;
 
+    /**
+     * 동반 가능 반려동물 크기 목록 (JSONB, 예: ["SMALL", "MEDIUM"])
+     * PetSizeCategory 문자열 값으로 저장되며, DB 컬럼 기본값은 전체 크기 허용이다.
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "allowed_sizes", columnDefinition = "jsonb")
+    private List<String> allowedSizes;
+
     @Column(name = "is_indoor_allowed")
     private Boolean isIndoorAllowed;
 
@@ -88,12 +99,14 @@ public class Place {
     @Column(name = "updated_at")
     private ZonedDateTime updatedAt;
 
+    private static final List<String> DEFAULT_ALLOWED_SIZES = List.of("SMALL", "MEDIUM", "LARGE");
+
     @Builder
     public Place(UUID id, String publicDataId, String name, String category, String categoryName,
                  String address, Point location, Double latitude, Double longitude, String phone,
                  String operatingHours, String imageUrl, String description, BigDecimal rating,
-                 Integer reviewCount, BigDecimal maxWeightLimitKg, Boolean isIndoorAllowed,
-                 Boolean isOutdoorAllowed, Boolean hasOffLeashZone) {
+                 Integer reviewCount, BigDecimal maxWeightLimitKg, List<String> allowedSizes,
+                 Boolean isIndoorAllowed, Boolean isOutdoorAllowed, Boolean hasOffLeashZone) {
         this.id = id;
         this.publicDataId = publicDataId;
         this.name = name;
@@ -110,6 +123,7 @@ public class Place {
         this.rating = rating != null ? rating : BigDecimal.valueOf(5.0);
         this.reviewCount = reviewCount != null ? reviewCount : 0;
         this.maxWeightLimitKg = maxWeightLimitKg;
+        this.allowedSizes = (allowedSizes != null && !allowedSizes.isEmpty()) ? allowedSizes : DEFAULT_ALLOWED_SIZES;
         this.isIndoorAllowed = isIndoorAllowed != null ? isIndoorAllowed : true;
         this.isOutdoorAllowed = isOutdoorAllowed != null ? isOutdoorAllowed : true;
         this.hasOffLeashZone = hasOffLeashZone != null ? hasOffLeashZone : false;

@@ -50,7 +50,7 @@ public class PlaceRepositoryImpl implements PlaceRepositoryCustom {
         NumberTemplate<Double> distanceExpression = null;
         if (condition.getLatitude() != null && condition.getLongitude() != null) {
             distanceExpression = Expressions.numberTemplate(Double.class,
-                    "ST_Distance({0}::geography, ST_SetSRID(ST_MakePoint({1}, {2}), 4326)::geography) / 1000.0",
+                    "ST_Distance(geography({0}), geography(ST_SetSRID(ST_MakePoint({1}, {2}), 4326))) / 1000.0",
                     place.location, condition.getLongitude(), condition.getLatitude());
         }
 
@@ -58,7 +58,8 @@ public class PlaceRepositoryImpl implements PlaceRepositoryCustom {
                 stDWithin(condition.getLatitude(), condition.getLongitude(), condition.getRadiusKmOrDefault()),
                 categoryEq(condition.getCategory()),
                 keywordContains(condition.getKeyword()),
-                maxWeightGte(condition.getMaxWeight())
+                maxWeightGte(condition.getMaxWeight()),
+                sizeCategoryAllowed(condition.getSizeCategory())
         };
 
         var query = queryFactory
@@ -77,6 +78,7 @@ public class PlaceRepositoryImpl implements PlaceRepositoryCustom {
                         place.rating,
                         place.reviewCount,
                         place.maxWeightLimitKg,
+                        place.allowedSizes,
                         distanceExpression != null ? distanceExpression : Expressions.nullExpression(Double.class)
                 ))
                 .from(place)
@@ -116,7 +118,7 @@ public class PlaceRepositoryImpl implements PlaceRepositoryCustom {
         }
         double radiusMeters = radiusKm * METERS_PER_KM;
         return Expressions.booleanTemplate(
-                "ST_DWithin({0}::geography, ST_SetSRID(ST_MakePoint({1}, {2}), 4326)::geography, {3}) = true",
+                "cast(ST_DWithin(geography({0}), geography(ST_SetSRID(ST_MakePoint({1}, {2}), 4326)), {3}) as boolean) = true",
                 QPlace.place.location, longitude, latitude, radiusMeters
         );
     }
@@ -148,5 +150,19 @@ public class PlaceRepositoryImpl implements PlaceRepositoryCustom {
         }
         return QPlace.place.maxWeightLimitKg.isNull()
                 .or(QPlace.place.maxWeightLimitKg.goe(petWeight));
+    }
+
+    /**
+     * 반려동물 크기 조건 (allowed_sizes JSONB 배열에 sizeCategory 문자열이 포함되어야 함)
+     * PostgreSQL jsonb_exists(jsonb, text) 함수를 사용해 배열 내 최상위 요소 존재 여부를 확인한다.
+     */
+    private BooleanExpression sizeCategoryAllowed(String sizeCategory) {
+        if (sizeCategory == null || sizeCategory.isBlank()) {
+            return null;
+        }
+        return Expressions.booleanTemplate(
+                "cast(jsonb_exists({0}, {1}) as boolean) = true",
+                QPlace.place.allowedSizes, sizeCategory
+        );
     }
 }

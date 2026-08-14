@@ -128,8 +128,12 @@
 ### Feature 3.3 Main Discovery & Search Screens [부분 진행]
 - [x] `TSK-FE-005` [P0] Home View (`/`): Recommended Places, Popular Places, Recent Places, Active Pet Chip
   - Dashboard API(`GET /api/v1/dashboard`) 연동 완료.
-- [ ] `TSK-FE-006` [P0] Place Search View (`/places`): Keyword Search, Category Filter, Pet Size Condition, Distance Sort
-  - 키워드/카테고리 검색 연동 완료. **잔여**: 반려동물 크기 조건 필터, 거리순 정렬 미구현.
+- [x] `TSK-FE-006` [P0] Place Search View (`/search`): Keyword Search, Category Filter, Pet Size Condition, Distance Sort (2026-08-14 완료)
+  - **Backend**: `Place` 엔티티에 기존 미사용이던 `allowed_sizes`(JSONB, V1부터 존재) 컬럼을 Hibernate 6 `@JdbcTypeCode(SqlTypes.JSON)`로 매핑, `PlaceSearchCondition.sizeCategory` 조건 추가, QueryDSL `jsonb_exists()` 기반 필터링(`PlaceRepositoryImpl`) 구현. `PlaceSearchResponseDto`에 `allowedSizes` 필드 추가(응답 계약 확장, 기존 필드 변경 없음).
+  - **거리순 정렬**: 기존 Sprint 1 구조(위도/경도 조건 시 ST_Distance 오름차순 자동 정렬) 그대로 유지, Pageable과 함께 정상 동작 확인.
+  - **버그 발견 및 수정**: Sprint 1에서 "완료"로 표시되었던 `ST_DWithin`/`ST_Distance` PostGIS 공간 쿼리가 실제 DB를 한 번도 거치지 않은 채(기존 테스트가 전부 Mockito Mock 기반) 테스트를 통과해왔음을 발견. 실제 실행 시 Hibernate 6 HQL 파서가 PostgreSQL 전용 `::geography` 캐스트 문법을 거부하고(`unrecognized cast target type`), `ST_DWithin(...) = true` 비교도 함수 반환 타입 미등록으로 `SemanticException`을 던지는 잠재 버그를 확인 — 위도/경도를 포함한 모든 검색 요청이 실제로는 실패했을 것으로 추정됨. `geography(...)` 함수 호출 + `cast(... as boolean)` 패턴으로 수정하고 실제 PostGIS DB를 사용하는 통합 테스트(`PlaceSearchSizeAndDistanceIntegrationTest`)로 검증 완료.
+  - **Frontend**: `SearchPage.vue` 전면 재구현 — 반려동물 크기 드롭다운(로그인 시 대표 반려동물 크기 자동 기본값 적용, `GET /pets` 연동), 브라우저 Geolocation 기반 "내 위치 기준 거리순 정렬" 토글(반경 선택 포함), Pageable 기반 페이지네이션 UI. `types/api.ts`(공용 `ApiResponse`/`PageResponse`), `types/place.ts`에 실제 응답 구조와 일치하는 `PlaceSearchItem`/`PlaceSearchParams` 타입 신규 추가(기존 `Place`/`PetPolicy` 아스퍼레이셔널 타입은 미사용 상태로 잔존, 하단 백로그 참조).
+  - **검증**: 백엔드 `./gradlew test` 전체 통과(신규 통합 테스트 2건 포함), 프런트엔드 Vitest 38/38 통과(신규 5건: `SearchPage`), `type-check`·`build` 통과, 실브라우저(Playwright, 임시 시드 데이터 15건) 검증 — 키워드 검색/크기 필터(전체 15건→LARGE 6건 정확히 필터링)/거리순 정렬(오름차순 정확)/페이지 이동(1→2페이지 거리 연속성 유지) 전 시나리오 확인 완료.
 - [ ] `TSK-FE-007` [P0] Interactive Map View (`/map`): Kakao Map / Leaflet Integration, Current Location Marker, Detail Drawer
   - **미착수**. 라우터(`router/index.ts`)에 `/map` 경로 자체가 아직 등록되지 않음.
 
@@ -164,3 +168,19 @@
   - **배경**: 현재 비밀번호 변경/임시 비밀번호 발급 시점에 기존 발급된 JWT를 무효화하지 않는다. Stateless JWT 특성상 서버가 개별 토큰을 강제로 만료시킬 방법이 없어, 탈취된 토큰이 있다면 비밀번호를 변경해도 만료 시각까지는 계속 유효하다.
   - **DoD**: JWT 블랙리스트(Redis 등) 또는 토큰 버전(`tokenVersion`) 관리 방식 중 택1 설계, 비밀번호 변경/강제 초기화 시 기존 토큰 즉시 무효화 적용 및 테스트.
   - **범위 제외 확인**: TSK-FE-012(2026-08-14) 보강 작업에서는 의도적으로 범위에서 제외됨.
+
+### Feature 4.4 구조적 개선 Backlog (TSK-FE-006 리뷰에서 식별, 2026-08-14)
+> 아래 항목들은 장소 검색 기능(반려동물 크기 필터/거리순 정렬) 구현 과정에서 발견되었으나, Sprint 3 기능 완성도 우선 원칙에 따라 즉시 리팩터링하지 않고 백로그로 기록한다.
+
+- [ ] `TSK-BE-029` [P0] 장소 상세 조회 API 부재 (`GET /api/v1/places/{id}`)
+  - **배경**: `PlaceController`에는 `/search`만 존재하고 단건 조회 엔드포인트가 없다. `PlaceDetailPage.vue`는 `GET /places/{id}`를 호출하고 있어 실제로는 항상 500 에러("장소 정보를 찾을 수 없습니다" 표시)가 발생한다. TASKS.md v2.0 초기 작성 시 Sprint 1에 포함된 것으로 잘못 기재되어 있었음(문서 오류였던 것으로 추정).
+  - **DoD**: `PlaceQueryService`/`PlaceController`에 단건 조회 API 추가, `PlaceNotFoundException`(이미 존재) 연동, `PlaceDetailPage.vue` 정상 렌더링 확인.
+- [ ] `TSK-QA-001` [P1] Sprint 1 PostGIS 공간 쿼리 실DB 통합 테스트 커버리지 부재
+  - **배경**: 이번 작업 중 `PlaceRepositoryImpl`의 `ST_DWithin`/`ST_Distance` QueryDSL 템플릿이 Hibernate 6 HQL 파서에서 파싱 오류(`unrecognized cast target type: geography`) 및 타입 불일치(`SemanticException`)로 실제로는 전혀 동작하지 않았음을 발견하고 수정했다(`geography(...)` 함수 호출 + `cast(... as boolean)` 패턴으로 교체). 기존 `PlaceRepositorySearchTest`/`PlaceQueryServiceTest`/`PlaceControllerTest`가 전부 Mockito Mock 기반이라 실제 쿼리 실행 경로를 한 번도 검증하지 못했기 때문에 Sprint 1 "완료" 이후 지금까지 발견되지 않았던 것으로 보인다.
+  - **DoD**: 공간/거리 관련 QueryDSL 커스텀 쿼리(및 향후 추가되는 네이티브 함수 템플릿)에 대해 최소 1개 이상의 실제 PostGIS DB 기반 통합 테스트를 필수화하는 컨벤션 수립(예: `PlaceSearchSizeAndDistanceIntegrationTest` 패턴 재사용/확장). 다른 도메인의 유사 위험(Mock만으로 커버된 실DB 의존 로직)도 함께 점검.
+- [ ] `TSK-FE-014` [P2] `types/place.ts`의 `Place`/`PetPolicy` 타입이 실제 API 응답과 불일치
+  - **배경**: `Place`/`PetPolicy`는 `DOMAIN.md`에 정의된 중첩 구조(`petPolicy: { allowedSizes, isIndoorAllowed, ... }`)를 따르지만, 실제 백엔드 `PlaceSearchResponseDto`는 평탄한(flat) 구조로 응답한다. 두 타입 모두 현재 어느 컴포넌트에서도 실사용되지 않는 아스퍼레이셔널(aspirational) 타입으로 방치되어 있었다. 이번 작업에서는 기존 타입을 건드리지 않고 실제 응답과 일치하는 `PlaceSearchItem`(`types/place.ts`)을 신규로 추가해 `SearchPage.vue`에서 사용하도록 했다.
+  - **DoD**: `Place`/`PetPolicy`를 실제 API 응답 구조에 맞게 재정의하거나, 장소 상세 API(TSK-BE-029) 구현 시 함께 정리하여 중복 타입을 제거.
+- [ ] `TSK-FE-015` [P2] `usePlaceStore`/`usePetStore` Pinia 스토어가 데이터 페칭에 관여하지 않음
+  - **배경**: TASKS.md Feature 3.1에 이미 기록된 기존 기술부채("각 페이지가 store action을 거치지 않고 apiClient를 직접 호출")가 이번에 재구현한 `SearchPage.vue`에도 동일하게 적용된다(기존 코드 패턴을 그대로 따름). `usePlaceStore.places`/`usePetStore.pets`는 여전히 채워지지 않는다.
+  - **DoD**: 스토어 리팩토링을 별도 스프린트로 계획할 때 장소 검색 페이지도 함께 포함.

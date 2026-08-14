@@ -53,7 +53,7 @@ class PlaceControllerTest {
                 UUID.randomUUID(), "P-001", "홍대 애견카페", "CAFE", "카페",
                 "서울특별시 마포구", 37.5567, 126.9236, "02-123-4567", "10:00-22:00",
                 "https://example.com/image.jpg", BigDecimal.valueOf(4.5), 10,
-                BigDecimal.valueOf(15.0), 0.2
+                BigDecimal.valueOf(15.0), java.util.List.of("SMALL", "MEDIUM", "LARGE"), 0.2
         );
 
         PageResponse<PlaceSearchResponseDto> mockPageResponse = PageResponse.of(List.of(mockDto), 0, 20, 1L);
