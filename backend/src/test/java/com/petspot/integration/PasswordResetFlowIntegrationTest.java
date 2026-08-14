@@ -28,6 +28,7 @@ import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -135,7 +136,8 @@ class PasswordResetFlowIntegrationTest {
         mockMvc.perform(get("/api/v1/users/me")
                         .header("Authorization", tempAuthHeader))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.success", is(false)));
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(header().string("X-Password-Change-Required", "true"));
 
         // ==========================================
         // 5. 비밀번호 변경 (PATCH /api/v1/auth/password) - 강제 변경 상태에서도 허용되어야 함

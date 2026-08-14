@@ -76,12 +76,15 @@ public class SecurityConfig {
 
         // 프론트엔드 개발 서버 주소 허용
         configuration.setAllowedOrigins(List.of("http://localhost:3000"));
-        // 모든 HTTP 메서드 허용 (GET, POST, PUT, DELETE, OPTIONS 등)
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        // 모든 HTTP 메서드 허용 (GET, POST, PUT, PATCH, DELETE, OPTIONS 등)
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         // 모든 헤더 허용
         configuration.setAllowedHeaders(List.of("*"));
         // 자격 증명(Cookie, Authorization 헤더 등) 허용 설정
         configuration.setAllowCredentials(true);
+        // 강제 비밀번호 변경 여부를 프런트가 판별할 수 있도록 커스텀 응답 헤더 노출
+        configuration.setExposedHeaders(List.of(
+                com.petspot.global.security.PasswordChangeRequiredInterceptor.PASSWORD_CHANGE_REQUIRED_HEADER));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

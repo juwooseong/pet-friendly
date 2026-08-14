@@ -51,6 +51,20 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(errorMsg));
     }
 
+    /**
+     * {@code @Validated} 클래스 + {@code @RequestParam} 제약조건(예: check-email/check-nickname) 검증 실패 시 발생.
+     * spring-boot-starter-validation의 AOP 기반 메서드 검증(MethodValidationPostProcessor)이
+     * Spring 6.1의 신규 HandlerMethodValidationException보다 우선 적용되어 이 예외가 실제로 던져진다.
+     */
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleConstraintViolation(jakarta.validation.ConstraintViolationException ex) {
+        String errorMsg = ex.getConstraintViolations().isEmpty()
+                ? "유효하지 않은 요청 파라미터입니다."
+                : ex.getConstraintViolations().iterator().next().getMessage();
+        log.warn("[CLIENT ERROR] ConstraintViolationException: {}", errorMsg);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(errorMsg));
+    }
+
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ApiResponse<Void>> handleMissingParam(MissingServletRequestParameterException ex) {
         log.warn("[CLIENT ERROR] MissingServletRequestParameterException: {}", ex.getMessage());

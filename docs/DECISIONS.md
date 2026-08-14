@@ -48,3 +48,14 @@
   - 프론트엔드에 **TypeScript 5.x** 도입 (`<script setup lang="ts">`, `@/types/` 스키마 정의, `vue-tsc` 정적 검사).
   - No `any` strict typing 정책을 적용하여 클라이언트와 서버 간 데이터 일관성 유지.
 - **Consequences**: 컴파일 타임 오류 사전 감지, IDE 자동완성 지원 및 유지보수 생산성 대폭 향상.
+
+---
+
+## ADR-006: 회원가입 실시간 이메일/닉네임 중복확인 API의 계정 존재 여부 노출 트레이드오프 수용 (TSK-BE-028/TSK-FE-013)
+- **Status**: Accepted
+- **Context**: 회원가입 UX 개선을 위해 `GET /api/v1/auth/check-email`, `GET /api/v1/auth/check-nickname` 실시간 중복확인 API를 추가했다. 이 API는 "해당 이메일로 이미 가입된 계정이 있는가"를 응답으로 직접 알려주므로, `find-password`(비밀번호 찾기)에 적용한 "계정 존재 여부 비노출" 원칙과 정면으로 상충한다.
+- **Decision**:
+  - 실시간 중복확인은 대부분의 서비스가 채택하는 표준 UX이며, 이메일 주소는 애초에 회원가입 폼 자체에서 값을 알아야 입력할 수 있는 정보이므로(무작위 대량 조회로 계정 존재 여부를 스캔하는 것과는 위험도가 다름), 이 트레이드오프를 의도적으로 수용한다.
+  - Rate Limiting(요청 빈도 제한)은 이번 Task 범위에서 구현하지 않고, Sprint 4 `TSK-INF-003`(Redis Caching for Geo-search & JWT Tokens) 또는 별도 보안 강화 Task의 후속 작업으로 미룬다.
+  - 프런트엔드는 실시간 체크의 `available: true` 결과를 신뢰하여 최종 중복 검사를 생략하지 않는다 — `POST /auth/register`의 서버 측 최종 중복 검사(이메일/닉네임)를 항상 그대로 유지해, 실시간 체크 이후 경합 상태(Race Condition)로 다른 사용자가 먼저 가입한 경우에도 서버가 최종적으로 방어하도록 한다.
+- **Consequences**: 무제한 요청 시 계정 존재 여부를 이메일 단위로 열거(enumeration)당할 수 있는 잔여 위험이 있으며, 이는 Rate Limiting 도입 전까지 인지된 채로 남는다.

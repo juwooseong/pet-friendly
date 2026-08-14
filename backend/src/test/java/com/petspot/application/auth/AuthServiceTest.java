@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
+import com.petspot.api.auth.dto.AvailabilityResponseDto;
 import com.petspot.api.auth.dto.ChangePasswordRequestDto;
 import com.petspot.api.auth.dto.FindIdRequestDto;
 import com.petspot.api.auth.dto.FindIdResponseDto;
@@ -140,6 +141,58 @@ class AuthServiceTest {
 
         verify(userRepository).existsByNickname("중복닉네임");
         verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("존재하는 이메일로 가용성 확인 시 available=false 반환")
+    void checkEmailAvailability_ExistingEmail_ReturnsFalse() {
+        // given
+        given(userRepository.existsByEmail("existing@petspot.com")).willReturn(true);
+
+        // when
+        AvailabilityResponseDto response = authService.checkEmailAvailability("existing@petspot.com");
+
+        // then
+        assertThat(response.isAvailable()).isFalse();
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 이메일로 가용성 확인 시 available=true 반환")
+    void checkEmailAvailability_NewEmail_ReturnsTrue() {
+        // given
+        given(userRepository.existsByEmail("new@petspot.com")).willReturn(false);
+
+        // when
+        AvailabilityResponseDto response = authService.checkEmailAvailability("new@petspot.com");
+
+        // then
+        assertThat(response.isAvailable()).isTrue();
+    }
+
+    @Test
+    @DisplayName("존재하는 닉네임으로 가용성 확인 시 available=false 반환")
+    void checkNicknameAvailability_ExistingNickname_ReturnsFalse() {
+        // given
+        given(userRepository.existsByNickname("기존닉네임")).willReturn(true);
+
+        // when
+        AvailabilityResponseDto response = authService.checkNicknameAvailability("기존닉네임");
+
+        // then
+        assertThat(response.isAvailable()).isFalse();
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 닉네임으로 가용성 확인 시 available=true 반환")
+    void checkNicknameAvailability_NewNickname_ReturnsTrue() {
+        // given
+        given(userRepository.existsByNickname("신규닉네임")).willReturn(false);
+
+        // when
+        AvailabilityResponseDto response = authService.checkNicknameAvailability("신규닉네임");
+
+        // then
+        assertThat(response.isAvailable()).isTrue();
     }
 
     @Test

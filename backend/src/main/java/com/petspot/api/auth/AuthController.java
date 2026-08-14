@@ -1,5 +1,6 @@
 package com.petspot.api.auth;
 
+import com.petspot.api.auth.dto.AvailabilityResponseDto;
 import com.petspot.api.auth.dto.ChangePasswordRequestDto;
 import com.petspot.api.auth.dto.FindIdRequestDto;
 import com.petspot.api.auth.dto.FindIdResponseDto;
@@ -15,15 +16,21 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -31,6 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Tag(name = "Auth API", description = "회원가입 및 JWT 인증 API")
 @Slf4j
+@Validated
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
@@ -51,6 +59,44 @@ public class AuthController {
         UserRegisterResponseDto result = authService.register(request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(result));
+    }
+
+    @Operation(
+            summary = "이메일 사용 가능 여부 확인 (실시간 중복확인)",
+            description = "회원가입 화면에서 이메일 중복 여부를 실시간으로 확인합니다. " +
+                    "이 응답은 참고용이며, 최종 중복 검사는 실제 회원가입(POST /register) 시점에 다시 수행됩니다."
+    )
+    @GetMapping("/check-email")
+    public ResponseEntity<ApiResponse<AvailabilityResponseDto>> checkEmail(
+            @RequestParam
+            @NotBlank(message = "이메일은 필수 입력값입니다.")
+            @Email(message = "올바른 이메일 형식이 아닙니다.")
+            String email) {
+
+        log.info("GET /api/v1/auth/check-email called");
+
+        AvailabilityResponseDto result = authService.checkEmailAvailability(email);
+
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    @Operation(
+            summary = "닉네임 사용 가능 여부 확인 (실시간 중복확인)",
+            description = "회원가입 화면에서 닉네임 중복 여부를 실시간으로 확인합니다. " +
+                    "이 응답은 참고용이며, 최종 중복 검사는 실제 회원가입(POST /register) 시점에 다시 수행됩니다."
+    )
+    @GetMapping("/check-nickname")
+    public ResponseEntity<ApiResponse<AvailabilityResponseDto>> checkNickname(
+            @RequestParam
+            @NotBlank(message = "닉네임은 필수 입력값입니다.")
+            @Size(min = 2, max = 50, message = "닉네임은 2자 이상 50자 이하이어야 합니다.")
+            String nickname) {
+
+        log.info("GET /api/v1/auth/check-nickname called");
+
+        AvailabilityResponseDto result = authService.checkNicknameAvailability(nickname);
+
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @Operation(

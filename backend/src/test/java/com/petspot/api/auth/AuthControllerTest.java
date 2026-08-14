@@ -1,6 +1,7 @@
 package com.petspot.api.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.petspot.api.auth.dto.AvailabilityResponseDto;
 import com.petspot.api.auth.dto.ChangePasswordRequestDto;
 import com.petspot.api.auth.dto.FindIdRequestDto;
 import com.petspot.api.auth.dto.FindIdResponseDto;
@@ -35,6 +36,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doAnswer;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -168,6 +170,97 @@ class AuthControllerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.success", is(false)))
                 .andExpect(jsonPath("$.error", is("이미 사용 중인 닉네임입니다.")));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/auth/check-email 존재하는 이메일 조회 시 200 OK 및 available=false 반환")
+    void checkEmail_ExistingEmail_ReturnsAvailableFalse() throws Exception {
+        // given
+        given(authService.checkEmailAvailability("existing@petspot.com"))
+                .willReturn(AvailabilityResponseDto.builder().available(false).build());
+
+        // when & then
+        mockMvc.perform(get("/api/v1/auth/check-email").param("email", "existing@petspot.com"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success", is(true)))
+                .andExpect(jsonPath("$.data.available", is(false)))
+                .andExpect(jsonPath("$.error").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/auth/check-email 존재하지 않는 이메일 조회 시 200 OK 및 available=true 반환")
+    void checkEmail_NewEmail_ReturnsAvailableTrue() throws Exception {
+        // given
+        given(authService.checkEmailAvailability("new@petspot.com"))
+                .willReturn(AvailabilityResponseDto.builder().available(true).build());
+
+        // when & then
+        mockMvc.perform(get("/api/v1/auth/check-email").param("email", "new@petspot.com"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success", is(true)))
+                .andExpect(jsonPath("$.data.available", is(true)));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/auth/check-email 잘못된 이메일 형식 요청 시 400 Bad Request 반환")
+    void checkEmail_InvalidFormat_BadRequest() throws Exception {
+        mockMvc.perform(get("/api/v1/auth/check-email").param("email", "not-an-email"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.error").exists());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/auth/check-email 이메일 파라미터 누락 시 400 Bad Request 반환")
+    void checkEmail_MissingParam_BadRequest() throws Exception {
+        mockMvc.perform(get("/api/v1/auth/check-email"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success", is(false)));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/auth/check-nickname 존재하는 닉네임 조회 시 200 OK 및 available=false 반환")
+    void checkNickname_ExistingNickname_ReturnsAvailableFalse() throws Exception {
+        // given
+        given(authService.checkNicknameAvailability("기존닉네임"))
+                .willReturn(AvailabilityResponseDto.builder().available(false).build());
+
+        // when & then
+        mockMvc.perform(get("/api/v1/auth/check-nickname").param("nickname", "기존닉네임"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success", is(true)))
+                .andExpect(jsonPath("$.data.available", is(false)));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/auth/check-nickname 존재하지 않는 닉네임 조회 시 200 OK 및 available=true 반환")
+    void checkNickname_NewNickname_ReturnsAvailableTrue() throws Exception {
+        // given
+        given(authService.checkNicknameAvailability("신규닉네임"))
+                .willReturn(AvailabilityResponseDto.builder().available(true).build());
+
+        // when & then
+        mockMvc.perform(get("/api/v1/auth/check-nickname").param("nickname", "신규닉네임"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success", is(true)))
+                .andExpect(jsonPath("$.data.available", is(true)));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/auth/check-nickname 2자 미만 닉네임 요청 시 400 Bad Request 반환 (회원가입과 동일한 정책)")
+    void checkNickname_TooShort_BadRequest() throws Exception {
+        mockMvc.perform(get("/api/v1/auth/check-nickname").param("nickname", "a"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.error").exists());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/auth/check-nickname 닉네임 파라미터 누락 시 400 Bad Request 반환")
+    void checkNickname_MissingParam_BadRequest() throws Exception {
+        mockMvc.perform(get("/api/v1/auth/check-nickname"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success", is(false)));
     }
 
     @Test

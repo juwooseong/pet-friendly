@@ -1,5 +1,6 @@
 package com.petspot.application.auth;
 
+import com.petspot.api.auth.dto.AvailabilityResponseDto;
 import com.petspot.api.auth.dto.ChangePasswordRequestDto;
 import com.petspot.api.auth.dto.FindIdRequestDto;
 import com.petspot.api.auth.dto.FindIdResponseDto;
@@ -75,6 +76,32 @@ public class AuthService {
 
         // 5. Response DTO 반환
         return UserRegisterResponseDto.from(savedUser);
+    }
+
+    /**
+     * 이메일 사용 가능 여부를 확인한다 (회원가입 실시간 중복확인용).
+     * 이 결과는 참고용이며, 최종 중복 검사는 {@link #register} 호출 시점에 다시 수행된다.
+     *
+     * @param email 확인할 이메일
+     * @return 사용 가능 여부 응답 DTO
+     */
+    @Transactional(readOnly = true)
+    public AvailabilityResponseDto checkEmailAvailability(String email) {
+        boolean available = !userRepository.existsByEmail(email);
+        return AvailabilityResponseDto.builder().available(available).build();
+    }
+
+    /**
+     * 닉네임 사용 가능 여부를 확인한다 (회원가입 실시간 중복확인용).
+     * 이 결과는 참고용이며, 최종 중복 검사는 {@link #register} 호출 시점에 다시 수행된다.
+     *
+     * @param nickname 확인할 닉네임
+     * @return 사용 가능 여부 응답 DTO
+     */
+    @Transactional(readOnly = true)
+    public AvailabilityResponseDto checkNicknameAvailability(String nickname) {
+        boolean available = !userRepository.existsByNickname(nickname);
+        return AvailabilityResponseDto.builder().available(available).build();
     }
 
     /**

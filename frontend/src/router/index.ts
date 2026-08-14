@@ -75,8 +75,26 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, _from, next) => {
+/** 강제 비밀번호 변경 상태에서도 접근을 허용하는 라우트 이름 목록 (로그인/로그아웃은 라우트 이동 없이도 항상 가능) */
+const ALLOWED_ROUTE_NAMES_WHILE_PASSWORD_CHANGE_REQUIRED = ['Login'];
+
+router.beforeEach((to, from, next) => {
   const authStore = useAuthStore();
+
+  if (
+    authStore.requiresPasswordChange &&
+    !ALLOWED_ROUTE_NAMES_WHILE_PASSWORD_CHANGE_REQUIRED.includes(to.name as string)
+  ) {
+    // 이미 앱 내부에 있었다면(뒤로가기/링크 클릭 등) 이동을 취소해 현재 화면(및 그 위의 강제 변경 레이어)을 유지한다.
+    // 새로고침/URL 직접 입력 등 진입점이 없는 경우에만 로그인 화면으로 보낸다.
+    if (from.name) {
+      next(false);
+    } else {
+      next({ name: 'Login' });
+    }
+    return;
+  }
+
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     next({ name: 'Login', query: { redirect: to.fullPath } });
   } else {

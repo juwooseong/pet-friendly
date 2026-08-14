@@ -31,9 +31,14 @@ const handleLogin = async () => {
     });
 
     if (response.data && response.data.success) {
-      const { accessToken, user } = response.data.data;
-      authStore.setAuth(accessToken, user);
-      router.push('/');
+      const { accessToken, user, requiresPasswordChange } = response.data.data;
+      authStore.setAuth(accessToken, user, requiresPasswordChange);
+
+      if (!requiresPasswordChange) {
+        router.push('/');
+      }
+      // requiresPasswordChange가 true이면 이동하지 않는다.
+      // App.vue에 전역으로 마운트된 ForcePasswordChangeModal이 authStore 상태를 보고 자동으로 표시된다.
     } else {
       errorMessage.value = response.data.error || '로그인에 실패했습니다.';
     }

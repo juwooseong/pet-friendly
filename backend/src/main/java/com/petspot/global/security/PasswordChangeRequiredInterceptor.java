@@ -27,6 +27,12 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class PasswordChangeRequiredInterceptor implements HandlerInterceptor {
 
+    /**
+     * 강제 비밀번호 변경으로 인한 403임을 클라이언트가 다른 403(권한 없음 등)과 구분할 수 있도록 붙이는 식별 헤더.
+     * CORS 환경에서 프런트가 읽으려면 SecurityConfig의 CORS 설정에 Access-Control-Expose-Headers로 노출되어야 한다.
+     */
+    public static final String PASSWORD_CHANGE_REQUIRED_HEADER = "X-Password-Change-Required";
+
     private final ObjectMapper objectMapper;
 
     @Override
@@ -40,6 +46,7 @@ public class PasswordChangeRequiredInterceptor implements HandlerInterceptor {
                     request.getMethod(), request.getRequestURI(), userDetails.getId());
 
             response.setStatus(HttpStatus.FORBIDDEN.value());
+            response.setHeader(PASSWORD_CHANGE_REQUIRED_HEADER, "true");
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             response.setCharacterEncoding("UTF-8");
             response.getWriter().write(objectMapper.writeValueAsString(
