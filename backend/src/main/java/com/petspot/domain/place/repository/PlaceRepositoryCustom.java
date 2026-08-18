@@ -6,6 +6,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * QueryDSL + PostGIS 공간 검색 커스텀 인터페이스
@@ -21,4 +23,9 @@ public interface PlaceRepositoryCustom {
      * 사용자 중심 위치 기준 반경 거리 N km 내 펫 동반 장소 다중 필터 검색 (Spring Pageable 페이징)
      */
     Page<PlaceSearchResponseDto> searchPlaces(PlaceSearchCondition condition, Pageable pageable);
+
+    /**
+     * 장소 ID로 상세 정보 단건 조회 (검색과 동일한 Projection DTO 재사용)
+     */
+    Optional<PlaceSearchResponseDto> findPlaceDetail(UUID placeId);
 }

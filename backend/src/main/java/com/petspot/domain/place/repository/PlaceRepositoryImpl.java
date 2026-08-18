@@ -16,6 +16,8 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * QueryDSL + PostGIS 기반 커스텀 Place Repository 구현체
@@ -106,6 +108,36 @@ public class PlaceRepositoryImpl implements PlaceRepositoryCustom {
         log.debug("[QUERYDSL PAGE SUCCESS] Search completed. Total: {}, Time: {} ms", totalCount, elapsedTime);
 
         return new org.springframework.data.domain.PageImpl<>(content, pageable.isPaged() ? pageable : Pageable.unpaged(), totalCount);
+    }
+
+    @Override
+    public Optional<PlaceSearchResponseDto> findPlaceDetail(UUID placeId) {
+        QPlace place = QPlace.place;
+
+        PlaceSearchResponseDto result = queryFactory
+                .select(new QPlaceSearchResponseDto(
+                        place.id,
+                        place.publicDataId,
+                        place.name,
+                        place.category,
+                        place.categoryName,
+                        place.address,
+                        place.latitude,
+                        place.longitude,
+                        place.phone,
+                        place.operatingHours,
+                        place.imageUrl,
+                        place.rating,
+                        place.reviewCount,
+                        place.maxWeightLimitKg,
+                        place.allowedSizes,
+                        Expressions.nullExpression(Double.class)
+                ))
+                .from(place)
+                .where(place.id.eq(placeId))
+                .fetchOne();
+
+        return Optional.ofNullable(result);
     }
 
     /**

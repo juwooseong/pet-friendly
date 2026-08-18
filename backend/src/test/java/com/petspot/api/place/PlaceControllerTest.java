@@ -106,4 +106,52 @@ class PlaceControllerTest {
                 .andExpect(jsonPath("$.success", is(false)))
                 .andExpect(jsonPath("$.error").exists());
     }
+
+    @Test
+    @DisplayName("GET /api/v1/places/{placeId} 정상 호출시 200 OK 및 장소 상세 정보 반환")
+    void getPlaceDetail_Success() throws Exception {
+        // given
+        UUID placeId = UUID.randomUUID();
+        PlaceSearchResponseDto mockDto = new PlaceSearchResponseDto(
+                placeId, "P-001", "홍대 애견카페", "CAFE", "카페",
+                "서울특별시 마포구", 37.5567, 126.9236, "02-123-4567", "10:00-22:00",
+                "https://example.com/image.jpg", BigDecimal.valueOf(4.5), 10,
+                BigDecimal.valueOf(15.0), java.util.List.of("SMALL", "MEDIUM", "LARGE"), null
+        );
+
+        given(placeQueryService.getPlaceDetail(placeId)).willReturn(mockDto);
+
+        // when & then
+        mockMvc.perform(get("/api/v1/places/{placeId}", placeId)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success", is(true)))
+                .andExpect(jsonPath("$.data.id", is(placeId.toString())))
+                .andExpect(jsonPath("$.data.name", is("홍대 애견카페")))
+                .andExpect(jsonPath("$.data.address", is("서울특별시 마포구")))
+                .andExpect(jsonPath("$.data.latitude", is(37.5567)))
+                .andExpect(jsonPath("$.data.longitude", is(126.9236)))
+                .andExpect(jsonPath("$.data.phone", is("02-123-4567")))
+                .andExpect(jsonPath("$.data.imageUrl", is("https://example.com/image.jpg")))
+                .andExpect(jsonPath("$.data.category", is("CAFE")))
+                .andExpect(jsonPath("$.data.allowedSizes", hasSize(3)))
+                .andExpect(jsonPath("$.data.rating", is(4.5)))
+                .andExpect(jsonPath("$.data.reviewCount", is(10)));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/places/{placeId} 존재하지 않는 ID 조회시 404 Not Found 반환")
+    void getPlaceDetail_NotFound() throws Exception {
+        // given
+        UUID placeId = UUID.randomUUID();
+        given(placeQueryService.getPlaceDetail(placeId))
+                .willThrow(new com.petspot.global.error.exception.PlaceNotFoundException("장소 정보를 찾을 수 없습니다."));
+
+        // when & then
+        mockMvc.perform(get("/api/v1/places/{placeId}", placeId)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.error").exists());
+    }
 }

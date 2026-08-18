@@ -94,4 +94,39 @@ class PlaceQueryServiceTest {
         assertThat(result.getSize()).isEqualTo(10);
         verify(placeRepository).searchPlaces(condition, pageable);
     }
+
+    @Test
+    @DisplayName("PlaceQueryService 상세 조회 요청 시 PlaceRepository.findPlaceDetail 호출 및 DTO 반환 검증")
+    void getPlaceDetail_Success() {
+        // given
+        UUID placeId = UUID.randomUUID();
+        PlaceSearchResponseDto expectedDto = new PlaceSearchResponseDto(
+                placeId, "P-001", "홍대 애견카페", "CAFE", "카페",
+                "서울특별시 마포구", 37.5567, 126.9236, "02-123-4567", "10:00-22:00",
+                "https://example.com/image.jpg", BigDecimal.valueOf(4.5), 10,
+                BigDecimal.valueOf(15.0), java.util.List.of("SMALL", "MEDIUM", "LARGE"), null
+        );
+
+        given(placeRepository.findPlaceDetail(placeId)).willReturn(java.util.Optional.of(expectedDto));
+
+        // when
+        PlaceSearchResponseDto result = placeQueryService.getPlaceDetail(placeId);
+
+        // then
+        assertThat(result.getId()).isEqualTo(placeId);
+        assertThat(result.getName()).isEqualTo("홍대 애견카페");
+        verify(placeRepository).findPlaceDetail(placeId);
+    }
+
+    @Test
+    @DisplayName("PlaceQueryService 상세 조회 시 존재하지 않는 ID면 PlaceNotFoundException 발생")
+    void getPlaceDetail_NotFound_ThrowsException() {
+        // given
+        UUID placeId = UUID.randomUUID();
+        given(placeRepository.findPlaceDetail(placeId)).willReturn(java.util.Optional.empty());
+
+        // when & then
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> placeQueryService.getPlaceDetail(placeId))
+                .isInstanceOf(com.petspot.global.error.exception.PlaceNotFoundException.class);
+    }
 }

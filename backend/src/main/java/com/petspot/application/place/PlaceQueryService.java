@@ -4,6 +4,7 @@ import com.petspot.domain.place.dto.PlaceSearchCondition;
 import com.petspot.domain.place.dto.PlaceSearchResponseDto;
 import com.petspot.domain.place.repository.PlaceRepository;
 import com.petspot.global.dto.PageResponse;
+import com.petspot.global.error.exception.PlaceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * 장소 검색 애플리케이션 서비스 (오케스트레이션 수행)
@@ -51,5 +53,18 @@ public class PlaceQueryService {
                 pageResult.getNumber(), pageResult.getSize(), pageResult.getTotalElements(), elapsedTime);
 
         return PageResponse.from(pageResult);
+    }
+
+    /**
+     * 장소 ID로 상세 정보 단건 조회
+     *
+     * @param placeId 조회할 장소 ID
+     * @return 장소 상세 정보 (검색 결과와 동일한 Projection DTO 재사용)
+     * @throws PlaceNotFoundException 존재하지 않는 장소 ID인 경우
+     */
+    public PlaceSearchResponseDto getPlaceDetail(UUID placeId) {
+        log.info("[PLACE DETAIL REQUEST] placeId={}", placeId);
+        return placeRepository.findPlaceDetail(placeId)
+                .orElseThrow(() -> new PlaceNotFoundException("장소 정보를 찾을 수 없습니다."));
     }
 }

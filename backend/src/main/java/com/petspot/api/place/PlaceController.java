@@ -16,8 +16,11 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.UUID;
 
 /**
  * 반려동물 동반 장소 검색 REST Controller
@@ -47,6 +50,20 @@ public class PlaceController {
                 pageable.getPageNumber(), pageable.getPageSize());
 
         PageResponse<PlaceSearchResponseDto> result = placeQueryService.searchPlaces(condition, pageable);
+
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    @Operation(
+            summary = "장소 상세 조회",
+            description = "장소 ID로 단건 상세 정보를 조회합니다. 존재하지 않는 ID인 경우 404를 반환합니다."
+    )
+    @GetMapping("/{placeId}")
+    public ResponseEntity<ApiResponse<PlaceSearchResponseDto>> getPlaceDetail(@PathVariable UUID placeId) {
+
+        log.info("GET /api/v1/places/{} called", placeId);
+
+        PlaceSearchResponseDto result = placeQueryService.getPlaceDetail(placeId);
 
         return ResponseEntity.ok(ApiResponse.success(result));
     }
