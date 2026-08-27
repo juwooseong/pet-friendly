@@ -141,7 +141,8 @@
 - [ ] `TSK-FE-008` [P0] Place Detail View/Modal (`/places/{id}`): Info, Photos, Pet Policy Checklist, Review Form, Favorite Toggle
   - 기본 정보 조회(`GET /places/{id}`, TSK-BE-029로 완료), **즐겨찾기 토글 연동 완료 (2026-08-18)**: 로그인 사용자 기준 즐겨찾기 상태 표시(`GET /users/me/favorites` 재사용), 추가/삭제 토글(`POST`/`DELETE /favorites/{placeId}`), 비로그인 시 로그인 화면(`redirect` 쿼리 포함) 이동, 요청 중 버튼 잠금(중복 클릭 방지), 실패 시 상태 유지 + `ErrorMessage`로 오류 표시.
   - **리뷰 목록 조회/작성 폼 연동 완료 (2026-08-18)**: 기존 `GET /places/{placeId}/reviews`/`POST /reviews` API 재사용, 리뷰 없을 시 `EmptyState` 표시, 로그인 사용자 대상 평점(1~5)/내용 입력 폼(비로그인 시 로그인 안내로 대체), 등록 성공 시 리뷰 목록과 장소 `rating`/`reviewCount` 즉시 재조회 갱신, 중복 작성(409)·검증 실패(400) 등 API 실패 시 기존 `extractErrorMessage`/`ErrorMessage` 패턴으로 오류 표시. 상세 내용은 하단 "2026-08-18 완료 기록" 참조(즐겨찾기/리뷰 각각 별도 기록).
-  - **잔여**: 사진, 반려동물 동반 수칙(Pet Policy Checklist)은 여전히 미구현.
+  - **사진/반려동물 동반 수칙 보강 완료 (2026-08-27)**: 사진은 `imageUrl` 없음/로드 실패(`@error`) 시 기존 fallback 아이콘 UI로 대체. 동반 수칙은 현재 API가 실제로 제공하는 `allowedSizes`(기존 크기 배지 UI 유지)/`maxWeightLimitKg`(신규 표시, 기존에 응답에는 있었으나 화면 미표시 상태였음)만 "반려동물 동반 수칙" 섹션에 표시, 정보가 전혀 없으면 안내 문구 표시. 상세 내용은 하단 "2026-08-27 완료 기록" 참조.
+  - **잔여**: 장소 사진은 여전히 `imageUrl` 단일 필드 기반(다중 사진 갤러리 아님) — 한국관광공사 이미지 데이터 연동은 Sprint 4 스코프. 실내/실외 동반 가능 여부·목줄 자유구역 등 `Place` 엔티티에는 있지만 API로 노출되지 않는 정책 필드는 `TSK-BE-031` 백로그 참조.
 - [ ] `TSK-FE-009` [P0] Favorites View (`/favorites`): Saved Place Grid & Quick Delete
   - 즐겨찾기 목록 조회만 연동. **잔여**: 삭제(Quick Delete) 기능 미구현.
 
@@ -192,6 +193,9 @@
 - [ ] `TSK-QA-002` [P1] Playwright E2E 테스트 하네스 부재 (`TSK-FE-008` 리뷰 기능 검증에서 식별, 2026-08-18)
   - **배경**: 장소 상세 리뷰 조회/작성 기능의 실브라우저 검증을 위해 로컬에 Playwright를 임시 설치하고, DB에 임시 시드 장소/계정 데이터를 스크립트로 직접 심어 수동으로 시나리오(로그인→검색→상세→리뷰 작성→새로고침→즐겨찾기 확인)를 실행했다. 저장소에는 재사용 가능한 Playwright 설정, 테스트용 DB 초기화/시드 스크립트, `npm run e2e` 같은 표준 진입점이 없어 매번 이 과정을 수작업으로 반복해야 한다.
   - **DoD**: `playwright.config.ts` 및 `frontend`(또는 루트) `e2e/` 디렉터리 신설, 테스트 전용 DB 시드/정리 스크립트 작성, CI에서 실행 가능한 `npm run e2e` 스크립트 추가. 최소한 이번에 검증한 리뷰 작성 플로우를 회귀 테스트로 고정.
+- [ ] `TSK-BE-031` [P2] `Place` 엔티티의 실내/실외/목줄 자유구역 정책 필드가 API 응답에 노출되지 않음 (`TSK-FE-008` 반려동물 동반 수칙 보강에서 식별, 2026-08-27)
+  - **배경**: `Place` 엔티티에는 `isIndoorAllowed`/`isOutdoorAllowed`/`hasOffLeashZone` 컬럼이 이미 존재하지만, `PlaceSearchResponseDto`(검색/상세 공용 Projection)에는 `allowedSizes`/`maxWeightLimitKg`만 포함되어 있어 프런트엔드가 이 값을 받을 수 없다. 이번 작업(장소 상세 반려동물 동반 수칙 섹션)에서는 요구사항에 따라 실제 API가 제공하는 필드만 표시했고, 임의로 DTO를 확장하지 않았다.
+  - **DoD**: 실내/실외/목줄 자유구역 정보를 반려동물 동반 수칙에 노출할 필요가 있는지 제품 우선순위를 확인한 뒤, 필요 시 `PlaceSearchResponseDto`에 해당 필드 추가(QueryDSL Projection 컬럼 추가) 및 프런트엔드 표시 UI 구현.
 
 ### 2026-08-18 완료 기록: 장소 상세 페이지 즐겨찾기 기능 연동
 - **구현 범위**: `PlaceDetailPage.vue`에 로그인 사용자 기준 즐겨찾기 상태 표시, 기존 `GET /users/me/favorites`/`POST·DELETE /favorites/{placeId}` API 재사용, 추가/삭제 토글, 비로그인 시 로그인 화면(`redirect` 쿼리) 이동, 진행 중 버튼 잠금(중복 클릭 방지), 성공 시 즉시 상태 갱신, 실패 시 상태 유지 + `extractErrorMessage`/`ErrorMessage` 패턴으로 오류 표시. 새로운 백엔드 API는 만들지 않고 기존 `FavoriteController`/`FavoriteResponseDto`를 그대로 사용.
@@ -210,3 +214,15 @@
   - 백엔드 `./gradlew test`: 변경 없음, 로컬 PostgreSQL 기동 후 전체 통과 재확인(기존 `ReviewControllerTest`/`ReviewServiceTest`/`ReviewRepositoryTest` 포함).
   - Playwright 실브라우저 검증(DB에 임시 시드 장소 1건, 회원가입으로 생성한 임시 계정 사용, 검증 후 리뷰/즐겨찾기/장소/계정 전부 삭제): 로그인 → 장소 검색("E2E" 키워드) → 상세 진입(리뷰 0건 EmptyState 확인) → 리뷰 작성(별점 5, 내용 입력) → 등록 직후 목록·리뷰 1개 카운트 즉시 반영 확인 → 새로고침 후에도 작성한 리뷰와 카운트 유지 확인 → 즐겨찾기 추가("즐겨찾기됨" 표시) 후 새로고침해도 상태 유지 확인(기존 기능 회귀 없음) → 동일 사용자로 재작성 시도 시 중복 작성 오류 메시지("이미 이 장소에 리뷰를 작성하셨습니다.") 노출 확인. 전 시나리오 통과.
 - **발견된 기술부채**: 이 저장소에는 Playwright 등 E2E 테스트 하네스가 아직 구성되어 있지 않아(`package.json`에 스크립트 없음), 이번 검증은 임시로 로컬에 Playwright를 설치하고 DB에 임시 시드 데이터를 직접 심어 수행했다(검증 후 전부 원복). 반복 가능한 E2E 검증을 위해 정식 Playwright 설정(`playwright.config.ts`, 테스트 DB/시드 스크립트, npm script)을 별도로 도입할 필요가 있다 — `TSK-QA-002`로 하단 Feature 4.4 백로그에 신규 추가.
+
+### 2026-08-27 완료 기록: 장소 상세 페이지 사진/반려동물 동반 수칙 보강
+- **구현 범위**: 백엔드 변경 없음. `PlaceDetailPage.vue`에 두 가지를 보강.
+  - **사진**: 기존에는 `imageUrl`이 없을 때만 fallback 아이콘을 표시했고, `imageUrl`이 있지만 실제 로드에 실패하는 경우(깨진 링크 등)는 처리하지 않았다. `<img>`에 `@error` 핸들러를 추가해 로드 실패 시에도 동일한 fallback 아이콘 UI로 전환되도록 수정. 외부 이미지 URL을 새로 생성하거나 이미지 API를 추가하지 않았으며, 현재 API 계약(`imageUrl: string | null`)을 그대로 유지해 향후 한국관광공사 이미지 데이터가 이 필드로 연결되어도 구조 변경이 필요 없다.
+  - **반려동물 동반 수칙**: 백엔드 `Place` 엔티티/`PlaceSearchResponseDto`를 먼저 확인한 결과, API로 실제 노출되는 반려동물 관련 필드는 `allowedSizes`, `maxWeightLimitKg` 둘뿐이었다(엔티티에는 `isIndoorAllowed`/`isOutdoorAllowed`/`hasOffLeashZone`도 있으나 DTO 미포함 확인, `TSK-BE-031`로 백로그 기록). "반려동물 동반 수칙" 섹션을 신설해 기존 크기 배지 UI(`allowedSizes`)를 그대로 재사용하고, 그동안 응답에는 있었지만 화면에 표시되지 않던 `maxWeightLimitKg`를 "최대 체중 N kg까지 동반 가능" 문구로 추가 표시. 둘 다 없으면 안내 문구만 표시. 새 백엔드 API나 DTO 필드는 추가하지 않았다.
+  - 기존 즐겨찾기 토글, 리뷰 조회/작성, 비로그인 조회 흐름은 코드 변경 없이 그대로 유지.
+- **테스트 결과**:
+  - Vitest: 전체 61/61 통과(`PlaceDetailPage.spec.ts`에 사진 3개 — 정상 표시, imageUrl 없음, 로드 실패 — 및 반려동물 동반 수칙 2개 — 정보 있음, 정보 없음 — 신규 시나리오 포함, 기존 즐겨찾기/리뷰/상세 조회 테스트 전부 회귀 없이 포함).
+  - `vue-tsc --noEmit`(type-check) 및 `npm run build` 통과.
+  - 백엔드 변경 없어 `./gradlew test`는 별도 실행하지 않음.
+  - Playwright 실브라우저 검증은 이번 작업에서는 수행하지 않음(`TSK-QA-002`에 기록된 대로 재사용 가능한 E2E 하네스가 아직 없어 매번 임시 설치/시드가 필요하므로, Vitest 컴포넌트 테스트로 사진 fallback/동반 수칙 표시 로직을 검증하는 것으로 갈음). 재사용 가능한 하네스가 마련되면 `TSK-QA-002` 완료 시 이번 흐름(검색→상세→사진/동반수칙→리뷰→즐겨찾기)도 함께 회귀 테스트로 편입 필요.
+- **발견된 기술부채**: `TSK-BE-031`(실내/실외/목줄 자유구역 정책 API 미노출) 신규 기록.

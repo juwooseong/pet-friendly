@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import apiClient, { extractErrorMessage } from '@/api/apiClient';
 import { useAuthStore } from '@/stores/authStore';
@@ -20,6 +20,17 @@ const place = ref<PlaceSearchItem | null>(null);
 const loading = ref(true);
 const notFound = ref(false);
 const errorMessage = ref('');
+const imageLoadError = ref(false);
+
+/**
+ * 반려동물 동반 수칙 섹션에 표시할 정보 존재 여부.
+ * 현재 API(`PlaceSearchResponseDto`)가 제공하는 필드(allowedSizes, maxWeightLimitKg)만 사용하며,
+ * 엔티티에는 존재하지만 API 응답에 아직 노출되지 않은 isIndoorAllowed/isOutdoorAllowed/hasOffLeashZone은
+ * 다루지 않는다(TSK-BE-031 백로그 참조).
+ */
+const hasPetPolicyInfo = computed(
+  () => !!place.value && ((place.value.allowedSizes?.length ?? 0) > 0 || place.value.maxWeightLimitKg != null)
+);
 
 const isFavorited = ref(false);
 const favoriteActionLoading = ref(false);
@@ -36,6 +47,7 @@ const fetchPlaceDetail = async () => {
   loading.value = true;
   notFound.value = false;
   errorMessage.value = '';
+  imageLoadError.value = false;
   try {
     const response = await apiClient.get<ApiResponse<PlaceSearchItem>>(`/places/${placeId}`);
     if (response.data && response.data.success) {
@@ -180,10 +192,11 @@ onMounted(async () => {
     <div v-else-if="place" class="bg-white p-8 rounded-3xl border border-stone-100 shadow-sm space-y-4">
       <div class="h-56 bg-stone-100 rounded-2xl overflow-hidden">
         <img
-          v-if="place.imageUrl"
+          v-if="place.imageUrl && !imageLoadError"
           :src="place.imageUrl"
           :alt="place.name"
           class="w-full h-full object-cover"
+          @error="imageLoadError = true"
         />
         <div v-else class="w-full h-full flex items-center justify-center text-stone-300">
           <i class="ri-image-line text-4xl"></i>
@@ -222,14 +235,27 @@ onMounted(async () => {
 
       <ErrorMessage v-if="favoriteErrorMessage" :message="favoriteErrorMessage" />
 
-      <div v-if="place.allowedSizes && place.allowedSizes.length > 0" class="flex flex-wrap gap-1.5">
-        <span
-          v-for="size in place.allowedSizes"
-          :key="size"
-          class="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-100"
-        >
-          {{ sizeLabel(size) }}
-        </span>
+      <div class="pt-4 border-t border-stone-100 space-y-2">
+        <h3 class="text-sm font-bold text-stone-700 flex items-center gap-1.5">
+          <i class="ri-shield-check-line text-amber-500"></i>
+          <span>반려동물 동반 수칙</span>
+        </h3>
+        <template v-if="hasPetPolicyInfo">
+          <div v-if="place.allowedSizes && place.allowedSizes.length > 0" class="flex flex-wrap gap-1.5">
+            <span
+              v-for="size in place.allowedSizes"
+              :key="size"
+              class="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-100"
+            >
+              {{ sizeLabel(size) }}
+            </span>
+          </div>
+          <p v-if="place.maxWeightLimitKg != null" class="text-sm text-stone-600 flex items-center gap-2">
+            <i class="ri-scales-3-line text-amber-500"></i>
+            <span>최대 체중 {{ place.maxWeightLimitKg }}kg까지 동반 가능</span>
+          </p>
+        </template>
+        <p v-else class="text-sm text-stone-400">등록된 반려동물 동반 수칙 정보가 없습니다.</p>
       </div>
 
       <div class="pt-4 border-t border-stone-100 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-stone-600">

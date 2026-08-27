@@ -184,6 +184,69 @@ describe('PlaceDetailPage', () => {
     expect(wrapper.text()).not.toContain('장소 정보를 찾을 수 없습니다.');
   });
 
+  describe('사진', () => {
+    it('imageUrl이 있으면 이미지를 표시한다', async () => {
+      (apiClient.get as any).mockResolvedValue(mockDetailResponse({ imageUrl: 'https://example.com/image.jpg' }));
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      const img = wrapper.find('img');
+      expect(img.exists()).toBe(true);
+      expect(img.attributes('src')).toBe('https://example.com/image.jpg');
+    });
+
+    it('imageUrl이 없으면 fallback 아이콘을 표시한다', async () => {
+      (apiClient.get as any).mockResolvedValue(mockDetailResponse({ imageUrl: null }));
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      expect(wrapper.find('img').exists()).toBe(false);
+      expect(wrapper.find('.ri-image-line').exists()).toBe(true);
+    });
+
+    it('이미지 로드 실패 시 fallback 아이콘으로 대체된다', async () => {
+      (apiClient.get as any).mockResolvedValue(mockDetailResponse({ imageUrl: 'https://example.com/broken.jpg' }));
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      await wrapper.find('img').trigger('error');
+      await flushPromises();
+
+      expect(wrapper.find('img').exists()).toBe(false);
+      expect(wrapper.find('.ri-image-line').exists()).toBe(true);
+    });
+  });
+
+  describe('반려동물 동반 수칙', () => {
+    it('allowedSizes와 maxWeightLimitKg이 있으면 함께 표시한다', async () => {
+      (apiClient.get as any).mockResolvedValue(
+        mockDetailResponse({ allowedSizes: ['SMALL', 'LARGE'], maxWeightLimitKg: 15 })
+      );
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      expect(wrapper.text()).toContain('반려동물 동반 수칙');
+      expect(wrapper.text()).toContain('소형견');
+      expect(wrapper.text()).toContain('대형견');
+      expect(wrapper.text()).toContain('최대 체중 15kg까지 동반 가능');
+    });
+
+    it('동반 수칙 관련 정보가 전혀 없으면 안내 문구를 표시한다', async () => {
+      (apiClient.get as any).mockResolvedValue(
+        mockDetailResponse({ allowedSizes: [], maxWeightLimitKg: null })
+      );
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      expect(wrapper.text()).toContain('등록된 반려동물 동반 수칙 정보가 없습니다.');
+    });
+  });
+
   describe('즐겨찾기', () => {
     it('로그인 사용자는 GET /users/me/favorites로 현재 장소의 즐겨찾기 상태를 조회해 표시한다', async () => {
       loginAuthStore();
