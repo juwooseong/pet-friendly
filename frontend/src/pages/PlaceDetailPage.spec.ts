@@ -82,11 +82,41 @@ function loginAuthStore() {
   return authStore;
 }
 
-/** apiClient.get을 경로별로 분기 처리하는 기본 mock (장소 상세 + 즐겨찾기 목록) */
-function mockGetByUrl(favoritePlaceIds: string[] = []) {
+function mockReviewsResponse(reviews: Array<Partial<Record<string, unknown>>> = []) {
+  return {
+    data: {
+      success: true,
+      data: reviews,
+      error: null,
+      timestamp: '2026-08-14T00:00:00',
+    },
+  };
+}
+
+function makeReview(overrides: Partial<Record<string, unknown>> = {}) {
+  return {
+    id: 'review-1',
+    placeId: 'place-123',
+    placeName: '홍대 애견카페',
+    userId: 'u1',
+    userNickname: '닉네임',
+    userAvatarUrl: null,
+    rating: 5,
+    content: '너무 좋았어요!',
+    imageUrl: null,
+    createdAt: '2026-08-14T00:00:00Z',
+    ...overrides,
+  };
+}
+
+/** apiClient.get을 경로별로 분기 처리하는 기본 mock (장소 상세 + 즐겨찾기 목록 + 리뷰 목록) */
+function mockGetByUrl(favoritePlaceIds: string[] = [], reviews: Array<Partial<Record<string, unknown>>> = []) {
   (apiClient.get as any).mockImplementation((url: string) => {
     if (url === '/users/me/favorites') {
       return Promise.resolve(mockFavoritesResponse(favoritePlaceIds.map((placeId) => ({ placeId }))));
+    }
+    if (url === '/places/place-123/reviews') {
+      return Promise.resolve(mockReviewsResponse(reviews));
     }
     return Promise.resolve(mockDetailResponse());
   });
@@ -265,6 +295,136 @@ describe('PlaceDetailPage', () => {
       resolvePost({ data: { success: true, data: {} } });
       await flushPromises();
       expect(wrapper.find('button').attributes('disabled')).toBeUndefined();
+    });
+  });
+
+  describe('리뷰', () => {
+    it('GET /places/{placeId}/reviews로 리뷰 목록을 조회해 표시한다', async () => {
+      mockGetByUrl([], [makeReview({ userNickname: '멍멍이집사', content: '너무 좋았어요!' })]);
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      expect(apiClient.get).toHaveBeenCalledWith('/places/place-123/reviews');
+      expect(wrapper.text()).toContain('멍멍이집사');
+      expect(wrapper.text()).toContain('너무 좋았어요!');
+    });
+
+    it('리뷰가 없으면 EmptyState 형태의 안내를 표시한다', async () => {
+      mockGetByUrl([], []);
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      expect(wrapper.text()).toContain('아직 작성된 리뷰가 없습니다.');
+    });
+
+    it('비로그인 사용자에게는 작성 폼 대신 로그인 안내를 표시한다', async () => {
+      mockGetByUrl([], []);
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      expect(wrapper.text()).toContain('리뷰를 작성하려면 로그인이 필요합니다.');
+      expect(wrapper.find('textarea').exists()).toBe(false);
+    });
+
+    it('평점 또는 내용이 비어있으면 제출 API를 호출하지 않고 안내 메시지를 표시한다', async () => {
+      loginAuthStore();
+      mockGetByUrl([], []);
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      const buttons = wrapper.findAll('button');
+      const submitButton = buttons.find((b) => b.text() === '리뷰 등록')!;
+      await submitButton.trigger('click');
+      await flushPromises();
+
+      expect(apiClient.post).not.toHaveBeenCalledWith('/reviews', expect.anything());
+      expect(wrapper.text()).toContain('평점과 리뷰 내용을 모두 입력해주세요.');
+    });
+
+    it('로그인 사용자가 리뷰 작성에 성공하면 목록과 장소 평점/리뷰 수가 즉시 갱신된다', async () => {
+      loginAuthStore();
+      let reviewsCallCount = 0;
+      (apiClient.get as any).mockImplementation((url: string) => {
+        if (url === '/users/me/favorites') {
+          return Promise.resolve(mockFavoritesResponse([]));
+        }
+        if (url === '/places/place-123/reviews') {
+          reviewsCallCount += 1;
+          if (reviewsCallCount === 1) return Promise.resolve(mockReviewsResponse([]));
+          return Promise.resolve(mockReviewsResponse([makeReview()]));
+        }
+        if (reviewsCallCount >= 1) {
+          return Promise.resolve(mockDetailResponse({ rating: 5.0, reviewCount: 11 }));
+        }
+        return Promise.resolve(mockDetailResponse());
+      });
+      (apiClient.post as any).mockResolvedValue({ data: { success: true, data: makeReview() } });
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      const stars = wrapper.findAll('button').filter((b) => b.text() === '★');
+      await stars[4].trigger('click');
+      await wrapper.find('textarea').setValue('정말 좋았어요');
+
+      const submitButton = wrapper.findAll('button').find((b) => b.text() === '리뷰 등록')!;
+      await submitButton.trigger('click');
+      await flushPromises();
+
+      expect(apiClient.post).toHaveBeenCalledWith('/reviews', {
+        placeId: 'place-123',
+        rating: 5,
+        content: '정말 좋았어요',
+      });
+      expect(apiClient.get).toHaveBeenCalledWith('/places/place-123/reviews');
+      expect(wrapper.text()).toContain('리뷰 11개');
+      expect(wrapper.text()).toContain('너무 좋았어요!');
+    });
+
+    it('이미 리뷰를 작성한 경우(409) 중복 작성 오류 메시지를 표시한다', async () => {
+      loginAuthStore();
+      mockGetByUrl([], []);
+      (apiClient.post as any).mockRejectedValue({
+        response: { status: 409, data: { error: '이미 이 장소에 리뷰를 작성하셨습니다.' } },
+      });
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      const stars = wrapper.findAll('button').filter((b) => b.text() === '★');
+      await stars[3].trigger('click');
+      await wrapper.find('textarea').setValue('중복 작성 시도');
+
+      const submitButton = wrapper.findAll('button').find((b) => b.text() === '리뷰 등록')!;
+      await submitButton.trigger('click');
+      await flushPromises();
+
+      expect(wrapper.text()).toContain('이미 이 장소에 리뷰를 작성하셨습니다.');
+    });
+
+    it('리뷰 등록 API 실패 시 기존 에러 처리 패턴으로 오류 메시지를 표시한다', async () => {
+      loginAuthStore();
+      mockGetByUrl([], []);
+      (apiClient.post as any).mockRejectedValue({
+        response: { status: 500, data: { error: '리뷰 등록 중 서버 오류가 발생했습니다.' } },
+      });
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      const stars = wrapper.findAll('button').filter((b) => b.text() === '★');
+      await stars[2].trigger('click');
+      await wrapper.find('textarea').setValue('오류 테스트');
+
+      const submitButton = wrapper.findAll('button').find((b) => b.text() === '리뷰 등록')!;
+      await submitButton.trigger('click');
+      await flushPromises();
+
+      expect(wrapper.text()).toContain('리뷰 등록 중 서버 오류가 발생했습니다.');
     });
   });
 });

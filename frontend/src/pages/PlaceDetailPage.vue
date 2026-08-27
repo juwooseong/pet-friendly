@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/authStore';
 import type { ApiResponse } from '@/types/api';
 import type { PlaceSearchItem } from '@/types/place';
 import type { FavoriteItem } from '@/types/favorite';
+import type { Review } from '@/types/review';
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue';
 import ErrorMessage from '@/components/common/ErrorMessage.vue';
 import EmptyState from '@/components/common/EmptyState.vue';
@@ -94,9 +95,72 @@ const toggleFavorite = async () => {
   }
 };
 
+const reviews = ref<Review[]>([]);
+const reviewsLoading = ref(true);
+const reviewsErrorMessage = ref('');
+
+const newRating = ref(0);
+const newContent = ref('');
+const reviewSubmitLoading = ref(false);
+const reviewSubmitErrorMessage = ref('');
+const reviewFormValidationMessage = ref('');
+
+const formatReviewDate = (createdAt: string): string => {
+  const date = new Date(createdAt);
+  if (Number.isNaN(date.getTime())) return createdAt;
+  return date.toLocaleDateString('ko-KR');
+};
+
+const fetchReviews = async () => {
+  reviewsLoading.value = true;
+  reviewsErrorMessage.value = '';
+  try {
+    const response = await apiClient.get<ApiResponse<Review[]>>(`/places/${placeId}/reviews`);
+    if (response.data && response.data.success) {
+      reviews.value = Array.isArray(response.data.data) ? response.data.data : [];
+    }
+  } catch (err) {
+    reviewsErrorMessage.value = extractErrorMessage(err, '리뷰 목록을 불러오는 중 오류가 발생했습니다.');
+  } finally {
+    reviewsLoading.value = false;
+  }
+};
+
+const goToLogin = () => {
+  router.push({ name: 'Login', query: { redirect: route.fullPath } });
+};
+
+const submitReview = async () => {
+  reviewFormValidationMessage.value = '';
+  reviewSubmitErrorMessage.value = '';
+
+  if (newRating.value < 1 || !newContent.value.trim()) {
+    reviewFormValidationMessage.value = '평점과 리뷰 내용을 모두 입력해주세요.';
+    return;
+  }
+  if (reviewSubmitLoading.value) return;
+
+  reviewSubmitLoading.value = true;
+  try {
+    await apiClient.post('/reviews', {
+      placeId,
+      rating: newRating.value,
+      content: newContent.value.trim(),
+    });
+    newRating.value = 0;
+    newContent.value = '';
+    await Promise.all([fetchReviews(), fetchPlaceDetail()]);
+  } catch (err) {
+    reviewSubmitErrorMessage.value = extractErrorMessage(err, '리뷰 등록 중 오류가 발생했습니다.');
+  } finally {
+    reviewSubmitLoading.value = false;
+  }
+};
+
 onMounted(async () => {
   await fetchPlaceDetail();
   await fetchFavoriteStatus();
+  await fetchReviews();
 });
 </script>
 
@@ -176,6 +240,78 @@ onMounted(async () => {
         <div class="flex items-center gap-2">
           <i class="ri-map-pin-line text-amber-500"></i>
           <span>{{ place.latitude }}, {{ place.longitude }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="place" class="bg-white p-8 rounded-3xl border border-stone-100 shadow-sm space-y-6">
+      <h2 class="text-xl font-extrabold text-stone-800">리뷰</h2>
+
+      <div v-if="authStore.isAuthenticated" class="space-y-3 p-4 rounded-2xl bg-stone-50 border border-stone-100">
+        <div class="flex items-center gap-1">
+          <button
+            v-for="star in 5"
+            :key="star"
+            type="button"
+            @click="newRating = star"
+            class="text-2xl"
+            :class="star <= newRating ? 'text-amber-500' : 'text-stone-300'"
+          >
+            ★
+          </button>
+        </div>
+        <textarea
+          v-model="newContent"
+          maxlength="1000"
+          rows="3"
+          placeholder="이 장소에 대한 리뷰를 남겨주세요."
+          class="w-full rounded-xl border border-stone-200 p-3 text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-amber-300"
+        ></textarea>
+        <ErrorMessage v-if="reviewFormValidationMessage" :message="reviewFormValidationMessage" />
+        <ErrorMessage v-if="reviewSubmitErrorMessage" :message="reviewSubmitErrorMessage" />
+        <button
+          type="button"
+          @click="submitReview"
+          :disabled="reviewSubmitLoading"
+          class="px-4 py-2 rounded-xl text-sm font-bold bg-amber-500 text-white hover:bg-amber-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          리뷰 등록
+        </button>
+      </div>
+      <div v-else class="p-4 rounded-2xl bg-stone-50 border border-stone-100 text-sm text-stone-600 flex items-center justify-between gap-3">
+        <span>리뷰를 작성하려면 로그인이 필요합니다.</span>
+        <button
+          type="button"
+          @click="goToLogin"
+          class="px-3 py-1.5 rounded-xl text-sm font-bold bg-amber-500 text-white hover:bg-amber-600 transition shrink-0"
+        >
+          로그인
+        </button>
+      </div>
+
+      <LoadingSpinner v-if="reviewsLoading" text="리뷰 로딩 중..." />
+
+      <ErrorMessage v-else-if="reviewsErrorMessage" :message="reviewsErrorMessage" />
+
+      <EmptyState
+        v-else-if="reviews.length === 0"
+        icon="ri-chat-3-line"
+        title="아직 작성된 리뷰가 없습니다."
+        description="가장 먼저 리뷰를 남겨보세요!"
+      />
+
+      <div v-else class="space-y-4">
+        <div
+          v-for="review in reviews"
+          :key="review.id"
+          class="p-4 rounded-2xl border border-stone-100 space-y-1.5"
+        >
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-stone-700 text-sm">{{ review.userNickname }}</span>
+            <span class="text-amber-500 text-sm font-bold">{{ '★'.repeat(review.rating) }}</span>
+          </div>
+          <p class="text-stone-600 text-sm whitespace-pre-wrap">{{ review.content }}</p>
+          <p class="text-stone-400 text-xs">{{ formatReviewDate(review.createdAt) }}</p>
         </div>
       </div>
     </div>

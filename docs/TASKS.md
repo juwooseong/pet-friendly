@@ -139,8 +139,9 @@
 
 ### Feature 3.4 Place Detail & Engagement Screens [스캐폴딩 수준]
 - [ ] `TSK-FE-008` [P0] Place Detail View/Modal (`/places/{id}`): Info, Photos, Pet Policy Checklist, Review Form, Favorite Toggle
-  - 기본 정보 조회(`GET /places/{id}`, TSK-BE-029로 완료) 및 **즐겨찾기 토글 연동 완료 (2026-08-18)**: 로그인 사용자 기준 즐겨찾기 상태 표시(`GET /users/me/favorites` 재사용), 추가/삭제 토글(`POST`/`DELETE /favorites/{placeId}`), 비로그인 시 로그인 화면(`redirect` 쿼리 포함) 이동, 요청 중 버튼 잠금(중복 클릭 방지), 실패 시 상태 유지 + `ErrorMessage`로 오류 표시. 상세 내용은 하단 "2026-08-18 완료 기록" 참조.
-  - **잔여**: 사진, 반려동물 동반 수칙(Pet Policy Checklist), 리뷰 목록/작성 폼은 여전히 미구현.
+  - 기본 정보 조회(`GET /places/{id}`, TSK-BE-029로 완료), **즐겨찾기 토글 연동 완료 (2026-08-18)**: 로그인 사용자 기준 즐겨찾기 상태 표시(`GET /users/me/favorites` 재사용), 추가/삭제 토글(`POST`/`DELETE /favorites/{placeId}`), 비로그인 시 로그인 화면(`redirect` 쿼리 포함) 이동, 요청 중 버튼 잠금(중복 클릭 방지), 실패 시 상태 유지 + `ErrorMessage`로 오류 표시.
+  - **리뷰 목록 조회/작성 폼 연동 완료 (2026-08-18)**: 기존 `GET /places/{placeId}/reviews`/`POST /reviews` API 재사용, 리뷰 없을 시 `EmptyState` 표시, 로그인 사용자 대상 평점(1~5)/내용 입력 폼(비로그인 시 로그인 안내로 대체), 등록 성공 시 리뷰 목록과 장소 `rating`/`reviewCount` 즉시 재조회 갱신, 중복 작성(409)·검증 실패(400) 등 API 실패 시 기존 `extractErrorMessage`/`ErrorMessage` 패턴으로 오류 표시. 상세 내용은 하단 "2026-08-18 완료 기록" 참조(즐겨찾기/리뷰 각각 별도 기록).
+  - **잔여**: 사진, 반려동물 동반 수칙(Pet Policy Checklist)은 여전히 미구현.
 - [ ] `TSK-FE-009` [P0] Favorites View (`/favorites`): Saved Place Grid & Quick Delete
   - 즐겨찾기 목록 조회만 연동. **잔여**: 삭제(Quick Delete) 기능 미구현.
 
@@ -188,6 +189,9 @@
 - [ ] `TSK-BE-030` [P2] 장소 단건 즐겨찾기 여부 확인 전용 API 부재
   - **배경**: 이번 장소 상세 즐겨찾기 토글 연동(2026-08-18) 작업 중 확인한 기존 백엔드 API에는 특정 장소 1건에 대한 즐겨찾기 여부만 확인하는 엔드포인트(예: `GET /favorites/{placeId}/status`)가 없다. `PlaceDetailPage.vue`는 이를 우회해 기존 `GET /users/me/favorites`(전체 목록)를 호출한 뒤 클라이언트에서 `placeId` 일치 여부를 찾는 방식으로 구현했다(요구사항에 따라 기존 API를 최대한 재사용). 즐겨찾기 수가 많아지면 상세 페이지 진입마다 불필요하게 전체 목록을 내려받는 비효율이 있다.
   - **DoD**: 즐겨찾기 수 증가에 따른 실측 성능 영향을 확인한 뒤, 필요 시 단건 상태 확인 전용 API(또는 장소 상세 응답에 `isFavorited` 필드 포함) 추가를 검토.
+- [ ] `TSK-QA-002` [P1] Playwright E2E 테스트 하네스 부재 (`TSK-FE-008` 리뷰 기능 검증에서 식별, 2026-08-18)
+  - **배경**: 장소 상세 리뷰 조회/작성 기능의 실브라우저 검증을 위해 로컬에 Playwright를 임시 설치하고, DB에 임시 시드 장소/계정 데이터를 스크립트로 직접 심어 수동으로 시나리오(로그인→검색→상세→리뷰 작성→새로고침→즐겨찾기 확인)를 실행했다. 저장소에는 재사용 가능한 Playwright 설정, 테스트용 DB 초기화/시드 스크립트, `npm run e2e` 같은 표준 진입점이 없어 매번 이 과정을 수작업으로 반복해야 한다.
+  - **DoD**: `playwright.config.ts` 및 `frontend`(또는 루트) `e2e/` 디렉터리 신설, 테스트 전용 DB 시드/정리 스크립트 작성, CI에서 실행 가능한 `npm run e2e` 스크립트 추가. 최소한 이번에 검증한 리뷰 작성 플로우를 회귀 테스트로 고정.
 
 ### 2026-08-18 완료 기록: 장소 상세 페이지 즐겨찾기 기능 연동
 - **구현 범위**: `PlaceDetailPage.vue`에 로그인 사용자 기준 즐겨찾기 상태 표시, 기존 `GET /users/me/favorites`/`POST·DELETE /favorites/{placeId}` API 재사용, 추가/삭제 토글, 비로그인 시 로그인 화면(`redirect` 쿼리) 이동, 진행 중 버튼 잠금(중복 클릭 방지), 성공 시 즉시 상태 갱신, 실패 시 상태 유지 + `extractErrorMessage`/`ErrorMessage` 패턴으로 오류 표시. 새로운 백엔드 API는 만들지 않고 기존 `FavoriteController`/`FavoriteResponseDto`를 그대로 사용.
@@ -197,3 +201,12 @@
   - 백엔드 `./gradlew test`: 로컬 PostgreSQL 기동 후 전체 통과(`PlaceDetailIntegrationTest` 포함, 실DB 기반 검증).
   - Playwright 실브라우저 검증(임시 시드 장소 1건, 회원가입으로 생성한 임시 계정 사용, 검증 후 시드 데이터 삭제): 회원가입 → 로그인 → 장소 검색 → 장소 상세 → 즐겨찾기 추가("즐겨찾기됨" 표시 확인) → 새로고침(상태 유지 확인) → 즐겨찾기 삭제("즐겨찾기" 상태로 복귀 확인) 전 시나리오 통과.
 - **발견된 기술부채**: 단건 즐겨찾기 상태 확인 전용 API 부재(`TSK-BE-030`), `favoriteStore` 미사용으로 인한 기존 스토어 부채 지속(`TSK-FE-015` 갱신).
+
+### 2026-08-18 완료 기록: 장소 상세 페이지 리뷰 조회/작성 기능 구현
+- **구현 범위**: `PlaceDetailPage.vue`에 리뷰 목록 조회 및 작성 UI 추가. 백엔드는 변경 없이 기존 `ReviewController`의 `GET /api/v1/places/{placeId}/reviews`(인증 불필요, 목록 조회), `POST /api/v1/reviews`(인증 필요, 작성)를 그대로 재사용. 프런트엔드에 `types/review.ts`(`Review`/`ReviewCreateRequest`, `ReviewResponseDto`/`ReviewCreateRequestDto`와 1:1 매핑) 신규 추가. 리뷰 없음은 기존 `EmptyState` 컴포넌트로 표시, 비로그인 사용자에게는 작성 폼 대신 로그인 안내 + 로그인 이동 버튼 표시, 로그인 사용자는 별점(1~5, 클릭형)/내용(최대 1000자) 입력 후 등록. 등록 성공 시 리뷰 목록(`fetchReviews`)과 장소 상세(`fetchPlaceDetail`)를 동시 재조회해 `rating`/`reviewCount`를 즉시 갱신. 중복 작성(409, 기존 백엔드 정책 그대로), 평점/내용 검증 실패(400), 기타 서버 오류는 모두 기존 `extractErrorMessage`/`ErrorMessage` 패턴으로 표시. 기존 장소 상세 조회·즐겨찾기 로직은 변경하지 않음.
+- **테스트 결과**:
+  - Vitest: 전체 56/56 통과(`PlaceDetailPage.spec.ts`에 리뷰 관련 7개 시나리오 신규 — 목록 조회, 리뷰 없음(EmptyState), 작성 성공 후 목록/평점 즉시 갱신, 평점·내용 미입력 시 클라이언트 검증, 비로그인 안내 표시, 중복 작성(409) 오류, 기타 API 실패 오류 — 및 기존 즐겨찾기/상세 조회 테스트 전부 회귀 없이 포함).
+  - `vue-tsc --noEmit`(type-check) 및 `npm run build` 통과.
+  - 백엔드 `./gradlew test`: 변경 없음, 로컬 PostgreSQL 기동 후 전체 통과 재확인(기존 `ReviewControllerTest`/`ReviewServiceTest`/`ReviewRepositoryTest` 포함).
+  - Playwright 실브라우저 검증(DB에 임시 시드 장소 1건, 회원가입으로 생성한 임시 계정 사용, 검증 후 리뷰/즐겨찾기/장소/계정 전부 삭제): 로그인 → 장소 검색("E2E" 키워드) → 상세 진입(리뷰 0건 EmptyState 확인) → 리뷰 작성(별점 5, 내용 입력) → 등록 직후 목록·리뷰 1개 카운트 즉시 반영 확인 → 새로고침 후에도 작성한 리뷰와 카운트 유지 확인 → 즐겨찾기 추가("즐겨찾기됨" 표시) 후 새로고침해도 상태 유지 확인(기존 기능 회귀 없음) → 동일 사용자로 재작성 시도 시 중복 작성 오류 메시지("이미 이 장소에 리뷰를 작성하셨습니다.") 노출 확인. 전 시나리오 통과.
+- **발견된 기술부채**: 이 저장소에는 Playwright 등 E2E 테스트 하네스가 아직 구성되어 있지 않아(`package.json`에 스크립트 없음), 이번 검증은 임시로 로컬에 Playwright를 설치하고 DB에 임시 시드 데이터를 직접 심어 수행했다(검증 후 전부 원복). 반복 가능한 E2E 검증을 위해 정식 Playwright 설정(`playwright.config.ts`, 테스트 DB/시드 스크립트, npm script)을 별도로 도입할 필요가 있다 — `TSK-QA-002`로 하단 Feature 4.4 백로그에 신규 추가.
