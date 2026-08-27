@@ -46,10 +46,10 @@
    - Review CUD API (`POST`, `GET`, `PUT`, `DELETE /api/v1/reviews`)
    - Review 작성/수정/삭제 시 `Place` 평균 평점 (`rating`) 및 리뷰 수 (`reviewCount`) 실시간 동기화
    - 장소당 1인 1리뷰 409 Conflict 처리 및 Soft Delete 적용
-2. **My Page API**:
-   - 사용자 정보, 대표 반려동물, 즐겨찾기 목록, 내 리뷰 목록, 내 반려동물 목록 일괄 조회 API (`GET /api/v1/users/me/profile-summary`)
-3. **Dashboard API**:
-   - 홈 화면용 추천 장소, 인기 장소, 최근 등록 장소, 대표 반려동물 통합 조회 API (`GET /api/v1/dashboard`)
+2. **My Page API** ✅ 완료 (2026-08-27 문서 반영 — 실제로는 이전에 이미 구현됨):
+   - 실제 엔드포인트는 `GET /api/v1/users/me`(사용자 정보 + 대표 반려동물 + 펫/즐겨찾기/리뷰 카운트 통합 응답). 즐겨찾기/내 리뷰/내 반려동물 "목록"은 각 화면이 기존 전용 API(`GET /users/me/favorites`, `GET /users/me/reviews`, `GET /pets`)를 그대로 재사용하는 구조로, 이 API가 목록까지 함께 내려주지는 않음(중복 응답 방지를 위한 의도적 설계로 확인).
+3. **Dashboard API** ✅ 완료 (2026-08-27 문서 반영 — 실제로는 이전에 이미 구현됨):
+   - `GET /api/v1/dashboard`. 홈 화면(`HomePage.vue`)에서 이미 연동 중이었음.
 4. **Integration Test (통합 테스트)**:
    - 회원가입 ➔ 로그인 ➔ JWT 발급 ➔ Pet 등록 ➔ Favorite 등록 ➔ Review 작성 ➔ Place Rating 변경 ➔ 조회 전체 Flow 검증 E2E Test.
 5. **API Documentation**:
@@ -84,7 +84,7 @@
 6. **장소 상세 (`/places/{id}`)** 🔶 부분 완료: 기본 정보 조회(2026-08-18), 즐겨찾기 토글(2026-08-18), 리뷰 목록 조회/작성(2026-08-18), 사진 fallback·반려동물 동반 수칙 표시(2026-08-27, 현재 API 제공 필드 `allowedSizes`/`maxWeightLimitKg` 기준) 완료 / 다중 사진 갤러리, 실내외·목줄 자유구역 정책 노출(`TSK-BE-031`, API 미제공)만 잔여
 7. **즐겨찾기 (`/favorites`)** ✅ 완료 (2026-08-27): 목록 조회(이미지/카테고리/평점·리뷰 수 포함), 장소 상세 이동, 삭제(중복 요청 방지) 전부 연동 완료
 8. **내 반려동물 (`/pets`)** ✅ 완료 (2026-08-27): 목록 조회, 등록/수정/삭제, 대표 반려동물 지정 전부 연동 완료 (`sizeCategory`는 서버 계산값 표시 전용)
-9. **마이페이지 (`/mypage`)** 🔶 스캐폴딩: 프로필 요약(펫/즐겨찾기/리뷰 카운트)만 표시 / 즐겨찾기·내 리뷰·내 반려동물 탭 미구현
+9. **마이페이지 (`/mypage`)** ✅ 완료 (2026-08-27): 내 정보(이메일/닉네임/프로필 이미지)·대표 반려동물·통계 표시, 회원 정보 수정, 즐겨찾기/반려동물/리뷰 메뉴 이동 전부 연동 완료(리뷰는 신규 `MyReviewsPage.vue`로 연결, 기존 백엔드 API 재사용)
 
 ### 계획 외 추가 구현: 계정 복구 (Account Recovery) [COMPLETED]
 - **아이디 찾기 (`/find-id`)**: 닉네임 → 마스킹된 이메일 조회 (`POST /api/v1/auth/find-id`)

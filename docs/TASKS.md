@@ -56,11 +56,11 @@
 - [x] `TSK-BE-018` Review Entity (Soft Delete `deleted`), ReviewRepository & Flyway V6 (`reviews` 엔티티)
 - [x] `TSK-BE-019` Review Service & REST API (`POST`, `GET`, `PUT`, `DELETE /api/v1/reviews`), Place rating & reviewCount 자동 갱신, 409 Conflict 중복 방지
 
-### Feature 2.4 My Page & Dashboard Summary API [IN_PROGRESS]
-- [ ] `TSK-BE-020` [P0] My Page Summary API (`GET /api/v1/users/me/summary`)
-  - **DoD**: 사용자 정보, 대표 반려동물, 즐겨찾기 목록, 내 리뷰 목록, 내 반려동물 목록 일괄 통합 응답 DTO 및 서비스 구현.
-- [ ] `TSK-BE-021` [P0] Dashboard Home API (`GET /api/v1/dashboard`)
-  - **DoD**: 홈 화면용 추천 장소, 인기 장소, 최근 등록 장소, 대표 반려동물 통합 조회 REST API 구현.
+### Feature 2.4 My Page & Dashboard Summary API [COMPLETED] (2026-08-27 문서 반영 — 실제로는 이전 스프린트에서 이미 구현되어 있었음)
+- [x] `TSK-BE-020` [P0] My Page Summary API — **완료 확인 (2026-08-27)**
+  - 실제 엔드포인트는 문서에 기재된 `GET /api/v1/users/me/summary`가 아니라 `GET /api/v1/users/me`(`UserController` → `MyPageQueryService`)이며, DoD에 적힌 "즐겨찾기/리뷰/반려동물 목록 일괄 포함" 대신 사용자 정보 + 대표 반려동물(`RepresentativePetDto`) + 각 카운트(`petCount`/`favoriteCount`/`reviewCount`)만 통합 응답하는 설계로 구현되어 있었다(목록 자체는 기존 `GET /pets`, `GET /users/me/favorites`, `GET /users/me/reviews`를 각 화면에서 그대로 재사용, 중복 응답 방지). `TSK-FE-011`(MyPage 연동) 작업 중 이 사실을 확인해 문서를 실제 상태로 갱신.
+- [x] `TSK-BE-021` [P0] Dashboard Home API (`GET /api/v1/dashboard`) — **완료 확인 (2026-08-27)**
+  - `DashboardController`/`DashboardQueryService`로 이미 구현되어 있었고, `TSK-FE-005`(홈 화면)에서 이미 연동해 사용 중이었다. Sprint 2 체크리스트에 반영되지 않은 문서 누락이었음을 확인해 갱신.
 
 ### Feature 2.5 Integration Test & API Documentation [IN_PROGRESS]
 - [ ] `TSK-BE-022` [P0] Full Flow End-to-End Integration Test (`BackendE2EFlowIntegrationTest`)
@@ -152,8 +152,11 @@
   - `PetPage.vue`를 기존 `PetController`(`GET`/`POST`/`PUT`/`DELETE /api/v1/pets`, `PATCH /api/v1/pets/{petId}/representative`, 전부 기존 API, 신규 없음) 연동으로 전면 재작성. 목록 조회, 등록/수정(`BaseModal` 공용 폼), 삭제(확인 모달), 대표 반려동물 지정 전부 구현.
   - `sizeCategory`는 서버 응답값을 그대로 표시만 하고 프론트에서 별도 계산 로직을 두지 않음(체중 변경 시 서버가 재계산한 값을 응답으로 받아 화면에 반영).
   - 상세 내용은 하단 "2026-08-27 완료 기록: 반려동물 관리 화면 CRUD 연동" 참조.
-- [ ] `TSK-FE-011` [P0] My Page View (`/mypage`): Profile Summary, Favorites Tab, My Reviews Tab, My Pets Tab
-  - `GET /users/me` 기반 프로필 요약(펫/즐겨찾기/리뷰 카운트)만 표시. **잔여**: 즐겨찾기/내 리뷰/내 반려동물 탭 UI 전부 미구현.
+- [x] `TSK-FE-011` [P0] My Page View (`/mypage`): Profile Summary, Favorites Tab, My Reviews Tab, My Pets Tab — **완료 (2026-08-27)**
+  - `MyPage.vue`를 기존 `GET /api/v1/users/me`(`MyPageQueryService`, 신규 API 없음) 연동으로 재작성: 이메일/닉네임/프로필 이미지(있을 때만) 표시, 대표 반려동물(이름/품종/체중/크기, 없으면 안내 문구) 표시, 펫/즐겨찾기/리뷰 카운트 표시.
+  - "탭"은 각 기능이 이미 별도 화면(`/favorites`, `/pets`)으로 구현되어 있어 중복 구현하지 않고 라우터 이동 버튼/카드로 연결. 리뷰는 기존에 화면이 없었으나 백엔드에 `GET /api/v1/users/me/reviews`(기존 `ReviewController`, 신규 아님) API가 이미 있었음을 확인해, 최소 범위의 읽기 전용 `MyReviewsPage.vue`(`/mypage/reviews`)를 신규로 구현해 연결(수정/삭제는 이번 범위에 없음, 필요 시 별도 백로그).
+  - **회원 정보 수정**: 백엔드에 이미 존재하는 `PUT /api/v1/users/me`(`UserProfileService`, 닉네임 필수/프로필 이미지 URL 선택)를 확인 후 재사용해 닉네임/프로필 이미지 수정 모달 구현. 성공 시 `authStore.currentUser`도 함께 갱신해 상단 헤더의 닉네임 표시와 즉시 동기화.
+  - 상세 내용은 하단 "2026-08-27 완료 기록: 마이페이지 통합 화면 연동" 참조.
 
 ---
 
@@ -196,6 +199,9 @@
 - [ ] `TSK-QA-002` [P1] Playwright E2E 테스트 하네스 부재 (`TSK-FE-008` 리뷰 기능 검증에서 식별, 2026-08-18)
   - **배경**: 장소 상세 리뷰 조회/작성 기능의 실브라우저 검증을 위해 로컬에 Playwright를 임시 설치하고, DB에 임시 시드 장소/계정 데이터를 스크립트로 직접 심어 수동으로 시나리오(로그인→검색→상세→리뷰 작성→새로고침→즐겨찾기 확인)를 실행했다. 저장소에는 재사용 가능한 Playwright 설정, 테스트용 DB 초기화/시드 스크립트, `npm run e2e` 같은 표준 진입점이 없어 매번 이 과정을 수작업으로 반복해야 한다.
   - **DoD**: `playwright.config.ts` 및 `frontend`(또는 루트) `e2e/` 디렉터리 신설, 테스트 전용 DB 시드/정리 스크립트 작성, CI에서 실행 가능한 `npm run e2e` 스크립트 추가. 최소한 이번에 검증한 리뷰 작성 플로우를 회귀 테스트로 고정.
+- [ ] `TSK-FE-016` [P2] `types/user.ts`의 `User`(로그인 응답 매핑) 타입이 실제 API 응답과 불일치 (`TSK-FE-011` MyPage 연동에서 식별, 2026-08-27)
+  - **배경**: `User` 인터페이스에 `pets: Pet[]`/`activePetId?: string` 필드가 있지만, 실제 로그인 응답(`UserLoginResponseDto.UserSummaryDto`)은 `id`/`email`/`nickname`/`avatarUrl`/`role`만 내려주며 `pets`/`activePetId`는 응답에 존재한 적이 없다(항상 빈 배열/undefined로만 취급되어 왔음, `PetPage`/`SearchPage`가 각자 `GET /pets`를 직접 호출하는 것도 이 때문으로 추정). `Pet`(`TSK-FE-010`) 때와 달리 이번에는 `authStore`/여러 페이지의 로그인 mock 데이터가 이 타입에 의존하고 있어 영향 범위가 넓아, 이번 작업 범위에서는 임의로 정리하지 않고 백로그로만 기록.
+  - **DoD**: `User` 타입에서 실제로 내려오지 않는 `pets`/`activePetId`를 제거하거나, 실제로 필요하다면 `role`을 타입에 추가하고 `pets` 관련 필드는 별도 API 응답으로 명확히 분리. 변경 시 `authStore`, 관련 스펙(`PlaceDetailPage.spec.ts` 등)의 로그인 mock 데이터도 함께 정리.
 - [ ] `TSK-BE-031` [P2] `Place` 엔티티의 실내/실외/목줄 자유구역 정책 필드가 API 응답에 노출되지 않음 (`TSK-FE-008` 반려동물 동반 수칙 보강에서 식별, 2026-08-27)
   - **배경**: `Place` 엔티티에는 `isIndoorAllowed`/`isOutdoorAllowed`/`hasOffLeashZone` 컬럼이 이미 존재하지만, `PlaceSearchResponseDto`(검색/상세 공용 Projection)에는 `allowedSizes`/`maxWeightLimitKg`만 포함되어 있어 프런트엔드가 이 값을 받을 수 없다. 이번 작업(장소 상세 반려동물 동반 수칙 섹션)에서는 요구사항에 따라 실제 API가 제공하는 필드만 표시했고, 임의로 DTO를 확장하지 않았다.
   - **DoD**: 실내/실외/목줄 자유구역 정보를 반려동물 동반 수칙에 노출할 필요가 있는지 제품 우선순위를 확인한 뒤, 필요 시 `PlaceSearchResponseDto`에 해당 필드 추가(QueryDSL Projection 컬럼 추가) 및 프런트엔드 표시 UI 구현.
@@ -258,3 +264,17 @@
   - 백엔드 변경 없어 `./gradlew test`는 별도 실행하지 않음.
   - Playwright 실브라우저 검증: 이번 환경에는 로컬 PostgreSQL/백엔드 구동 수단이 없어(`TSK-QA-002`) 수행하지 못함. Vitest 컴포넌트 테스트로 등록/수정/삭제/대표 지정 흐름을 대체 검증.
 - **발견된 기술부채**: 없음(기존 `TSK-FE-015`, `TSK-QA-002`에 계속 해당). `types/user.ts`의 `Pet` 타입 불일치는 이번 작업에서 직접 수정 완료.
+
+### 2026-08-27 완료 기록: 마이페이지 통합 화면 연동
+- **구현 범위**: 백엔드 변경 없음(`UserController`/`MyPageQueryService`/`UserProfileService` 조사 결과 필요한 API가 이미 모두 존재함을 확인, 신규 API 없이 그대로 재사용). 문서상 Sprint 2에 "미완료"로 남아 있던 `TSK-BE-020`(마이페이지 요약 API)/`TSK-BE-021`(대시보드 API)이 실제로는 이미 구현·연동되어 있었음을 이번 조사에서 확인하고 문서를 실제 상태로 갱신(코드 변경 아님).
+  - **타입 신규 추가**: `types/user.ts`에 `MyPageSummary`/`MyPageRepresentativePet`(`MyPageResponseDto`/`RepresentativePetDto`와 1:1), `UserProfileUpdateRequest`/`UserProfileResponse`(`UserProfileUpdateRequestDto`/`UserProfileResponseDto`와 1:1) 신규 추가. 기존 `Pet` 타입과 필드가 겹치지만 실제로는 다른 응답 구조(대표 반려동물 요약은 필드가 더 적음)라 별도 타입으로 분리, 실제 응답에 없는 필드는 추가하지 않음.
+  - **MyPage.vue**: `GET /users/me` 재사용, 로딩/오류(`ErrorMessage`)/데이터 표시 상태 처리(빈 목록 개념은 없음 — 사용자 본인 정보이므로 항상 존재), 이메일/닉네임/프로필 이미지(있을 때만 `<img>`, 없으면 이니셜) 표시. 대표 반려동물은 `representativePet`이 있으면 이름/품종/체중/크기(기존 `sizeLabel` 배지 패턴 재사용)를, 없으면 `EmptyState`로 안내. 즐겨찾기/반려동물 통계 버튼 및 하단 메뉴 카드 클릭 시 각각 기존 `/favorites`(`Favorites`)/`/pets`(`Pets`) 라우트로 이동 — 화면을 중복 구현하지 않음. 비로그인 시 API 호출 없이 로그인 화면(`redirect=/mypage`)으로 이동.
+  - **회원 정보 수정**: 기존 `BaseModal`/`BaseInput` 재사용, 닉네임(2자 이상, 서버 검증과 동일 범위 클라이언트 검증) + 프로필 이미지 URL(선택) 입력 후 `PUT /users/me` 호출. 성공 시 `authStore.setUser()`로 상단 헤더 닉네임도 즉시 동기화, 요청 중 버튼 잠금, 실패 시 `ErrorMessage` 표시.
+  - **대표 반려동물 최신 상태 반영 확인**: `MyPage.vue`가 캐시나 store 없이 마운트 시점마다 `GET /users/me`를 새로 호출하는 구조이므로, `PetPage`에서 대표 반려동물을 변경한 뒤 `/mypage`로 이동하면 별도 동기화 로직 없이도 항상 최신 값이 반영됨을 코드 구조로 확인(수동 캐시 무효화 불필요).
+  - **MyReviewsPage.vue 신규 추가(`/mypage/reviews`)**: "리뷰" 메뉴가 이동할 기존 화면이 없었으나, 백엔드에 `GET /api/v1/users/me/reviews`(`ReviewController`, 기존 API)가 이미 구현되어 있음을 확인. 최소 범위(목록 조회, 로딩/빈 목록/오류 상태, 카드 클릭 시 `/place/:id` 이동)의 읽기 전용 화면만 신규 구현 — 수정/삭제 UI는 이번 범위에 포함하지 않음(요청 범위 밖).
+- **테스트 결과**:
+  - Vitest: 전체 94/94 통과(`MyPage.spec.ts` 신규 8개 — 비로그인 리다이렉트, 정보/대표펫 표시, 대표펫 없음, API 오류, 즐겨찾기/리뷰/반려동물 메뉴 이동, 정보 수정 성공 — 및 `MyReviewsPage.spec.ts` 신규 5개 — 비로그인 리다이렉트, 목록 조회, 빈 목록, API 오류, 상세 이동 — 포함, 기존 테스트 전부 회귀 없이 포함).
+  - `vue-tsc --noEmit`(type-check) 및 `npm run build` 통과.
+  - 백엔드 변경 없어 `./gradlew test`는 별도 실행하지 않음.
+  - Playwright 실브라우저 검증: 이번 환경에는 로컬 PostgreSQL/백엔드 구동 수단이 없어(`TSK-QA-002`) 수행하지 못함. Vitest 컴포넌트 테스트로 정보 표시/메뉴 이동/정보 수정 흐름을 대체 검증.
+- **발견된 기술부채**: `TSK-FE-016`(`types/user.ts`의 `User` 타입이 실제 로그인 응답과 불일치) 신규 기록. `TSK-BE-020`/`TSK-BE-021`은 이미 구현되어 있었음을 확인해 문서만 갱신(코드 변경 아님).

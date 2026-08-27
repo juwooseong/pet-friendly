@@ -43,3 +43,45 @@ export interface User {
   pets: Pet[];
   activePetId?: string;
 }
+
+export type UserRole = 'USER' | 'ADMIN';
+
+/** 마이페이지 대표 반려동물 요약 (백엔드 `MyPageResponseDto.RepresentativePetDto`와 1:1 매핑, `Pet`보다 필드가 적은 별도 응답 구조) */
+export interface MyPageRepresentativePet {
+  petId: string;
+  petName: string;
+  breed: string;
+  weightKg: number;
+  sizeCategory: SizeCategory;
+}
+
+/** 마이페이지 통합 요약 정보 (`GET /api/v1/users/me`, 백엔드 `MyPageResponseDto`와 1:1 매핑) */
+export interface MyPageSummary {
+  userId: string;
+  email: string;
+  nickname: string;
+  avatarUrl: string | null;
+  role: UserRole;
+  representativePet: MyPageRepresentativePet | null;
+  petCount: number;
+  favoriteCount: number;
+  reviewCount: number;
+}
+
+/** 사용자 프로필 수정 요청 (`PUT /api/v1/users/me`, 백엔드 `UserProfileUpdateRequestDto`와 1:1 매핑) */
+export interface UserProfileUpdateRequest {
+  nickname: string;
+  avatarUrl?: string | null;
+}
+
+/** 사용자 프로필 수정 응답 (백엔드 `UserProfileResponseDto`와 1:1 매핑) */
+export interface UserProfileResponse {
+  id: string;
+  email: string;
+  nickname: string;
+  avatarUrl: string | null;
+  role: UserRole;
+  provider: string;
+  status: string;
+  createdAt: string;
+}

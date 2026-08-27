@@ -63,6 +63,12 @@ const routes: Array<RouteRecordRaw> = [
     meta: { layout: 'main', requiresAuth: true },
   },
   {
+    path: '/mypage/reviews',
+    name: 'MyReviews',
+    component: () => import('@/pages/MyReviewsPage.vue'),
+    meta: { layout: 'main', requiresAuth: true },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/pages/NotFoundPage.vue'),
