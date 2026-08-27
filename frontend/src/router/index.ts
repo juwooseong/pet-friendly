@@ -45,6 +45,12 @@ const routes: Array<RouteRecordRaw> = [
     meta: { layout: 'main' },
   },
   {
+    path: '/map',
+    name: 'Map',
+    component: () => import('@/pages/MapPage.vue'),
+    meta: { layout: 'main' },
+  },
+  {
     path: '/mypage',
     name: 'MyPage',
     component: () => import('@/pages/MyPage.vue'),

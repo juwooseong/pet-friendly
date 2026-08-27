@@ -26,6 +26,7 @@ const handleLogout = () => {
         <nav class="hidden md:flex items-center gap-6 font-medium text-stone-600">
           <router-link to="/" class="hover:text-amber-500 transition" active-class="text-amber-500 font-bold">홈</router-link>
           <router-link to="/search" class="hover:text-amber-500 transition" active-class="text-amber-500 font-bold">장소 탐색</router-link>
+          <router-link to="/map" class="hover:text-amber-500 transition" active-class="text-amber-500 font-bold">지도</router-link>
           <router-link to="/favorites" class="hover:text-amber-500 transition" active-class="text-amber-500 font-bold">즐겨찾기</router-link>
           <router-link to="/pets" class="hover:text-amber-500 transition" active-class="text-amber-500 font-bold">내 반려동물</router-link>
           <router-link to="/mypage" class="hover:text-amber-500 transition" active-class="text-amber-500 font-bold">마이페이지</router-link>

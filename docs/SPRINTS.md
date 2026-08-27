@@ -70,7 +70,7 @@
 
 ### Frontend 설계 문서 수립 항목
 - [x] Frontend Architecture Spec / Common Layout / UI 컴포넌트 7종
-- [x] Vue Router 4 Routing Specification (단, `/map` 라우트는 미등록)
+- [x] Vue Router 4 Routing Specification (`/map` 라우트 포함 전체 등록 완료, 2026-08-27)
 - [x] Pinia Global Store 기본 구조 (`authStore`, `petStore`, `placeStore`) — `favoriteStore` 및 store 경유 데이터 페칭은 미완
 - [x] Axios Interceptor & Auth Token Manager (401 처리, 에러 메시지 추출)
 - [ ] Component Tree Taxonomy / API Endpoint Mapping Table 문서화
@@ -80,7 +80,7 @@
 2. **회원가입 (`/signup`)** ✅ 사실상 완료: Form Validation, 비밀번호 확인/패턴 검증, 필수값 자동 포커스, Caps Lock 감지, 비밀번호 한글 입력 차단, 이메일/닉네임 중복 시 인라인 에러 표시 완료 / 실시간 중복 확인만 미구현
 3. **홈 (`/`)** ✅ 완료: 추천 장소, 인기 장소, 최근 등록 장소, 대표 반려동물 카드 렌더링 (Dashboard API 연동)
 4. **장소 검색 (`/places`)** ✅ 완료 (2026-08-14): 키워드 검색, 카테고리 필터, 반려동물 크기 조건, 거리순 정렬(위치 기반) 전부 연동 완료
-5. **지도 (`/map`)** ❌ 미착수: 라우트조차 미등록, Kakao Map/Leaflet 연동 없음
+5. **지도 (`/map`)** 🔶 부분 완료 (2026-08-27, 1단계): Kakao Map SDK 연동 구조(`VITE_KAKAO_MAP_APP_KEY` 환경변수 관리), 현재 위치 기반 초기 중심점, 기존 장소 검색 API 재사용 마커 표시, 마커 클릭→상세 이동 완료 / 지도 이동·확대축소 시 재검색(`TSK-FE-017`), 한국관광공사 데이터 연동(다음 Task)은 잔여
 6. **장소 상세 (`/places/{id}`)** 🔶 부분 완료: 기본 정보 조회(2026-08-18), 즐겨찾기 토글(2026-08-18), 리뷰 목록 조회/작성(2026-08-18), 사진 fallback·반려동물 동반 수칙 표시(2026-08-27, 현재 API 제공 필드 `allowedSizes`/`maxWeightLimitKg` 기준) 완료 / 다중 사진 갤러리, 실내외·목줄 자유구역 정책 노출(`TSK-BE-031`, API 미제공)만 잔여
 7. **즐겨찾기 (`/favorites`)** ✅ 완료 (2026-08-27): 목록 조회(이미지/카테고리/평점·리뷰 수 포함), 장소 상세 이동, 삭제(중복 요청 방지) 전부 연동 완료
 8. **내 반려동물 (`/pets`)** ✅ 완료 (2026-08-27): 목록 조회, 등록/수정/삭제, 대표 반려동물 지정 전부 연동 완료 (`sizeCategory`는 서버 계산값 표시 전용)
