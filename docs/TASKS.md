@@ -143,8 +143,9 @@
   - **리뷰 목록 조회/작성 폼 연동 완료 (2026-08-18)**: 기존 `GET /places/{placeId}/reviews`/`POST /reviews` API 재사용, 리뷰 없을 시 `EmptyState` 표시, 로그인 사용자 대상 평점(1~5)/내용 입력 폼(비로그인 시 로그인 안내로 대체), 등록 성공 시 리뷰 목록과 장소 `rating`/`reviewCount` 즉시 재조회 갱신, 중복 작성(409)·검증 실패(400) 등 API 실패 시 기존 `extractErrorMessage`/`ErrorMessage` 패턴으로 오류 표시. 상세 내용은 하단 "2026-08-18 완료 기록" 참조(즐겨찾기/리뷰 각각 별도 기록).
   - **사진/반려동물 동반 수칙 보강 완료 (2026-08-27)**: 사진은 `imageUrl` 없음/로드 실패(`@error`) 시 기존 fallback 아이콘 UI로 대체. 동반 수칙은 현재 API가 실제로 제공하는 `allowedSizes`(기존 크기 배지 UI 유지)/`maxWeightLimitKg`(신규 표시, 기존에 응답에는 있었으나 화면 미표시 상태였음)만 "반려동물 동반 수칙" 섹션에 표시, 정보가 전혀 없으면 안내 문구 표시. 상세 내용은 하단 "2026-08-27 완료 기록" 참조.
   - **잔여**: 장소 사진은 여전히 `imageUrl` 단일 필드 기반(다중 사진 갤러리 아님) — 한국관광공사 이미지 데이터 연동은 Sprint 4 스코프. 실내/실외 동반 가능 여부·목줄 자유구역 등 `Place` 엔티티에는 있지만 API로 노출되지 않는 정책 필드는 `TSK-BE-031` 백로그 참조.
-- [ ] `TSK-FE-009` [P0] Favorites View (`/favorites`): Saved Place Grid & Quick Delete
-  - 즐겨찾기 목록 조회만 연동. **잔여**: 삭제(Quick Delete) 기능 미구현.
+- [x] `TSK-FE-009` [P0] Favorites View (`/favorites`): Saved Place Grid & Quick Delete — **완료 (2026-08-27)**
+  - `FavoritesPage.vue`를 기존 `GET /api/v1/users/me/favorites`(기존 API, 신규 없음) 연동으로 재작성. 장소명/주소/이미지(없음/로드 실패 fallback 아이콘)/카테고리/평점·리뷰 수를 카드로 표시, 카드 클릭 시 기존 `/place/:id`(`PlaceDetail`) 라우트로 이동. 삭제는 기존 `DELETE /api/v1/favorites/{placeId}` 재사용, 카드 클릭과 분리된 삭제 버튼(`@click.stop`), 요청 중 버튼 잠금(중복 클릭 방지), 성공 시 목록에서 즉시 제거, 실패 시 목록 유지 + `ErrorMessage`. 로딩/빈 목록/API 오류는 기존 `LoadingSpinner`/`EmptyState`/`ErrorMessage` 패턴 재사용. 비로그인 접근은 라우터 가드(`meta.requiresAuth`)로 우선 차단되지만, 컴포넌트 자체에서도 방어적으로 `authStore.isAuthenticated`를 확인해 로그인 화면(`redirect` 쿼리)으로 이동. `favoriteStore`는 이번에도 도입하지 않고 기존 프로젝트 패턴(페이지에서 `apiClient` 직접 호출)을 그대로 따름 — 기존 기술부채(`TSK-FE-015`)에 계속 해당.
+  - 상세 내용은 하단 "2026-08-27 완료 기록: 즐겨찾기 목록 화면 CRUD 연동" 참조.
 
 ### Feature 3.5 Pet & My Page Screens [스캐폴딩 수준]
 - [ ] `TSK-FE-010` [P0] My Pets Management View (`/pets`): Pet Multi-CRUD, Weight Input, Representative Pet Toggle
@@ -226,3 +227,17 @@
   - 백엔드 변경 없어 `./gradlew test`는 별도 실행하지 않음.
   - Playwright 실브라우저 검증은 이번 작업에서는 수행하지 않음(`TSK-QA-002`에 기록된 대로 재사용 가능한 E2E 하네스가 아직 없어 매번 임시 설치/시드가 필요하므로, Vitest 컴포넌트 테스트로 사진 fallback/동반 수칙 표시 로직을 검증하는 것으로 갈음). 재사용 가능한 하네스가 마련되면 `TSK-QA-002` 완료 시 이번 흐름(검색→상세→사진/동반수칙→리뷰→즐겨찾기)도 함께 회귀 테스트로 편입 필요.
 - **발견된 기술부채**: `TSK-BE-031`(실내/실외/목줄 자유구역 정책 API 미노출) 신규 기록.
+
+### 2026-08-27 완료 기록: 즐겨찾기 목록 화면 CRUD 연동
+- **구현 범위**: 백엔드 변경 없음(신규 API 없음). `FavoritesPage.vue`를 조사 결과 이전에는 `fav.id`(실제 응답 필드는 `favoriteId`) 참조 등 실제 API 응답과 어긋난 스캐폴딩 코드였음을 확인하고, 기존 `types/favorite.ts`(`FavoriteItem`, `FavoriteResponseDto`와 1:1)와 기존 `GET /api/v1/users/me/favorites`/`DELETE /api/v1/favorites/{placeId}`(`PlaceDetailPage.vue`의 즐겨찾기 토글에서 이미 사용 중이던 것과 동일 API)를 그대로 재사용해 전면 재작성.
+  - 목록 조회: 로딩/빈 목록(`EmptyState`)/API 오류(`ErrorMessage`, `extractErrorMessage`) 상태 처리, 카드에 장소명/주소/이미지(`imageUrl` 없음 또는 로드 실패 시 fallback 아이콘)/카테고리명/평점·리뷰 수 표시(모두 기존 API 응답 필드).
+  - 상세 이동: 카드 클릭 시 `router.push({ name: 'PlaceDetail', params: { id: fav.placeId } })`로 기존 `/place/:id` 라우트 재사용.
+  - 삭제: 기존 `DELETE /favorites/{placeId}` 재사용, 카드 클릭 이벤트와 분리(`@click.stop`), `removingPlaceId` 상태로 중복 클릭 방지(진행 중 버튼 비활성화), 성공 시 목록에서 즉시 제거(재조회 없이 클라이언트에서 filter), 실패 시 목록 유지 + 별도 `ErrorMessage`로 오류 표시.
+  - 비로그인: `/favorites` 라우트에는 이미 `meta.requiresAuth`가 설정되어 라우터 가드가 우선 차단하지만, 컴포넌트가 라우터 없이 단독으로 마운트되는 경우(테스트 등)에도 안전하도록 `onMounted`에서 `authStore.isAuthenticated`를 확인해 API 호출 없이 로그인 화면(`redirect=/favorites`)으로 이동하는 방어 로직을 추가.
+  - `favoriteStore`는 여전히 미사용 — Feature 3.1/`TSK-FE-015`에 이미 기록된 기존 패턴(페이지가 `apiClient`를 직접 호출)을 유지, 이번 작업에서 전역 상태 구조로 무리하게 확장하지 않음.
+- **테스트 결과**:
+  - Vitest: 전체 70/70 통과(`FavoritesPage.spec.ts` 신규 9개 — 비로그인 리다이렉트, 목록 조회, 로딩, 빈 목록, API 오류, 상세 이동, 삭제 성공, 삭제 실패, 중복 삭제 요청 방지 — 및 기존 테스트 전부 회귀 없이 포함).
+  - `vue-tsc --noEmit`(type-check) 및 `npm run build` 통과.
+  - 백엔드 변경 없어 `./gradlew test`는 별도 실행하지 않음.
+  - Playwright 실브라우저 검증: 이번 환경에는 로컬 PostgreSQL/백엔드 구동 수단이 없어(`TSK-QA-002`에 기록된 대로 재사용 가능한 E2E 하네스도 부재) 수행하지 못함. Vitest 컴포넌트 테스트로 목록 조회/상세 이동/삭제 흐름을 대체 검증.
+- **발견된 기술부채**: 기존 `FavoritesPage.vue`가 실제 API 응답 필드(`favoriteId`)와 다른 `fav.id`를 참조하던 버그를 이번 재작성 과정에서 발견 및 수정(별도 Task로 분리할 실익이 없어 이번 구현에 포함해 수정함, 범위 확장 아님 — 화면이 사실상 비어 있던 필드 표시 버그).
