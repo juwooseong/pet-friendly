@@ -134,8 +134,10 @@
   - **버그 발견 및 수정**: Sprint 1에서 "완료"로 표시되었던 `ST_DWithin`/`ST_Distance` PostGIS 공간 쿼리가 실제 DB를 한 번도 거치지 않은 채(기존 테스트가 전부 Mockito Mock 기반) 테스트를 통과해왔음을 발견. 실제 실행 시 Hibernate 6 HQL 파서가 PostgreSQL 전용 `::geography` 캐스트 문법을 거부하고(`unrecognized cast target type`), `ST_DWithin(...) = true` 비교도 함수 반환 타입 미등록으로 `SemanticException`을 던지는 잠재 버그를 확인 — 위도/경도를 포함한 모든 검색 요청이 실제로는 실패했을 것으로 추정됨. `geography(...)` 함수 호출 + `cast(... as boolean)` 패턴으로 수정하고 실제 PostGIS DB를 사용하는 통합 테스트(`PlaceSearchSizeAndDistanceIntegrationTest`)로 검증 완료.
   - **Frontend**: `SearchPage.vue` 전면 재구현 — 반려동물 크기 드롭다운(로그인 시 대표 반려동물 크기 자동 기본값 적용, `GET /pets` 연동), 브라우저 Geolocation 기반 "내 위치 기준 거리순 정렬" 토글(반경 선택 포함), Pageable 기반 페이지네이션 UI. `types/api.ts`(공용 `ApiResponse`/`PageResponse`), `types/place.ts`에 실제 응답 구조와 일치하는 `PlaceSearchItem`/`PlaceSearchParams` 타입 신규 추가(기존 `Place`/`PetPolicy` 아스퍼레이셔널 타입은 미사용 상태로 잔존, 하단 백로그 참조).
   - **검증**: 백엔드 `./gradlew test` 전체 통과(신규 통합 테스트 2건 포함), 프런트엔드 Vitest 38/38 통과(신규 5건: `SearchPage`), `type-check`·`build` 통과, 실브라우저(Playwright, 임시 시드 데이터 15건) 검증 — 키워드 검색/크기 필터(전체 15건→LARGE 6건 정확히 필터링)/거리순 정렬(오름차순 정확)/페이지 이동(1→2페이지 거리 연속성 유지) 전 시나리오 확인 완료.
-- [x] `TSK-FE-007` [P0] Interactive Map View (`/map`): Kakao Map Integration 기반 구축 — **완료 (2026-08-27, 1단계: 기반 구축)**
-  - Kakao Maps JavaScript SDK 연동 구조, `/map` 라우트, 현재 위치 기반 지도 표시, 기존 `/places/search` API 재사용 마커 표시, 마커 클릭 시 장소 카드 → `/place/:id` 이동까지 완료. 한국관광공사 데이터 연동은 다음 Task로 분리(의도적 범위 제외). 상세 내용은 하단 "2026-08-27 완료 기록: Kakao Map 지도 연동 기반 구축" 참조.
+- [x] `TSK-FE-007` [P0] Interactive Map View (`/map`): Kakao Map SDK 로딩/렌더링 기반 — **완료 (2026-08-27, 0단계: SDK+렌더링만)**
+  - Kakao Maps JavaScript SDK 연동 구조(`VITE_KAKAO_MAP_APP_KEY`), `/map` 라우트, 현재 위치/기본 위치(서울시청) 기준 지도 렌더링, SDK 로딩 실패 오류 표시, 언마운트 시 리소스 정리까지 완료.
+  - **의도적 범위 축소(2026-08-27)**: 직전 커밋(`4a4b00c`)에서 함께 구현했던 "기존 `/places/search` 재사용 마커 표시 + 마커 클릭 시 장소 카드 + 상세 이동"은 이번 요청에 따라 되돌리고, 이번 단계는 "SDK 로딩 및 지도 렌더링 자체 검증"에만 집중하도록 축소했다. 마커/장소 연동은 다음 Task에서 별도로 재구현 예정(버그 아님, 의도된 단계적 진행).
+  - 상세 내용은 하단 "2026-08-27 완료 기록: Kakao Map SDK 로딩/렌더링 기반 (0단계)" 참조.
 
 ### Feature 3.4 Place Detail & Engagement Screens [스캐폴딩 수준]
 - [ ] `TSK-FE-008` [P0] Place Detail View/Modal (`/places/{id}`): Info, Photos, Pet Policy Checklist, Review Form, Favorite Toggle
@@ -202,9 +204,9 @@
 - [ ] `TSK-FE-016` [P2] `types/user.ts`의 `User`(로그인 응답 매핑) 타입이 실제 API 응답과 불일치 (`TSK-FE-011` MyPage 연동에서 식별, 2026-08-27)
   - **배경**: `User` 인터페이스에 `pets: Pet[]`/`activePetId?: string` 필드가 있지만, 실제 로그인 응답(`UserLoginResponseDto.UserSummaryDto`)은 `id`/`email`/`nickname`/`avatarUrl`/`role`만 내려주며 `pets`/`activePetId`는 응답에 존재한 적이 없다(항상 빈 배열/undefined로만 취급되어 왔음, `PetPage`/`SearchPage`가 각자 `GET /pets`를 직접 호출하는 것도 이 때문으로 추정). `Pet`(`TSK-FE-010`) 때와 달리 이번에는 `authStore`/여러 페이지의 로그인 mock 데이터가 이 타입에 의존하고 있어 영향 범위가 넓아, 이번 작업 범위에서는 임의로 정리하지 않고 백로그로만 기록.
   - **DoD**: `User` 타입에서 실제로 내려오지 않는 `pets`/`activePetId`를 제거하거나, 실제로 필요하다면 `role`을 타입에 추가하고 `pets` 관련 필드는 별도 API 응답으로 명확히 분리. 변경 시 `authStore`, 관련 스펙(`PlaceDetailPage.spec.ts` 등)의 로그인 mock 데이터도 함께 정리.
-- [ ] `TSK-FE-017` [P2] 지도 이동/확대·축소 시 재검색(뷰포트 기반 갱신) 미구현 (`TSK-FE-007` 지도 기반 구축에서 식별, 2026-08-27)
-  - **배경**: 이번 기반 구축에서는 최초 진입 시 현재 위치(또는 기본 위치) 기준 반경 5km로 1회 조회한 마커만 표시한다. 사용자가 지도를 드래그하거나 확대/축소해도 새로운 뷰포트 기준으로 장소를 다시 조회하지 않는다. `SearchPage.vue`의 검색 상태/로직과 완전히 분리된 구조라 서로 충돌하지는 않지만(요청 범위였던 "책임 분리"는 충족), 실사용 시 지도를 이동한 위치의 장소를 보려면 새로고침이 필요하다.
-  - **DoD**: Kakao Maps `idle`/`bounds_changed` 이벤트에 디바운스 재조회를 연결해 뷰포트 기준으로 마커를 갱신. 과도한 API 호출 방지책(디바운스/최소 이동 거리 임계값) 포함.
+- [ ] `TSK-FE-017` [P1] 지도에 장소 마커 연동 (`TSK-FE-007` 0단계 이후 다음 단계, 2026-08-27 재기록)
+  - **배경**: 2026-08-27에 한 차례 기존 `GET /places/search` 재사용 마커 표시 + 마커 클릭 카드 + 상세 이동까지 구현했었으나(`4a4b00c`), 이후 요청에 따라 "SDK 로딩/지도 렌더링 자체 검증"에만 집중하도록 의도적으로 되돌렸다(`MapPage.vue`에서 장소 조회/마커 코드 제거). 구현 참고용 코드는 git 히스토리(`4a4b00c`)에서 재사용 가능.
+  - **DoD**: 기존 `GET /places/search` 재사용(신규 API 없음)해 지도 중심 기준 장소 마커 표시, 마커 클릭 시 최소 정보 카드, 카드에서 `/place/:id` 이동. 추가로 지도 이동/확대·축소 시 뷰포트 기준 재조회(디바운스/최소 이동 거리 임계값 포함)까지 함께 고려.
 - [ ] `TSK-BE-031` [P2] `Place` 엔티티의 실내/실외/목줄 자유구역 정책 필드가 API 응답에 노출되지 않음 (`TSK-FE-008` 반려동물 동반 수칙 보강에서 식별, 2026-08-27)
   - **배경**: `Place` 엔티티에는 `isIndoorAllowed`/`isOutdoorAllowed`/`hasOffLeashZone` 컬럼이 이미 존재하지만, `PlaceSearchResponseDto`(검색/상세 공용 Projection)에는 `allowedSizes`/`maxWeightLimitKg`만 포함되어 있어 프런트엔드가 이 값을 받을 수 없다. 이번 작업(장소 상세 반려동물 동반 수칙 섹션)에서는 요구사항에 따라 실제 API가 제공하는 필드만 표시했고, 임의로 DTO를 확장하지 않았다.
   - **DoD**: 실내/실외/목줄 자유구역 정보를 반려동물 동반 수칙에 노출할 필요가 있는지 제품 우선순위를 확인한 뒤, 필요 시 `PlaceSearchResponseDto`에 해당 필드 추가(QueryDSL Projection 컬럼 추가) 및 프런트엔드 표시 UI 구현.
@@ -282,17 +284,18 @@
   - Playwright 실브라우저 검증: 이번 환경에는 로컬 PostgreSQL/백엔드 구동 수단이 없어(`TSK-QA-002`) 수행하지 못함. Vitest 컴포넌트 테스트로 정보 표시/메뉴 이동/정보 수정 흐름을 대체 검증.
 - **발견된 기술부채**: `TSK-FE-016`(`types/user.ts`의 `User` 타입이 실제 로그인 응답과 불일치) 신규 기록. `TSK-BE-020`/`TSK-BE-021`은 이미 구현되어 있었음을 확인해 문서만 갱신(코드 변경 아님).
 
-### 2026-08-27 완료 기록: Kakao Map 지도 연동 기반 구축
-- **구현 범위**: 백엔드 변경 없음(신규 API 없이 기존 `GET /api/v1/places/search`만 재사용). 한국관광공사 API 연동 및 Place 데이터 구조 변경은 이번 범위에서 의도적으로 제외(다음 Task).
-  - **Kakao SDK 연동 구조**: `src/utils/kakaoMap.ts`(`loadKakaoMaps()`) 신규 추가. `VITE_KAKAO_MAP_APP_KEY` 환경변수로 키를 관리하며 소스에 키를 하드코딩하지 않음. `frontend/.env.development`/`.env.production`에는 빈 값 플레이스홀더만 커밋하고, 실제 키는 `frontend/.env.local`(기존 `.gitignore`의 `frontend/*.local` 패턴으로 이미 추적 제외됨, Vite가 자동으로 로드해 커밋된 값을 덮어씀)에 개발자가 개별 설정하도록 안내 주석 추가. 스크립트 태그를 동적으로 삽입해 SDK를 로드하고, 키 미설정/스크립트 로드 실패/이미 로드됨(중복 삽입 방지) 세 가지 경로를 모두 reject/resolve로 명확히 구분.
-  - **`/map` 라우트 및 `MapPage.vue`**: 라우터에 `/map`(`Map`) 신규 등록, 로그인 불필요(장소 검색/상세와 동일하게 공개). `MainLayout.vue` 상단 네비게이션에 "지도" 링크 추가.
-  - **현재 위치**: 마운트 시 `navigator.geolocation.getCurrentPosition`으로 현재 위치를 요청(기존 `SearchPage.vue`의 Promise 래핑 패턴과 동일한 방식으로 별도 구현 — 페이지 간 상태를 공유하지 않기 위해 의도적으로 분리). 위치 정보 미지원/거부 시 에러를 던지지 않고 기본 중심(서울시청, 37.5665/126.9780)으로 안내 메시지와 함께 계속 진행.
-  - **장소 마커 표시**: 기존 `GET /places/search`를 `latitude`/`longitude`/`radiusKm=5`로 재사용(신규 API 없음)해 최초 1회 조회, 응답의 `latitude`/`longitude`로 `kakao.maps.Marker`를 생성. 마커 클릭 시 Kakao 네이티브 인포윈도우 대신 Vue로 구현한 간단한 장소 카드(장소명/카테고리/평점)를 오버레이로 표시하고, "상세보기" 클릭 시 기존 `/place/:id`(`PlaceDetail`)로 이동 — 신규 상세 화면 없이 기존 페이지 재사용.
-  - **책임 분리**: `MapPage.vue`는 `SearchPage.vue`와 상태/스토어를 전혀 공유하지 않는 독립 컴포넌트로 구현. 이번 범위에서는 지도 이동/확대·축소에 따른 재조회는 구현하지 않아(최초 진입 시 1회 조회) `SearchPage`의 검색 로직과 충돌할 여지 자체가 없음 — 뷰포트 기반 재조회는 `TSK-FE-017`로 백로그 기록.
-  - **상태 처리**: SDK 로딩/오류, 위치 정보 오류(안내만, 진행은 계속), 장소 조회 로딩/오류/빈 결과(안내 배너) 상태를 기존 `LoadingSpinner`/`ErrorMessage` 패턴으로 모두 처리. 기존 `SearchPage`/`PlaceDetailPage`/`FavoritesPage`는 코드 변경 없음.
+### 2026-08-27 완료 기록: Kakao Map SDK 로딩/렌더링 기반 (0단계)
+- **구현 범위**: 백엔드 변경 없음. `SearchPage.vue`는 이번 작업에서 전혀 건드리지 않음(요청대로). 장소 API 연동/마커 표시/검색 결과 연동은 이번 범위에서 명시적으로 제외 — 직전에 한 차례 구현했던 마커 연동(`4a4b00c`)은 이번 요청에 따라 되돌리고 SDK 로딩/렌더링만 남겼다(`TSK-FE-017`로 재기록, git 히스토리에 참고 구현 존재).
+  - **Kakao SDK 연동 구조**: `src/utils/kakaoMap.ts`(`loadKakaoMaps()`). `VITE_KAKAO_MAP_APP_KEY` 환경변수로 키를 관리하며 소스에 키를 하드코딩하지 않음. `frontend/.env.development`/`.env.production`에는 빈 값 플레이스홀더만 커밋, 실제 키는 `frontend/.env.local`(`.gitignore`의 `frontend/*.local` 패턴으로 이미 추적 제외, Vite가 자동 로드해 커밋된 값을 덮어씀)에 개발자가 개별 설정. 스크립트 태그를 동적으로 삽입해 SDK를 로드하고, 키 미설정/스크립트 로드 실패/이미 로드됨(중복 삽입 방지) 세 경로를 모두 reject/resolve로 구분.
+  - **Kakao 콘솔 Web 플랫폼 도메인(`http://localtest.me:3000`) 대응**: `frontend/vite.config.ts`의 dev 서버가 기본 설정(`host` 미지정)에서는 이 환경 기준 IPv6 루프백(`::1`)에만 바인딩되어 `127.0.0.1` 기반 호스트명(→ `localtest.me`)이 연결 거부되는 것을 확인, `server.host: '127.0.0.1'`을 명시해 해결. Vite 5의 Host 헤더 검증(`allowedHosts`)에 `localtest.me`를 추가해 해당 도메인으로 dev 서버 접근이 차단되지 않도록 구성. 로컬에서 `curl http://localtest.me:3000/map` → 200 확인.
+  - **`/map` 라우트 및 `MapPage.vue`**: 라우터에 `/map`(`Map`) 신규 등록, 로그인 불필요. `MainLayout.vue` 상단 네비게이션에 "지도" 링크 추가.
+  - **현재 위치/기본 위치**: 마운트 시 `navigator.geolocation.getCurrentPosition`으로 현재 위치를 요청(브라우저 미지원/권한 거부 시 에러를 던지지 않고 안내 메시지만 표시). 좌표를 얻으면 그 위치를, 실패하면 기본 중심(서울시청, 37.5665/126.9780)을 `kakao.maps.Map`의 초기 `center`로 사용해 지도를 렌더링.
+  - **오류 처리**: `loadKakaoMaps()` reject 시(키 미설정/스크립트 로드 실패) `ErrorMessage`로 표시하고 지도 컨테이너 자체를 렌더링하지 않음.
+  - **언마운트 정리**: SDK 로드/위치 요청이 끝나기 전에 컴포넌트가 언마운트되어도 이후 콜백이 상태를 갱신하지 않도록 `isUnmounted` 가드를 두고, `onUnmounted`에서 보유 중이던 `mapInstance`/`kakaoSdk` 참조를 정리(Kakao Maps는 별도 destroy API를 제공하지 않아 참조 해제가 정리의 전부).
+  - **기존 기능 영향 없음**: `SearchPage.vue`/`PlaceDetailPage.vue`/`FavoritesPage.vue`/`PetPage.vue`/`MyPage.vue` 코드 변경 없음.
 - **테스트 결과**:
-  - Vitest: 전체 105/105 통과(`kakaoMap.spec.ts` 신규 4개 — API 키 미설정, 로드 성공, 로드 실패, 중복 로드 방지 — 및 `MapPage.spec.ts` 신규 7개 — SDK 로드 실패, SDK 로드 성공/마커 표시, 빈 결과, 장소 API 오류, 마커 클릭→상세 이동, 위치 거부, 위치 미지원 — 포함, 기존 테스트 전부 회귀 없이 포함). 테스트 환경에서는 Kakao SDK를 `vi.mock('@/utils/kakaoMap')`으로 완전히 모킹해 실제 스크립트 로드 없이 검증(`kakaoMap.ts` 자체의 스크립트 로드 성공/실패 분기는 `document.head`에 삽입된 `<script>`의 `onload`/`onerror`를 직접 호출해 별도 검증).
+  - Vitest: 전체 105/105 통과(`kakaoMap.spec.ts` 4개 — API 키 미설정/로드 성공/로드 실패/중복 로드 방지 — 및 `MapPage.spec.ts` 7개 — 로딩 상태→SDK 로드, 지도 초기화, SDK 로드 실패, 현재 위치 반영, 위치 거부 시 기본 좌표, 위치 미지원 시 기본 좌표, 로드 중 언마운트 안전성 — 포함, 기존 테스트 전부 회귀 없이 포함). Kakao SDK는 `vi.mock('@/utils/kakaoMap')`으로 완전히 모킹.
   - `vue-tsc --noEmit`(type-check) 및 `npm run build` 통과.
   - 백엔드 변경 없어 `./gradlew test`는 별도 실행하지 않음.
-  - Playwright 실브라우저 검증: 이번 환경에는 로컬 PostgreSQL/백엔드 구동 수단과 실제 Kakao 개발 키가 없어(`TSK-QA-002`와 동일한 사유 + Kakao 키 미보유) 수행하지 못함. Vitest로 SDK 로드/마커/이동 흐름을 대체 검증.
-- **발견된 기술부채**: `TSK-FE-017`(지도 뷰포트 이동 시 재검색 미구현) 신규 기록.
+  - **실브라우저 검증(부분)**: 로컬 dev 서버를 `http://localtest.me:3000/map`으로 기동해 200 응답(정상 라우팅) 확인. 다만 이 환경에는 실제 Kakao 개발 키가 없어(`.env.local` 미설정) 지도가 실제로 렌더링되는 시각적 확인까지는 수행하지 못했다 — 키 미설정 시의 오류 메시지 경로(요구사항 중 하나)는 이 상태에서 그대로 재현/확인됨. 실제 키를 발급받아 `frontend/.env.local`에 설정한 뒤 브라우저에서 지도 렌더링 자체를 육안으로 확인하는 절차가 필요.
+- **발견된 기술부채**: 없음(신규 발견 없음). `TSK-FE-017`을 "지도 뷰포트 재검색"에서 "지도에 장소 마커 연동"(마커 표시 자체 + 뷰포트 재검색)으로 범위를 넓혀 재기록.
