@@ -148,8 +148,10 @@
   - 상세 내용은 하단 "2026-08-27 완료 기록: 즐겨찾기 목록 화면 CRUD 연동" 참조.
 
 ### Feature 3.5 Pet & My Page Screens [스캐폴딩 수준]
-- [ ] `TSK-FE-010` [P0] My Pets Management View (`/pets`): Pet Multi-CRUD, Weight Input, Representative Pet Toggle
-  - 반려동물 목록 조회만 연동. **잔여**: 등록/수정/삭제 폼, 대표 반려동물 스위칭 UI 전부 미구현("+ 반려동물 등록" 버튼 동작 없음).
+- [x] `TSK-FE-010` [P0] My Pets Management View (`/pets`): Pet Multi-CRUD, Weight Input, Representative Pet Toggle — **완료 (2026-08-27)**
+  - `PetPage.vue`를 기존 `PetController`(`GET`/`POST`/`PUT`/`DELETE /api/v1/pets`, `PATCH /api/v1/pets/{petId}/representative`, 전부 기존 API, 신규 없음) 연동으로 전면 재작성. 목록 조회, 등록/수정(`BaseModal` 공용 폼), 삭제(확인 모달), 대표 반려동물 지정 전부 구현.
+  - `sizeCategory`는 서버 응답값을 그대로 표시만 하고 프론트에서 별도 계산 로직을 두지 않음(체중 변경 시 서버가 재계산한 값을 응답으로 받아 화면에 반영).
+  - 상세 내용은 하단 "2026-08-27 완료 기록: 반려동물 관리 화면 CRUD 연동" 참조.
 - [ ] `TSK-FE-011` [P0] My Page View (`/mypage`): Profile Summary, Favorites Tab, My Reviews Tab, My Pets Tab
   - `GET /users/me` 기반 프로필 요약(펫/즐겨찾기/리뷰 카운트)만 표시. **잔여**: 즐겨찾기/내 리뷰/내 반려동물 탭 UI 전부 미구현.
 
@@ -241,3 +243,18 @@
   - 백엔드 변경 없어 `./gradlew test`는 별도 실행하지 않음.
   - Playwright 실브라우저 검증: 이번 환경에는 로컬 PostgreSQL/백엔드 구동 수단이 없어(`TSK-QA-002`에 기록된 대로 재사용 가능한 E2E 하네스도 부재) 수행하지 못함. Vitest 컴포넌트 테스트로 목록 조회/상세 이동/삭제 흐름을 대체 검증.
 - **발견된 기술부채**: 기존 `FavoritesPage.vue`가 실제 API 응답 필드(`favoriteId`)와 다른 `fav.id`를 참조하던 버그를 이번 재작성 과정에서 발견 및 수정(별도 Task로 분리할 실익이 없어 이번 구현에 포함해 수정함, 범위 확장 아님 — 화면이 사실상 비어 있던 필드 표시 버그).
+
+### 2026-08-27 완료 기록: 반려동물 관리 화면 CRUD 연동
+- **구현 범위**: 백엔드 변경 없음(`PetController`/`PetService`/`PetRepository`/DTO 조사 결과 등록·목록·수정·삭제·대표 지정 API가 이미 모두 구현되어 있음을 확인, 신규 API 없이 그대로 재사용). `PetPage.vue`를 실제 API 계약 기준으로 전면 재작성.
+  - **타입 불일치 수정**: 기존 `types/user.ts`의 `Pet` 인터페이스가 실제 `PetResponseDto`에 없는 `species`/`userId`/`ageYears`/`isVaccinated` 필드를 포함하고, 실제로 존재하는 `gender`/`birthDate`/`neutered`는 누락되어 있던 것을 확인. 이 타입을 사용하는 곳은 `PetPage.vue`(재작성 대상)와 `SearchPage.vue`(`name`/`sizeCategory`/`representative`만 사용, 영향 없음)뿐임을 먼저 확인한 뒤, `Place`/`PetPolicy`(`TSK-FE-014`) 때와 달리 이번에는 실사용처가 한정적이고 명확한 버그였으므로 별도 병행 타입을 만드는 대신 `Pet` 인터페이스 자체를 실제 응답과 일치하도록 직접 수정(최소 수정 원칙). `PetCreateRequest`/`PetUpdateRequest` 타입 신규 추가(`PetCreateRequestDto`/`PetUpdateRequestDto`와 1:1).
+  - **목록 조회**: `GET /pets` 재사용, 로딩/빈 목록(`EmptyState`)/API 오류(`ErrorMessage`) 처리, 카드에 이름/품종/성별/생년월일/체중/중성화 여부/크기 카테고리/대표 여부 배지 표시.
+  - **등록/수정**: 기존 `BaseModal`/`BaseInput`/`BaseButton` 공용 컴포넌트를 재사용한 단일 폼으로 등록(`POST /pets`)과 수정(`PUT /pets/{petId}`)을 함께 처리. 이름/품종/체중/성별 미입력 또는 체중 0 이하 시 클라이언트 검증 메시지 표시 후 API 미호출(서버 필수 검증과 동일한 범위), 서버 400 등 실패 시 `extractErrorMessage`/`ErrorMessage`로 표시, 요청 중 버튼 잠금. `sizeCategory`는 입력값이 아니라 응답으로만 받아 표시 — 프론트에 체중 구간 판정 로직을 두지 않음(백엔드 `PetSizeCategory.fromWeight` 결과 그대로 신뢰).
+  - **삭제**: `BaseModal` 기반 확인 다이얼로그(장소/펫 이름 표시) 도입 후 확인 시에만 `DELETE /pets/{petId}` 호출, 요청 중 버튼 잠금, 성공 시 목록 재조회(백엔드가 삭제된 펫이 대표였을 경우 자동으로 다른 펫을 대표로 재지정하는 정책을 그대로 반영하기 위해 재조회 방식 사용).
+  - **대표 반려동물 지정**: 기존 `PATCH /pets/{petId}/representative` 재사용, 이미 대표인 펫은 버튼 미노출, 변경 중 요청 잠금, 성공 시 목록 재조회로 최신 대표 상태 반영, 실패 시 별도 `ErrorMessage` 표시.
+  - **기존 구조 보호**: `SearchPage.vue`의 대표 반려동물 기반 크기 필터 기본값 로직(`GET /pets` 자체 호출, `Pet` 타입의 `name`/`sizeCategory`/`representative` 사용)은 이번 타입 수정 후에도 그대로 동작함을 코드 검토로 확인, 변경하지 않음. `usePetStore`는 기존과 마찬가지로 미사용 상태 유지(`TSK-FE-015` 기존 기술부채 그대로, 이번 작업에서 무리하게 전역 상태로 확장하지 않음).
+- **테스트 결과**:
+  - Vitest: 전체 81/81 통과(`PetPage.spec.ts` 신규 11개 — 비로그인 리다이렉트, 목록 조회, 빈 목록, API 오류, 등록 검증 실패, 등록 성공, 수정 성공, 삭제 성공, 대표 변경 성공, 대표 변경 실패, 중복 삭제 요청 방지 — 및 기존 테스트 전부 회귀 없이 포함).
+  - `vue-tsc --noEmit`(type-check) 및 `npm run build` 통과.
+  - 백엔드 변경 없어 `./gradlew test`는 별도 실행하지 않음.
+  - Playwright 실브라우저 검증: 이번 환경에는 로컬 PostgreSQL/백엔드 구동 수단이 없어(`TSK-QA-002`) 수행하지 못함. Vitest 컴포넌트 테스트로 등록/수정/삭제/대표 지정 흐름을 대체 검증.
+- **발견된 기술부채**: 없음(기존 `TSK-FE-015`, `TSK-QA-002`에 계속 해당). `types/user.ts`의 `Pet` 타입 불일치는 이번 작업에서 직접 수정 완료.
