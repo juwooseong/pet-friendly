@@ -54,7 +54,9 @@ jwt:
 public-data:
   tour-api:
     service-key: test-service-key
-    baseUrl: https://apis.data.go.kr/B551011/KorPetTourService
+    # 실제 호출 검증 결과(TSK-DATA-002): B551011/KorPetTourService2 가 유효한 게이트웨이 경로로 확인됨.
+    # ("KorPetTourService"는 경로 자체가 존재하지 않아 NO_OPENAPI_SERVICE_ERROR(12) 반환)
+    baseUrl: https://apis.data.go.kr/B551011/KorPetTourService2
     mobile-os: ETC
     mobile-app: PetSpot
   batch:

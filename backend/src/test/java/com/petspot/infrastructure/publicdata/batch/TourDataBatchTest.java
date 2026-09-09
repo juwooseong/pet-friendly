@@ -52,8 +52,8 @@ class TourDataBatchTest {
                 .contentId("1001")
                 .title("댕댕이 힐링 공원")
                 .address1("서울특별시 마포구")
-                .longitude(126.9)
-                .latitude(37.5)
+                .rawLongitude("126.9")
+                .rawLatitude("37.5")
                 .build();
 
         TourApiResponseDto.Header header = TourApiResponseDto.Header.builder()

@@ -204,12 +204,44 @@
 - [ ] `TSK-FE-016` [P2] `types/user.ts`의 `User`(로그인 응답 매핑) 타입이 실제 API 응답과 불일치 (`TSK-FE-011` MyPage 연동에서 식별, 2026-08-27)
   - **배경**: `User` 인터페이스에 `pets: Pet[]`/`activePetId?: string` 필드가 있지만, 실제 로그인 응답(`UserLoginResponseDto.UserSummaryDto`)은 `id`/`email`/`nickname`/`avatarUrl`/`role`만 내려주며 `pets`/`activePetId`는 응답에 존재한 적이 없다(항상 빈 배열/undefined로만 취급되어 왔음, `PetPage`/`SearchPage`가 각자 `GET /pets`를 직접 호출하는 것도 이 때문으로 추정). `Pet`(`TSK-FE-010`) 때와 달리 이번에는 `authStore`/여러 페이지의 로그인 mock 데이터가 이 타입에 의존하고 있어 영향 범위가 넓아, 이번 작업 범위에서는 임의로 정리하지 않고 백로그로만 기록.
   - **DoD**: `User` 타입에서 실제로 내려오지 않는 `pets`/`activePetId`를 제거하거나, 실제로 필요하다면 `role`을 타입에 추가하고 `pets` 관련 필드는 별도 API 응답으로 명확히 분리. 변경 시 `authStore`, 관련 스펙(`PlaceDetailPage.spec.ts` 등)의 로그인 mock 데이터도 함께 정리.
-- [ ] `TSK-FE-017` [P1] 지도에 장소 마커 연동 (`TSK-FE-007` 0단계 이후 다음 단계, 2026-08-27 재기록)
-  - **배경**: 2026-08-27에 한 차례 기존 `GET /places/search` 재사용 마커 표시 + 마커 클릭 카드 + 상세 이동까지 구현했었으나(`4a4b00c`), 이후 요청에 따라 "SDK 로딩/지도 렌더링 자체 검증"에만 집중하도록 의도적으로 되돌렸다(`MapPage.vue`에서 장소 조회/마커 코드 제거). 구현 참고용 코드는 git 히스토리(`4a4b00c`)에서 재사용 가능.
-  - **DoD**: 기존 `GET /places/search` 재사용(신규 API 없음)해 지도 중심 기준 장소 마커 표시, 마커 클릭 시 최소 정보 카드, 카드에서 `/place/:id` 이동. 추가로 지도 이동/확대·축소 시 뷰포트 기준 재조회(디바운스/최소 이동 거리 임계값 포함)까지 함께 고려.
+- [x] `TSK-FE-017` [P1] 지도에 장소 마커 연동 (`TSK-FE-007` 0단계 이후 다음 단계, 2026-09-09 완료)
+  - **배경**: 2026-08-27에 한 차례 기존 `GET /places/search` 재사용 마커 표시 + 마커 클릭 카드 + 상세 이동까지 구현했었으나(`4a4b00c`), 이후 요청에 따라 "SDK 로딩/지도 렌더링 자체 검증"에만 집중하도록 의도적으로 되돌렸다(`MapPage.vue`에서 장소 조회/마커 코드 제거). 2026-09-09에 `MapPage.vue`가 다시 장소 마커 연동을 포함한 상태로 확인되어(사전 확보 작업으로 추정), 이번 작업에서 요구사항 충족 여부를 재검증하고 완료로 기록.
+  - **DoD**: 기존 `GET /places/search` 재사용(신규 API 없음)해 지도 중심 기준 장소 마커 표시, 마커 클릭 시 최소 정보 카드(장소명/카테고리/평점/리뷰수), 카드에서 `/place/:id` 이동. 뷰포트 기준 재조회(지도 이동/확대·축소 시 디바운스 재검색)는 이번 범위에서 명시적으로 제외하고 `TSK-FE-018`로 별도 기록(아래 참고).
+- [ ] `TSK-FE-018` [P3] 지도 뷰포트 이동/확대축소 시 디바운스 재검색 (`TSK-FE-017`에서 범위 제외, 2026-09-09 신규)
+  - **배경**: `TSK-FE-017` 요구사항에서 지도 드래그/이동 시 재검색은 명시적으로 범위 밖으로 지정되었다. 현재 `MapPage.vue`는 최초 마운트 시 1회만 `GET /places/search`를 호출한다.
+  - **DoD**: 지도 `dragend`/`zoom_changed` 이벤트에 디바운스를 걸어 새 중심 좌표 기준으로 재검색, 최소 이동 거리 임계값 적용, 마커 클러스터링도 함께 검토(마커 수가 많아질 경우 대비).
 - [ ] `TSK-BE-031` [P2] `Place` 엔티티의 실내/실외/목줄 자유구역 정책 필드가 API 응답에 노출되지 않음 (`TSK-FE-008` 반려동물 동반 수칙 보강에서 식별, 2026-08-27)
   - **배경**: `Place` 엔티티에는 `isIndoorAllowed`/`isOutdoorAllowed`/`hasOffLeashZone` 컬럼이 이미 존재하지만, `PlaceSearchResponseDto`(검색/상세 공용 Projection)에는 `allowedSizes`/`maxWeightLimitKg`만 포함되어 있어 프런트엔드가 이 값을 받을 수 없다. 이번 작업(장소 상세 반려동물 동반 수칙 섹션)에서는 요구사항에 따라 실제 API가 제공하는 필드만 표시했고, 임의로 DTO를 확장하지 않았다.
   - **DoD**: 실내/실외/목줄 자유구역 정보를 반려동물 동반 수칙에 노출할 필요가 있는지 제품 우선순위를 확인한 뒤, 필요 시 `PlaceSearchResponseDto`에 해당 필드 추가(QueryDSL Projection 컬럼 추가) 및 프런트엔드 표시 UI 구현.
+- [x] `TSK-DATA-002` [P0] 한국관광공사 TourAPI(반려동물 동반여행 서비스) 클라이언트 실제 검증 및 스키마 확정 (2026-09-09 완료, 아래 "완료 기록" 참조)
+  - **범위**: `infrastructure/publicdata/` 기존 클라이언트(`TourApiClient`/DTO/Mapper/Service/Batch)에 대한 실제 HTTP 호출 기반 검증, `baseUrl`/오퍼레이션 경로 오류 수정, 게이트웨이 오류 응답 처리 보강, 오프라인 테스트 추가. **DB 대량 적재/시드/마이그레이션은 이번 범위에서 명시적으로 제외**(→ TSK-DATA-003 이후로 이관).
+  - **핵심 발견**: `application.yml` 기본 `baseUrl`이 `B551011/KorPetTourService`(오퍼레이션 무관하게 항상 `NO_OPENAPI_SERVICE_ERROR`/reasonCode 12 = 존재하지 않는 경로)로 잘못되어 있었음 → `B551011/KorPetTourService2`로 수정. 로컬 프로필 시크릿은 확인된 유효 경로(`areaBasedList2` 등)에 대해서도 `SERVICE_KEY_IS_NOT_REGISTERED_ERROR`(reasonCode 30)를 반환해, 실제 반려동물 필드 payload는 이번 작업에서 확보하지 못함(아래 백로그 `TSK-DATA-004` 참조). 기존 `TourApiClient`가 존재하지 않는 오퍼레이션(`/detailPetTour1`)을 호출하고 있던 버그도 함께 발견/수정.
+- [x] `TSK-DATA-004` [P0] TourAPI 로컬 프로필 서비스키 활용신청 상태 확인 (2026-09-09 완료, 아래 "완료 기록" 참조)
+  - **결론**: 활용신청 **승인완료**로 확인됨(data.go.kr 마이페이지 캡처로도 처리상태 "승인", 활용기간 2026-09-09~2028-09-09 재확인). `TSK-DATA-002` 시점에는 `SERVICE_KEY_IS_NOT_REGISTERED_ERROR`(reasonCode 30)가 발생했으나, 이후 두 차례 재확인(`areaBasedList2`, numOfRows=1 단건 호출) 모두 `resultCode 0000`으로 정상 응답(실제 장소 데이터 반환)했다. 원인은 활용신청 승인 처리 지연이었던 것으로 확정 — 코드/설정 문제가 아니었음. 실제 성공 응답 원문은 `backend/src/test/resources/tourapi/success-area-based-list2-real-2026-09-09.json`에 fixture로 저장(serviceKey 미포함). `TSK-DATA-005`(반려동물 필드 실제 검증) 착수 가능.
+- [ ] `TSK-DATA-005` [P2] TourAPI 반려동물 전용 필드 실제 스키마 미검증 상태로 코드에 존치 (`TSK-DATA-002`에서 식별, 2026-09-09, `TSK-DATA-004`로 착수 가능 확인됨)
+  - **배경**: `TourApiPlaceItemDto`의 `acmpyTypeCd`/`claAcmpyInfo`/`relaAcmpyInfo`/`relaPosbleFclty`/`relaRqustFclty`/`etcAcmpyInfo`/`acmpyPsblCpam` 필드명은 `TSK-DATA-002` 착수 이전부터 코드에 존재하던 가정치이며, 이번 작업에서도 실제 응답으로 검증하지 못했다(단건 확인은 `areaBasedList2` 목록 응답으로, 반려동물 전용 필드가 포함되는 오퍼레이션인지도 미확인). 체중 제한(kg) 전용 숫자 필드가 실제로 존재하는지도 미확인이며, 현재는 자유 텍스트에서 정규식으로 추출하는 방식에 의존한다.
+  - **DoD**: `TourApiClientRealApiIntegrationTest`(`-DrunTourApiIntegrationTest=true`)로 반려동물 전용 필드가 실제로 포함되는 오퍼레이션(상세/전용 API 등)을 재확인하고, 실제 payload로 필드명/값 형식을 검증. 존재하지 않는 것으로 확인된 필드는 제거하거나 명확히 "미제공"으로 문서화. 체중 제한 전용 필드가 있다면 정규식 추출 로직을 대체.
+
+### 2026-09-09 완료 기록: TourAPI(반려동물 동반여행 서비스) 클라이언트 실제 검증 (`TSK-DATA-002`)
+- **실제 호출 결과 요약**: 로컬 프로필 시크릿(gitignored)으로 data.go.kr에 직접 HTTP 호출해 다음을 확인했다.
+  - `B551011/KorPetTourService`(기존 `application.yml` 기본값, "2" 없음), `KorPetTourService1`, `PetTourService1/2`, `KorService1`(레거시), `detailPetTour1`/`detailPetTour2`/`areaBasedSyncList2` 오퍼레이션: 모두 `NO_OPENAPI_SERVICE_ERROR`(reasonCode 12) — 존재하지 않는 경로로 확인.
+  - `B551011/KorPetTourService2` 하위 `areaBasedList2`/`locationBasedList2`/`detailCommon2`/`detailIntro2`/`detailImage2`/`searchKeyword2`: 전부 `SERVICE_KEY_IS_NOT_REGISTERED_ERROR`(reasonCode 30)로 응답 — 경로 자체는 유효하나(레거시/오오퍼레이션 오류와 다른 오류코드), 현재 로컬 키가 미승인/승인대기 상태로 추정(`TSK-DATA-004`로 기록). 동일 키로 무관한 `KorService2` 상품 호출 시에도 동일 오류가 발생해 인코딩 문제가 아님을 확인(Encoding/Decoding 키 양쪽 테스트).
+  - 결과적으로 실제 아이템 payload(성공 응답)는 확보하지 못했다 — **반려동물 전용 8개 필드는 "여전히 확인 불가"(키 미승인)** 로 정직하게 기록하며, 이전에 "확인 필요"였던 상태에서 진전은 "표준 봉투 스키마 확정" 및 "게이트웨이 오류 스키마(별도 `OpenAPI_ServiceResponse` 루트) 실체 확인"까지다.
+- **클라이언트 수정 내역**: `application.yml` 기본 `baseUrl`을 `KorPetTourService2`로 수정. `TourApiClient`의 하드코딩된 잘못된 오퍼레이션(`/detailPetTour1`, 실존하지 않음)을 확인된 유효 오퍼레이션(`/areaBasedList2`)으로 교체. data.go.kr이 정상 스키마(`response.header/body`)와 전혀 다른 루트 키(`OpenAPI_ServiceResponse.cmmMsgHeader`)의 게이트웨이 오류를 반환할 수 있음을 실제로 확인하고, 이를 파싱해 실제 오류코드/메시지를 노출하는 `TourApiErrorEnvelopeDto` 및 예외 처리 경로 추가(기존에는 이 경우 "Header Null"이라는 의미 없는 메시지만 던졌음). `TourApiPlaceItemDto`의 mapx/mapy를 `Double` 직접 매핑에서 안전 파싱 `String`(빈 문자열/숫자 아닌 값 대응, 페이지 전체 역직렬화 실패 방지)으로 변경.
+- **테스트**: 신규 오프라인 테스트 10개 추가(DTO 역직렬화 4, 매퍼 좌표/체중 예외 케이스 3, 클라이언트 게이트웨이 오류 3) + 기존 10개 전부 유지. 실제 API 호출 통합 테스트(`TourApiClientRealApiIntegrationTest`)는 `-DrunTourApiIntegrationTest=true` 없이는 항상 스킵되도록 게이팅. 전체 백엔드 `./gradlew test`: **175개 중 174 통과, 1 스킵(의도된 게이팅), 실패/에러 0건**.
+- **범위 외 확인**: DB 대량 적재/시드/마이그레이션은 수행하지 않았음(`TSK-DATA-003`+ 로 유지). `Place` 엔티티 필드 변경도 하지 않았음(현재 매핑 가능한 필드만으로 충분, 반려동물 전용 원본 코드를 저장할 컬럼이 필요한지는 `TSK-DATA-005` 해결 이후 재검토).
+
+### 2026-09-09 완료 기록: TourAPI 로컬 프로필 서비스키 활용신청 상태 확인 (`TSK-DATA-004`)
+- **점검 범위**: `Place` 엔티티/DB migration/대량 데이터 적재/프런트엔드/반려동물 필드 스키마 확정은 이번 작업 범위에서 명시적으로 제외. 서비스키 활용신청 상태와 API 키 전달 설정만 확인.
+- **키 주입 방식 확인**: `TourApiClient`가 `@Value("${public-data.tour-api.service-key:test-service-key}")`로 주입받는 구조를 재확인. `application.yml`에는 플레이스홀더(`test-service-key`)만 있고, 실제 값은 `application-local.yml`(gitignored, Spring `local` 프로필에서만 로드)에만 존재 — 코드/문서 어디에도 실제 키 값 미기록.
+- **API 호출 결과**: `GET /B551011/KorPetTourService2/areaBasedList2` (`numOfRows=1&pageNo=1&MobileOS=ETC&MobileApp=PetSpot&arrange=A&_type=json`) 총 2회(1차 최종 확인, 2차 재확인) 호출 → 매번 **HTTP 200, resultCode 0000, 실제 장소 데이터(부산 소재 장소 1건, contentid=2930927) 정상 반환**. `TSK-DATA-002`에서 발생했던 `SERVICE_KEY_IS_NOT_REGISTERED_ERROR`(reasonCode 30)는 더 이상 재현되지 않음.
+- **활용신청 상태(포털 확인)**: data.go.kr 마이페이지 캡처로 "한국관광공사_반려동물_동반여행_서비스" 처리상태 = **승인**, 심의여부 = 자동승인, 활용기간 2026-09-09~2028-09-09 확인됨.
+- **확인된 원인**: 서비스키 자체나 URL 인코딩/전달 방식의 문제가 아니라, `TSK-DATA-002` 수행 시점에 활용신청이 아직 **승인 처리 중**이었던 것으로 확정. 현재는 승인완료 상태로 정상 동작.
+- **실제 응답 필드(이번에 확인된 것만)**: `contentid`, `contenttypeid`, `title`, `addr1`, `addr2`(빈 문자열), `tel`(빈 문자열), `mapx`, `mapy`, `firstimage`, `firstimage2`, `areacode`(빈 문자열), `sigungucode`(빈 문자열), `cat1`/`cat2`/`cat3`(빈 문자열), `modifiedtime`, `createdtime`, `cpyrhtDivCd`, `mlevel`, `zipcode`, `lDongRegnCd`, `lDongSignguCd`, `lclsSystm1`/`2`/`3`. **반려동물 전용 필드(`acmpyTypeCd` 등)는 이 응답에 전혀 존재하지 않음** — 다른 오퍼레이션(상세 등)에서 제공되는지는 미확인이며 `TSK-DATA-005`에서 별도 확인 필요(이번 작업에서 반려동물 필드 매핑은 확정하지 않음).
+- **mapx/mapy 참고 확인**(범위 외, 부수적으로 관찰): `mapx="129.056805686045"`(경도), `mapy="35.1579550616706"`(위도)로 부산 지역 좌표와 일치 — `TSK-DATA-002`의 mapx=longitude/mapy=latitude 가정과 일치하는 정황.
+- **fixture 저장**: 실제 성공 응답 원문을 `backend/src/test/resources/tourapi/success-area-based-list2-real-2026-09-09.json`에 저장(serviceKey 미포함). 기존 `success-area-based-list2-sample.json`(TSK-DATA-002 당시 가정치 샘플)은 그대로 유지 — 실물 데이터로 교체하는 것은 TSK-DATA-005 범위.
+- **TSK-DATA-005 진행 가능 여부**: **가능** — 키는 정상 작동하므로 다음 단계에서 반려동물 전용 필드가 포함되는 오퍼레이션을 찾아 실제 스키마를 검증할 수 있음. 단, 이번 작업에서는 반려동물 필드 검증을 수행하지 않았으므로 `TSK-DATA-005`는 별도로 진행 필요.
+- **테스트**: 코드 변경 없음(설정/구조 확인, fixture 추가, 총 2회 실제 API 호출만 수행) — 기존 백엔드 테스트 스위트에 영향 없음.
 
 ### 2026-08-18 완료 기록: 장소 상세 페이지 즐겨찾기 기능 연동
 - **구현 범위**: `PlaceDetailPage.vue`에 로그인 사용자 기준 즐겨찾기 상태 표시, 기존 `GET /users/me/favorites`/`POST·DELETE /favorites/{placeId}` API 재사용, 추가/삭제 토글, 비로그인 시 로그인 화면(`redirect` 쿼리) 이동, 진행 중 버튼 잠금(중복 클릭 방지), 성공 시 즉시 상태 갱신, 실패 시 상태 유지 + `extractErrorMessage`/`ErrorMessage` 패턴으로 오류 표시. 새로운 백엔드 API는 만들지 않고 기존 `FavoriteController`/`FavoriteResponseDto`를 그대로 사용.

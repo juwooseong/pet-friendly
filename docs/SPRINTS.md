@@ -6,6 +6,8 @@
 
 ## 📝 Change Log (변경 이력)
 
+- **2026-09-09**: `TSK-DATA-004` 완료(포털 확인 포함 최종 확정) — TourAPI 로컬 프로필 서비스키 활용신청 상태를 data.go.kr 마이페이지(처리상태: 승인, 활용기간 2026-09-09~2028-09-09)와 `areaBasedList2` 실제 호출(2회, 매번 `resultCode 0000` 정상 응답) 양쪽으로 확정. `TSK-DATA-002` 시점의 `SERVICE_KEY_IS_NOT_REGISTERED_ERROR`는 승인 처리 지연이었던 것으로 결론(코드/설정 문제 아님). 실제 성공 응답을 fixture로 저장(`success-area-based-list2-real-2026-09-09.json`, serviceKey 미포함). 반려동물 전용 필드는 이 표준 목록 응답에 없음을 확인했으나 다른 오퍼레이션 확인은 `TSK-DATA-005`로 이관. 상세는 `docs/TASKS.md` 참조.
+- **2026-09-09**: `TSK-DATA-002`(Sprint 1 후속 검증) 완료 — 한국관광공사 TourAPI 반려동물 동반여행 서비스 클라이언트를 실제 HTTP 호출로 검증. `application.yml` 잘못된 `baseUrl`(`KorPetTourService` → `KorPetTourService2`)과 존재하지 않는 오퍼레이션(`/detailPetTour1` → `/areaBasedList2`) 버그를 실제 호출 증거로 확인/수정, 게이트웨이 오류 스키마 처리 추가. 로컬 시크릿이 `SERVICE_KEY_IS_NOT_REGISTERED_ERROR`(reasonCode 30)를 반환해 반려동물 전용 필드의 실제 payload 검증은 미완료로 남음(`TSK-DATA-004`/`TSK-DATA-005` 백로그, `docs/TASKS.md` 참조). DB 대량 적재는 범위 외. 상세는 `docs/TASKS.md`의 "2026-09-09 완료 기록" 참조.
 - **v2.0 (2026-08-07)**: **실서비스 MVP 우선구축을 위한 스프린트 로드맵 전면 재구성**
   - **Sprint 2 (Backend Feature Completion)**: 백엔드 완결 (Review Service & API, My Page API, Dashboard API, Integration Test & Swagger OpenAPI 완성). 기술부채(ST_DWithin, Pagination, QueryDSL 최적화)는 별도 리팩토링 스프린트로 분리.
   - **Sprint 3 (Frontend MVP)**: Vue 3 + Vite, Pinia, Axios, TailwindCSS 기반 Frontend MVP 구축 (로그인, 회원가입, 홈, 장소 검색, 지도, 상세, 즐겨찾기, 펫 CRUD, 마이페이지 9개 화면 및 백엔드 완전 연동).
@@ -80,7 +82,7 @@
 2. **회원가입 (`/signup`)** ✅ 사실상 완료: Form Validation, 비밀번호 확인/패턴 검증, 필수값 자동 포커스, Caps Lock 감지, 비밀번호 한글 입력 차단, 이메일/닉네임 중복 시 인라인 에러 표시 완료 / 실시간 중복 확인만 미구현
 3. **홈 (`/`)** ✅ 완료: 추천 장소, 인기 장소, 최근 등록 장소, 대표 반려동물 카드 렌더링 (Dashboard API 연동)
 4. **장소 검색 (`/places`)** ✅ 완료 (2026-08-14): 키워드 검색, 카테고리 필터, 반려동물 크기 조건, 거리순 정렬(위치 기반) 전부 연동 완료
-5. **지도 (`/map`)** 🔶 부분 완료 (2026-08-27, 0단계): Kakao Map SDK 연동 구조(`VITE_KAKAO_MAP_APP_KEY` 환경변수 관리, `http://localtest.me:3000` 접근 대응), 현재/기본 위치 기준 지도 렌더링, SDK 로딩 실패 처리, 언마운트 시 리소스 정리 완료 / 장소 마커 연동(`TSK-FE-017`), 한국관광공사 데이터 연동(다음 Task)은 잔여
+5. **지도 (`/map`)** ✅ 완료 (2026-09-09, `TSK-FE-017`): Kakao Map SDK 연동 구조(`VITE_KAKAO_MAP_APP_KEY` 환경변수 관리, `http://localtest.me:3000` 접근 대응), 현재/기본 위치 기준 지도 렌더링, SDK 로딩 실패 처리, 언마운트 시 리소스 정리에 더해 기존 `GET /places/search` 재사용한 주변 장소 마커 표시, 마커 클릭 시 정보 카드(장소명/카테고리/평점/리뷰수) + `/place/:id` 이동, 0건/API 오류 시에도 지도 유지 전부 연동 완료 / 지도 이동 시 재검색(`TSK-FE-018`), 한국관광공사 데이터 연동(다음 Task)은 잔여
 6. **장소 상세 (`/places/{id}`)** 🔶 부분 완료: 기본 정보 조회(2026-08-18), 즐겨찾기 토글(2026-08-18), 리뷰 목록 조회/작성(2026-08-18), 사진 fallback·반려동물 동반 수칙 표시(2026-08-27, 현재 API 제공 필드 `allowedSizes`/`maxWeightLimitKg` 기준) 완료 / 다중 사진 갤러리, 실내외·목줄 자유구역 정책 노출(`TSK-BE-031`, API 미제공)만 잔여
 7. **즐겨찾기 (`/favorites`)** ✅ 완료 (2026-08-27): 목록 조회(이미지/카테고리/평점·리뷰 수 포함), 장소 상세 이동, 삭제(중복 요청 방지) 전부 연동 완료
 8. **내 반려동물 (`/pets`)** ✅ 완료 (2026-08-27): 목록 조회, 등록/수정/삭제, 대표 반려동물 지정 전부 연동 완료 (`sizeCategory`는 서버 계산값 표시 전용)

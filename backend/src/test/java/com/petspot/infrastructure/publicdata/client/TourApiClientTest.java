@@ -204,4 +204,67 @@ class TourApiClientTest {
                 .isInstanceOf(PublicDataException.class)
                 .hasMessageContaining("500 Internal Server Error");
     }
+
+    @Test
+    @DisplayName("data.go.kr 게이트웨이 오류 응답(OpenAPI_ServiceResponse, 서비스키 미등록)이 PublicDataException으로 " +
+            "실제 오류 코드/메시지와 함께 노출되는지 검증 (TSK-DATA-002 실제 호출로 확보한 응답 형태)")
+    void fetchPetPlaces_GatewayServiceKeyNotRegistered_ThrowsExceptionWithRealDetail() {
+        // given: 실제 호출로 확인된 SERVICE_KEY_IS_NOT_REGISTERED_ERROR(reasonCode 30) 응답
+        String gatewayErrorJson = """
+            {
+              "OpenAPI_ServiceResponse": {
+                "cmmMsgHeader": {
+                  "errMsg": "SERVICE_KEY_IS_NOT_REGISTERED_ERROR",
+                  "returnAuthMsg": "등록되지 않은 서비스키",
+                  "returnReasonCode": "30"
+                }
+              }
+            }
+            """;
+
+        mockServer.expect(method(HttpMethod.GET))
+                .andRespond(withStatus(HttpStatus.FORBIDDEN).contentType(MediaType.APPLICATION_JSON).body(gatewayErrorJson));
+
+        // when & then
+        assertThatThrownBy(() -> tourApiClient.fetchPetPlaces(10, 1))
+                .isInstanceOf(PublicDataException.class)
+                .hasMessageContaining("30")
+                .hasMessageContaining("SERVICE_KEY_IS_NOT_REGISTERED_ERROR");
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 오퍼레이션 호출 시 NO_OPENAPI_SERVICE_ERROR(reasonCode 12)가 그대로 노출되는지 검증")
+    void fetchPetPlaces_GatewayNoOpenApiService_ThrowsExceptionWithRealDetail() {
+        // given: 실제 호출로 확인된 NO_OPENAPI_SERVICE_ERROR(reasonCode 12) 응답
+        String gatewayErrorJson = """
+            {
+              "OpenAPI_ServiceResponse": {
+                "cmmMsgHeader": {
+                  "errMsg": "NO_OPENAPI_SERVICE_ERROR",
+                  "returnAuthMsg": "해당 오픈API 서비스가 없거나 폐기됨",
+                  "returnReasonCode": "12"
+                }
+              }
+            }
+            """;
+
+        mockServer.expect(method(HttpMethod.GET))
+                .andRespond(withStatus(HttpStatus.BAD_REQUEST).contentType(MediaType.APPLICATION_JSON).body(gatewayErrorJson));
+
+        // when & then
+        assertThatThrownBy(() -> tourApiClient.fetchPetPlaces(10, 1))
+                .isInstanceOf(PublicDataException.class)
+                .hasMessageContaining("12")
+                .hasMessageContaining("NO_OPENAPI_SERVICE_ERROR");
+    }
+
+    @Test
+    @DisplayName("응답 본문이 빈 문자열인 경우 PublicDataException 발생 검증")
+    void fetchPetPlaces_EmptyBody_ThrowsException() {
+        mockServer.expect(method(HttpMethod.GET))
+                .andRespond(withSuccess("", MediaType.APPLICATION_JSON));
+
+        assertThatThrownBy(() -> tourApiClient.fetchPetPlaces(10, 1))
+                .isInstanceOf(PublicDataException.class);
+    }
 }

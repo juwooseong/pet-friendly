@@ -28,8 +28,8 @@ class TourApiPlaceMapperTest {
                 .address1("서울특별시 마포구 월드컵북로 100")
                 .address2("2층")
                 .tel("02-1234-5678")
-                .longitude(126.901234)
-                .latitude(37.556789)
+                .rawLongitude("126.901234")
+                .rawLatitude("37.556789")
                 .firstImage("https://example.com/image.jpg")
                 .petPolicyInfo("실내 목줄 필수")
                 .petWeightLimitText("15kg 이하 소형견/중형견 가능")
@@ -56,5 +56,59 @@ class TourApiPlaceMapperTest {
 
         // 체중 정제 검증
         assertThat(place.getMaxWeightLimitKg()).isEqualByComparingTo("15");
+    }
+
+    @Test
+    @DisplayName("mapx/mapy가 빈 문자열(좌표 누락)인 경우 예외 없이 0.0 좌표로 매핑되어야 한다")
+    void toEntity_BlankCoordinates_DefaultsToZero() {
+        // given
+        TourApiPlaceItemDto dto = TourApiPlaceItemDto.builder()
+                .contentId("NO-COORD-1")
+                .title("좌표 누락 장소")
+                .address1("경기도 용인시 기흥구")
+                .rawLongitude("")
+                .rawLatitude("")
+                .build();
+
+        // when
+        Place place = mapper.toEntity(dto);
+
+        // then
+        assertThat(place.getLongitude()).isEqualTo(0.0);
+        assertThat(place.getLatitude()).isEqualTo(0.0);
+        assertThat(place.getLocation()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("mapx/mapy가 숫자로 파싱 불가능한 문자열인 경우 예외 없이 0.0 좌표로 매핑되어야 한다")
+    void toEntity_MalformedCoordinates_DefaultsToZero() {
+        // given
+        TourApiPlaceItemDto dto = TourApiPlaceItemDto.builder()
+                .contentId("BAD-COORD-1")
+                .title("잘못된 좌표 장소")
+                .rawLongitude("N/A")
+                .rawLatitude("알수없음")
+                .build();
+
+        // when
+        Place place = mapper.toEntity(dto);
+
+        // then
+        assertThat(place.getLongitude()).isEqualTo(0.0);
+        assertThat(place.getLatitude()).isEqualTo(0.0);
+    }
+
+    @Test
+    @DisplayName("체중 제한 텍스트에 kg 표기가 없으면 maxWeightLimitKg는 null이어야 한다")
+    void toEntity_NoWeightLimitText_ReturnsNull() {
+        TourApiPlaceItemDto dto = TourApiPlaceItemDto.builder()
+                .contentId("NO-WEIGHT-1")
+                .title("체중 정보 없는 장소")
+                .petWeightLimitText("소형견만 가능")
+                .build();
+
+        Place place = mapper.toEntity(dto);
+
+        assertThat(place.getMaxWeightLimitKg()).isNull();
     }
 }

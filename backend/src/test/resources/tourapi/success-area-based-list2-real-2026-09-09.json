@@ -1,0 +1,45 @@
+{
+  "_fixtureNote": "TSK-DATA-004: 승인된 로컬 프로필 시크릿으로 실제 호출해 확보한 진짜 성공 응답(2026-09-09, KorPetTourService2/areaBasedList2, numOfRows=1). serviceKey는 포함하지 않음. 참고: 이 표준 목록 오퍼레이션 응답에는 반려동물 전용 필드(acmpyTypeCd 등)가 전혀 내려오지 않는다 — 그런 필드가 다른 오퍼레이션(상세 등)에서 제공되는지는 TSK-DATA-005에서 별도 확인 필요하며, 이 파일만으로 반려동물 필드 존재/부재를 확정하지 않는다.",
+  "response": {
+    "header": {
+      "resultCode": "0000",
+      "resultMsg": "OK"
+    },
+    "body": {
+      "items": {
+        "item": [
+          {
+            "addr1": "부산광역시 부산진구 가야대로 779 (부전동)",
+            "addr2": "",
+            "areacode": "",
+            "cat1": "",
+            "cat2": "",
+            "cat3": "",
+            "contentid": "2930927",
+            "contenttypeid": "38",
+            "createdtime": "20221030154457",
+            "firstimage": "https://tong.visitkorea.or.kr/cms/resource/90/4017190_image2_1.jpg",
+            "firstimage2": "https://tong.visitkorea.or.kr/cms/resource/90/4017190_image3_1.jpg",
+            "cpyrhtDivCd": "Type3",
+            "mapx": "129.056805686045",
+            "mapy": "35.1579550616706",
+            "mlevel": "6",
+            "modifiedtime": "20260316103559",
+            "sigungucode": "",
+            "tel": "",
+            "title": "가까운약국",
+            "zipcode": "47257",
+            "lDongRegnCd": "26",
+            "lDongSignguCd": "230",
+            "lclsSystm1": "SH",
+            "lclsSystm2": "SH04",
+            "lclsSystm3": "SH040300"
+          }
+        ]
+      },
+      "numOfRows": 1,
+      "pageNo": 1,
+      "totalCount": 9683
+    }
+  }
+}

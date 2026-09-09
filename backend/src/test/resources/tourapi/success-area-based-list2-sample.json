@@ -1,0 +1,93 @@
+{
+  "_fixtureNote": "TSK-DATA-002: 실제 성공 응답이 아님(로컬 프로필 시크릿이 게이트웨이에서 SERVICE_KEY_IS_NOT_REGISTERED_ERROR를 반환해 실물 payload 확보 실패). 이 파일은 TourApiPlaceItemDto/TourApiResponseDto에 이미 정의된 필드명(TourAPI 4.0 공통 스키마 기준)으로 구성한 역직렬화 테스트용 샘플이며, 반려동물 전용 필드값은 미검증 가정치이다. 실제 키 승인 후 재검증 및 교체 필요.",
+  "response": {
+    "header": {
+      "resultCode": "0000",
+      "resultMsg": "OK"
+    },
+    "body": {
+      "items": {
+        "item": [
+          {
+            "contentid": "126216",
+            "contenttypeid": "12",
+            "title": "경복궁",
+            "addr1": "서울특별시 종로구 사직로 161",
+            "addr2": "",
+            "tel": "02-3700-3900",
+            "mapx": "126.9769112092",
+            "mapy": "37.5788439714",
+            "firstimage": "http://tong.visitkorea.or.kr/cms/resource/sample1.jpg",
+            "firstimage2": "http://tong.visitkorea.or.kr/cms/resource/sample1_thumb.jpg",
+            "areacode": "1",
+            "sigungucode": "23",
+            "cat1": "A02",
+            "cat2": "A0206",
+            "cat3": "A02060100",
+            "modifiedtime": "20240101120000",
+            "acmpyTypeCd": "PET002",
+            "claAcmpyInfo": "실외 공간 목줄 착용 시 동반 가능",
+            "relaAcmpyInfo": "야외 정원 동반 가능, 실내 전시관 동반 불가",
+            "relaPosbleFclty": "야외 산책로",
+            "relaRqustFclty": "목줄, 배변봉투",
+            "etcAcmpyInfo": "대형견은 사전 문의 필요",
+            "acmpyPsblCpam": "10kg 이하 소형견 권장"
+          },
+          {
+            "contentid": "999998",
+            "contenttypeid": "39",
+            "title": "댕댕이 카페 샘플",
+            "addr1": "서울특별시 마포구 월드컵북로 100",
+            "addr2": "1층",
+            "tel": "02-1234-5678",
+            "mapx": "126.9012340000",
+            "mapy": "37.5567890000",
+            "firstimage": "",
+            "firstimage2": "",
+            "areacode": "1",
+            "sigungucode": "17",
+            "cat1": "A05",
+            "cat2": "A0502",
+            "cat3": "A05020900",
+            "modifiedtime": "20240102093000",
+            "acmpyTypeCd": "",
+            "claAcmpyInfo": "",
+            "relaAcmpyInfo": "",
+            "relaPosbleFclty": "",
+            "relaRqustFclty": "",
+            "etcAcmpyInfo": "",
+            "acmpyPsblCpam": "15kg 이하 가능"
+          },
+          {
+            "contentid": "999999",
+            "contenttypeid": "32",
+            "title": "좌표 누락 샘플 숙소",
+            "addr1": "경기도 용인시 기흥구",
+            "addr2": "",
+            "tel": "",
+            "mapx": "",
+            "mapy": "",
+            "firstimage": "",
+            "firstimage2": "",
+            "areacode": "31",
+            "sigungucode": "",
+            "cat1": "B02",
+            "cat2": "B0201",
+            "cat3": "B020100",
+            "modifiedtime": "20240103100000",
+            "acmpyTypeCd": "",
+            "claAcmpyInfo": "",
+            "relaAcmpyInfo": "",
+            "relaPosbleFclty": "",
+            "relaRqustFclty": "",
+            "etcAcmpyInfo": "",
+            "acmpyPsblCpam": ""
+          }
+        ]
+      },
+      "numOfRows": 3,
+      "pageNo": 1,
+      "totalCount": 3
+    }
+  }
+}
