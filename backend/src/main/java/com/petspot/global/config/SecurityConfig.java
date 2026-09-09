@@ -75,7 +75,12 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // 프론트엔드 개발 서버 주소 허용
-        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
+        // localtest.me:3000은 Kakao Maps JavaScript SDK 도메인 등록(로컬 개발용)에 맞춰 접속하는 주소
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+                "http://localtest.me:3000"
+        ));
         // 모든 HTTP 메서드 허용 (GET, POST, PUT, PATCH, DELETE, OPTIONS 등)
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         // 모든 헤더 허용
