@@ -8,8 +8,6 @@ import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.stereotype.Component;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * TourAPI DTO -> Place Entity 변환 전용 매퍼 컴포넌트
@@ -20,7 +18,6 @@ public class TourApiPlaceMapper {
 
     private static final int SRID_WGS84 = 4326;
     private static final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), SRID_WGS84);
-    private static final Pattern WEIGHT_PATTERN = Pattern.compile("(\\d+(\\.\\d+)?)\\s*kg", Pattern.CASE_INSENSITIVE);
 
     private static final String DEFAULT_CATEGORY = "ETC";
     private static final String DEFAULT_CATEGORY_NAME = "기타 펫동반 장소";
@@ -54,7 +51,6 @@ public class TourApiPlaceMapper {
 
         String category = mapCategory(dto.getContentTypeId(), dto.getCategory3());
         String categoryName = dto.getCategory3() != null ? dto.getCategory3() : DEFAULT_CATEGORY_NAME;
-        Double maxWeight = extractWeightLimit(dto.getPetWeightLimitText());
 
         return Place.builder()
                 .publicDataId(dto.getContentId())
@@ -67,13 +63,9 @@ public class TourApiPlaceMapper {
                 .longitude(longitude)
                 .phone(dto.getTel())
                 .imageUrl(dto.getFirstImage() != null ? dto.getFirstImage() : dto.getFirstImageThumbnail())
-                // description/maxWeightLimitKg의 원천 필드(claAcmpyInfo/acmpyPsblCpam)는 TSK-DATA-005에서 실제 응답에
-                // 존재하지 않음이 확인되었으므로, 실제 적재 시에는 둘 다 null로 저장된다(TSK-DATA-007에서 정리 예정).
-                .description(dto.getPetPolicyInfo())
-                .maxWeightLimitKg(maxWeight != null ? java.math.BigDecimal.valueOf(maxWeight) : null)
-                // TSK-DATA-008 (ADR-007): isIndoorAllowed/isOutdoorAllowed/hasOffLeashZone/allowedSizes는
-                // TourAPI(areaBasedList2/detailIntro2/detailInfo2/detailCommon2, TSK-DATA-005에서 실제 검증)가
-                // 직접 제공하지 않으므로 근거 없이 채우지 않는다 - null(미검증)로 유지한다.
+                // 반려동물 정책(maxWeightLimitKg/allowedSizes/실내외 등)은 목록 응답(areaBasedList2)에 없다.
+                // 장소별 detailPetTour2 응답을 TourApiPetPolicyParser로 해석해 별도로 반영한다(ADR-009).
+                // 이 단계에서는 근거 없이 채우지 않고 null(미확인)로 둔다(ADR-007).
                 .build();
     }
 
@@ -89,22 +81,5 @@ public class TourApiPlaceMapper {
             return "PARK"; // 관광지/레포츠/공원
         }
         return DEFAULT_CATEGORY;
-    }
-
-    /**
-     * "10kg 이하 가능" 과 같은 동반 조건 텍스트에서 숫자 체중(kg) 추출
-     */
-    private Double extractWeightLimit(String weightText) {
-        if (weightText == null || weightText.isBlank()) {
-            return null;
-        }
-        Matcher matcher = WEIGHT_PATTERN.matcher(weightText);
-        if (matcher.find()) {
-            try {
-                return Double.parseDouble(matcher.group(1));
-            } catch (NumberFormatException ignored) {
-            }
-        }
-        return null;
     }
 }

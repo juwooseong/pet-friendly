@@ -63,7 +63,7 @@
 ---
 
 ## ADR-007: TourAPI vs PetSpot 데이터 소유권 및 반려동물 정책 보강 전략 (`TSK-DATA-006`)
-- **Status**: Accepted (설계 전용 — 실제 Entity/migration/코드 구현은 후속 작업)
+- **Status**: Accepted — **일부 대체됨 (ADR-009, 2026-11-19)**. "TourAPI는 반려동물 정책 필드를 제공하지 않는다"는 Context의 전제는 틀렸다(`detailPetTour2` 미검증). NULL 원칙(미확인=null), 필드별 소유권 구분, 사용자 제보/관리자 보강 구조는 그대로 유효하며, 정책 필드의 1차 출처만 ADR-009로 바뀐다.
 - **Context**: `TSK-DATA-005`에서 한국관광공사 `KorPetTourService2`(`areaBasedList2`/`detailIntro2`/`detailInfo2`/`detailCommon2`)를 실제 호출로 검증한 결과, TourAPI는 장소 기본정보(`contentid`/`title`/`addr1`/`addr2`/`tel`/`mapx`/`mapy`/`firstimage`/`modifiedtime`/`createdtime`/category 계열)는 충분히 제공하지만, `Place`의 반려동물 정책 필드(`maxWeightLimitKg`/`allowedSizes`/`isIndoorAllowed`/`isOutdoorAllowed`/`hasOffLeashZone`)는 직접 제공하지 않는다. 기존 코드가 가정했던 `acmpyTypeCd` 등 7개 필드도 실제로 존재하지 않음이 확인되었다. 그럼에도 현재 `TourApiPlaceMapper.toEntity()`는 `isIndoorAllowed=true`/`isOutdoorAllowed=true`/`hasOffLeashZone=false`를 **하드코딩된 상수로 채우고 있고**, `Place`의 `@Builder` 생성자는 이 세 필드와 `allowedSizes`에 `null`이 들어오면 각각 `true`/`true`/`false`/`["SMALL","MEDIUM","LARGE"]`(전체 허용)로 **자동 치환**한다(`maxWeightLimitKg`만 유일하게 `null`을 그대로 유지). 즉 현재 코드는 "정보 없음"과 "실제로 전부 허용됨"을 구조적으로 구분하지 못하며, 이 상태로 대량 적재를 하면 근거 없는 허용 정보가 사실처럼 노출되는 위험이 있다. 프런트엔드 설계 문서(`docs/DOMAIN.md`의 `PetPolicy`/`evaluatePetMatch`)도 현재 `allowedSizes`/`isIndoorAllowed` 등을 non-nullable 필수 값으로 정의하고 있어 동일한 갭을 안고 있다.
 - **Decision**:
 
@@ -183,3 +183,22 @@
   - TourAPI가 제공하는 좌표 없는 장소는 PetSpot에 전혀 나타나지 않는다(장소 기본정보조차 보존되지 않음) — `TSK-DATA-003-C`(전국 적재) 시 이런 장소들의 비율이 얼마나 되는지 사전에 파악되지 않았으므로, 대량 적재 착수 시 스킵 건수를 모니터링할 필요가 있다.
   - 검색/지도/거리순 정렬 API는 전혀 변경하지 않았다 — 기존 "좌표는 항상 유효하다"는 불변식이 계속 유지된다.
   - 향후 좌표 결측 장소를 어떤 형태로든 보존해야 할 필요(예: "위치 미확인" 상태의 장소를 사용자에게 노출)가 제품 요구사항으로 생기면, 이 ADR을 재검토하고 전략 A(migration 포함)로 전환을 고려해야 한다.
+
+## ADR-009: TourAPI `detailPetTour2`를 반려동물 정책의 1차 출처로 채택 (ADR-007 일부 대체, `TSK-DATA-009`)
+- **Status**: Accepted (2026-11-19)
+- **Context**:
+  - ADR-007은 `TSK-DATA-005`의 결론("TourAPI는 체중/크기/실내외 등 반려동물 정책 필드를 제공하지 않는다")을 전제로 "정책 데이터는 PetSpot이 직접 구축한다"고 정했다.
+  - 그러나 `TSK-DATA-005`는 `areaBasedList2`/`detailIntro2`/`detailInfo2`/`detailCommon2` 4개 오퍼레이션만 검증했고, 반려동물 전용 오퍼레이션 **`detailPetTour2`(반려동물 동반여행 조회)를 검증 대상에서 빠뜨렸다.** 그 이전 `TSK-DATA-002`(2026-09-09)는 서비스키 승인 전 상태에서 `detailPetTour2`가 `NO_OPENAPI_SERVICE_ERROR`(reasonCode 12)를 반환한 것을 근거로 "존재하지 않는 경로"라고 잘못 기록했다.
+  - 2026-11-19 승인된 키로 실제 호출한 결과 `detailPetTour2`는 정상(resultCode `0000`)이며, 조회한 관광지/레포츠 10곳 **모두** 정책 텍스트를 반환했다: `acmpyPsblCpam`(동반 가능 동물: "전 견종 동반 가능", "10kg 이하 동반 가능", "15kg 미만 중소형견만 입장 가능(맹견 및 대형견 입장 불가)"), `acmpyTypeCd`(전구역/일부구역 동반가능), `acmpyNeedMtr`(목줄 착용, 이동장/유모차), `etcAcmpyInfo`(예방접종 필수, 실내 시설 입장 불가, 마릿수 제한 등), `relaPosesFclty` 등. 과거 `TourApiPlaceItemDto`의 "추측 필드" 이름 대부분이 실제로 이 오퍼레이션의 필드였다.
+  - 제약: `contentId` 필수(목록 조회 불가, 장소당 1회 호출), 값은 사람이 쓴 자유 텍스트, 정책 미등록 장소는 정상 응답에 `items: ""`.
+- **Decision**:
+  1. **정책 필드(`maxWeightLimitKg`/`allowedSizes`/실내 출입/필요 사항)의 1차 출처를 TourAPI `detailPetTour2`로 한다.** 원문 텍스트는 해석 결과와 함께 보존한다(재해석·화면 안내용).
+  2. 자유 텍스트 해석은 `TourApiPetPolicyParser`가 담당하며 **ADR-007의 NULL 원칙을 그대로 적용**한다 — 근거 문구가 없는 항목은 `null`(미확인). "목줄 언급 없음"을 "목줄 불필요(false)"로 해석하지 않는다. 체중 "N kg 미만"은 N으로 근사 저장하고 원문을 보존한다. 크기는 `PetSizeCategory` 경계(10kg/20kg)로 유도한다.
+  3. ADR-007의 PetSpot 자체 관리(관리자 입력·사용자 제보)는 **보강·검증 역할**로 축소한다: TourAPI 정책이 없는 장소, 해석 결과가 `null`인 항목, 현장 정보와 다른 경우의 정정. 출처 우선순위와 재동기화 시 덮어쓰기 규칙은 `TSK-DATA-010`에서 확정한다(원칙: 관리자가 검증한 값은 TourAPI 재동기화로 덮어쓰지 않는다).
+  4. 한국문화정보원 "전국 반려동물 동반 가능 문화시설 위치 데이터"(CSV, 입장 가능 동물 크기·실내/실외 여부 컬럼 보유)는 교차 검증·보강용 2차 출처 후보로 둔다(별도 작업).
+- **Consequences**:
+  - 직전까지의 판단 "핵심 가치(스마트 매칭)는 데이터 출처가 없어 막혀 있다"는 철회한다 — 공식 API 데이터로 시작할 수 있다.
+  - `TourApiPlaceItemDto`의 추측 필드는 삭제가 아니라 `TourApiPetTourItemDto`(실제 필드명)로 이동했다(`TSK-DATA-007` 해결). 목록 매핑 단계(`TourApiPlaceMapper`)는 정책을 채우지 않는다.
+  - 전국 적재(`TSK-DATA-003-C`)는 장소 수만큼 `detailPetTour2` 호출이 추가되므로 일일 트래픽 한도와 재시도/재개(resume) 설계가 필요하다.
+  - 샘플 10건은 관광지/레포츠 위주다. 숙박·음식점 유형의 정책 채움률과 표현은 `TSK-DATA-010`에서 추가 확인한다.
+  - 교훈: "필드가 없다"는 결론은 **해당 서비스의 전체 오퍼레이션 목록을 확인한 뒤**에만 내린다. 서비스키 승인 전의 게이트웨이 오류 코드는 경로 존재 여부의 근거로 쓰지 않는다.

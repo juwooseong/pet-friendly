@@ -36,8 +36,6 @@ class TourApiResponseDtoDeserializationTest {
         // mapx/mapy가 JSON 문자열("126.9769112092")로 와도 안전하게 Double로 파싱된다.
         assertThat(first.getLongitude()).isEqualTo(126.9769112092);
         assertThat(first.getLatitude()).isEqualTo(37.5788439714);
-        assertThat(first.getAccompanyTypeCd()).isEqualTo("PET002");
-        assertThat(first.getPetWeightLimitText()).isEqualTo("10kg 이하 소형견 권장");
     }
 
     @Test

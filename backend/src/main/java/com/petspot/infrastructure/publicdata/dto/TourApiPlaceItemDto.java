@@ -14,20 +14,10 @@ import lombok.NoArgsConstructor;
  * firstimage2/areacode/sigungucode/cat1~3/modifiedtime/contenttypeid)는 TourAPI 4.0 공통 스키마와
  * 동일하여 신뢰도가 높다.
  *
- * <p><b>TSK-DATA-005 검증 결과(2026-09-14, 실제 승인 키로 areaBasedList2/detailIntro2/detailInfo2/
- * detailCommon2 실제 호출):</b> 아래 반려동물 전용 필드(acmpyTypeCd, claAcmpyInfo, relaAcmpyInfo,
- * relaPosbleFclty, relaRqustFclty, etcAcmpyInfo, acmpyPsblCpam)는 <b>실제 응답 어디에도 존재하지 않음이
- * 확인되었다</b> (contentTypeId=38/쇼핑, contentTypeId=32/숙박 두 종류 모두 미존재). 즉 areaBasedList2/
- * detailIntro2/detailInfo2/detailCommon2 네 오퍼레이션 전체를 통틀어 이 필드들은 실물 스키마가 아니다 -
- * 최초 구현 시점의 추측치가 그대로 남아 있던 것으로 확인됨. detailIntro2에서 contentTypeId=38(쇼핑)에
- * 한해 "chkpetshopping"(반려동물 동반 가능 여부, 값은 관찰된 샘플에서 빈 문자열)이라는 필드가 존재하지만,
- * contentTypeId=32(숙박)의 detailIntro2에는 그런 chkpet류 필드 자체가 없다 - 즉 필드 유무/이름이
- * contentTypeId별로 다르다. 체중 제한(kg)/크기/목줄/이동장(케이지)/실내외/오프리쉬 관련 필드도 확인된
- * 4개 오퍼레이션 어디에도 없었다. 상세 근거와 fixture 목록은 docs/TASKS.md TSK-DATA-005 기록 및
- * src/test/resources/tourapi/success-detail-*-real-2026-09-14.json 참조.
- *
- * <p>이 필드들은 실제로 존재하지 않는 것으로 검증되었지만, TSK-DATA-005 범위 제한(Entity/매핑 로직 변경
- * 금지)에 따라 이 DTO 자체는 아직 수정하지 않았다 - 제거/교체는 별도 작업에서 처리한다.
+ * <p><b>반려동물 정책 필드 (정정, ADR-009):</b> 과거 이 DTO에는 acmpyTypeCd, acmpyPsblCpam, etcAcmpyInfo 등
+ * 반려동물 필드가 "추측 필드"로 들어 있었다. TSK-DATA-005는 이 필드들이 areaBasedList2/detailIntro2/detailInfo2/
+ * detailCommon2 응답에 없음을 확인했지만, 실제로는 별도 오퍼레이션 {@code detailPetTour2}의 필드였다
+ * (2026-11-19 실제 호출로 확인). 해당 필드는 {@link TourApiPetTourItemDto}로 옮겼다.
  */
 @Getter
 @NoArgsConstructor
@@ -112,31 +102,8 @@ public class TourApiPlaceItemDto {
     @JsonProperty("modifiedtime")
     private String modifiedTime;
 
-    // --- 반려동물 전용 동반 정보 (Pet Policy Details) ---
-    // [주의] TSK-DATA-005(2026-09-14) 실제 호출 검증 결과, 아래 7개 필드는 TourAPI 실제 응답에 존재하지 않는
-    // 최초 구현 당시의 추측 필드다. 실제 응답에서는 항상 null로 역직렬화되며, 실데이터 근거로 사용하면 안 된다.
-    // 제거/교체는 TSK-DATA-007(백로그)에서 처리한다.
-
-    @JsonProperty("acmpyTypeCd")
-    private String accompanyTypeCd;
-
-    @JsonProperty("claAcmpyInfo")
-    private String petPolicyInfo;
-
-    @JsonProperty("relaAcmpyInfo")
-    private String petFacilityInfo;
-
-    @JsonProperty("relaPosbleFclty")
-    private String petAllowedFacilities;
-
-    @JsonProperty("relaRqustFclty")
-    private String petRequiredItems;
-
-    @JsonProperty("etcAcmpyInfo")
-    private String petEtcPolicy;
-
-    @JsonProperty("acmpyPsblCpam")
-    private String petWeightLimitText;
+    // 반려동물 동반 정책 필드는 이 목록 응답(areaBasedList2)에 없다. 장소별 detailPetTour2 응답으로
+    // 별도 조회한다 - TourApiPetTourItemDto 참조 (TSK-DATA-007/009, ADR-009).
 
     /**
      * 주소 결합 헬퍼 메서드

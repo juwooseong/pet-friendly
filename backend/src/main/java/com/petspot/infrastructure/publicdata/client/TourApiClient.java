@@ -1,7 +1,9 @@
 package com.petspot.infrastructure.publicdata.client;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.petspot.infrastructure.publicdata.dto.TourApiErrorEnvelopeDto;
+import com.petspot.infrastructure.publicdata.dto.TourApiPetTourItemDto;
 import com.petspot.infrastructure.publicdata.dto.TourApiResponseDto;
 import com.petspot.infrastructure.publicdata.exception.PublicDataException;
 import lombok.extern.slf4j.Slf4j;
@@ -13,15 +15,25 @@ import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.util.Optional;
 
 /**
  * 한국관광공사 TourAPI (KorPetTourService2 - 반려동물 동반여행 서비스) HTTP 통신 클라이언트 (Spring Boot 3.2+ RestClient)
  *
- * <p>TSK-DATA-002 실제 호출 검증 결과: baseUrl은 B551011/KorPetTourService2 이며, 지원이 확인된
- * 오퍼레이션은 areaBasedList2 / locationBasedList2 / detailCommon2 / detailIntro2 / detailImage2 /
- * searchKeyword2 이다 (data.go.kr 게이트웨이가 reasonCode 30 "SERVICE_KEY_IS_NOT_REGISTERED_ERROR"로
- * 응답 - 즉 경로 자체는 인식됨). 반대로 detailPetTour1/2, areaBasedSyncList2, KorPetTourService(2 없는 구버전),
- * KorPetTourService1, KorService1 은 reasonCode 12 "NO_OPENAPI_SERVICE_ERROR"로 응답 - 즉 존재하지 않는 경로임.
+ * <p>baseUrl은 {@code B551011/KorPetTourService2}이다. 실제 호출로 사용을 확인한 오퍼레이션:
+ * <ul>
+ *   <li>{@code areaBasedList2} - 장소 기본정보 목록 (좌표/주소/이미지/분류)</li>
+ *   <li>{@code detailPetTour2} - 장소별 반려동물 동반 정책 (동반 가능 동물·필요 사항 등). {@code contentId} 필수</li>
+ *   <li>{@code detailCommon2} / {@code detailIntro2} / {@code detailInfo2} - 상세 공통/소개/반복 정보 (TSK-DATA-005)</li>
+ * </ul>
+ *
+ * <p><b>정정 (ADR-009, 2026-11-19):</b> TSK-DATA-002(2026-09-09)는 {@code detailPetTour2}를 "존재하지 않는 경로"로
+ * 기록했으나, 이는 서비스키 승인 전 상태에서의 오판이었다. 승인된 키로 호출하면 정상 응답(resultCode 0000)과
+ * 반려동물 정책 데이터를 반환한다.
+ *
+ * <p>data.go.kr 게이트웨이 오류 응답은 세 가지 형태가 관찰되었고 모두 {@link PublicDataException}으로 변환한다:
+ * 표준 봉투의 non-0000 resultCode, {@code OpenAPI_ServiceResponse} 봉투(서비스키 미등록 등),
+ * 루트에 {@code resultCode}/{@code resultMsg}만 있는 평평한 봉투(필수 파라미터 누락 등).
  */
 @Slf4j
 @Component
@@ -29,8 +41,11 @@ public class TourApiClient {
 
     private static final String SUCCESS_RESULT_CODE = "0000";
 
-    /** TSK-DATA-002 실제 호출로 확인된 목록 조회 오퍼레이션 (구 "detailPetTour1"은 존재하지 않는 경로였음) */
+    /** 장소 기본정보 목록 조회 오퍼레이션 */
     private static final String LIST_OPERATION_PATH = "/areaBasedList2";
+
+    /** 장소별 반려동물 동반 정책 조회 오퍼레이션 (contentId 필수, 목록 조회 불가) */
+    private static final String PET_TOUR_DETAIL_OPERATION_PATH = "/detailPetTour2";
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -76,9 +91,80 @@ public class TourApiClient {
      * 반려동물 동반 여행 정보 지역/분류별 목록 조회 (contentTypeId 필터 추가 지원)
      */
     public TourApiResponseDto fetchPetPlaces(int numOfRows, int pageNo, String contentTypeId) {
-        URI targetUri = buildUri(LIST_OPERATION_PATH, numOfRows, pageNo, contentTypeId);
-        log.info("Requesting TourAPI via RestClient: {}", targetUri);
+        URI targetUri = buildListUri(numOfRows, pageNo, contentTypeId);
+        log.info("Requesting TourAPI via RestClient: {}", maskServiceKey(targetUri));
 
+        String rawBody = fetchRaw(targetUri);
+        TourApiResponseDto responseDto = parseSuccessBody(rawBody);
+        validateResponse(responseDto, rawBody);
+        return responseDto;
+    }
+
+    /**
+     * 장소 1곳의 반려동물 동반 정책을 조회한다 ({@code detailPetTour2}).
+     *
+     * <p>정책 정보가 등록되지 않은 장소는 정상 응답이지만 {@code items}가 빈 문자열({@code ""})로 내려오므로
+     * {@link Optional#empty()}를 반환한다(실제 관찰: 숙박 contentId 2707444).
+     *
+     * @param contentId TourAPI 장소 ID (필수)
+     * @return 반려동물 정책 item, 등록된 정책이 없으면 empty
+     * @throws IllegalArgumentException contentId가 비어 있는 경우
+     * @throws PublicDataException      통신 실패 또는 게이트웨이/API 오류 응답
+     */
+    public Optional<TourApiPetTourItemDto> fetchPetTourDetail(String contentId) {
+        if (contentId == null || contentId.isBlank()) {
+            throw new IllegalArgumentException("contentId는 필수입니다.");
+        }
+        URI targetUri = UriComponentsBuilder.fromUriString(baseUrl + PET_TOUR_DETAIL_OPERATION_PATH)
+                .queryParam("serviceKey", serviceKey)
+                .queryParam("MobileOS", mobileOs)
+                .queryParam("MobileApp", mobileApp)
+                .queryParam("_type", "json")
+                .queryParam("contentId", contentId)
+                .build(true).toUri();
+        log.debug("Requesting TourAPI detailPetTour2: contentId={}", contentId);
+
+        String rawBody = fetchRaw(targetUri);
+        JsonNode root;
+        try {
+            root = objectMapper.readTree(rawBody);
+        } catch (Exception e) {
+            throw gatewayError(rawBody);
+        }
+
+        JsonNode header = root.path("response").path("header");
+        if (header.isMissingNode()) {
+            throw gatewayError(rawBody);
+        }
+        String resultCode = header.path("resultCode").asText();
+        if (!SUCCESS_RESULT_CODE.equals(resultCode)) {
+            throw new PublicDataException("TourAPI 오류 응답: [" + resultCode + "] " + header.path("resultMsg").asText());
+        }
+
+        // 정책 미등록 장소는 items가 "" (문자열)로 온다
+        JsonNode items = root.path("response").path("body").path("items");
+        if (!items.isObject()) {
+            return Optional.empty();
+        }
+        JsonNode item = items.path("item");
+        if (item.isArray()) {
+            item = item.isEmpty() ? null : item.get(0);
+        }
+        if (item == null || !item.isObject()) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(objectMapper.treeToValue(item, TourApiPetTourItemDto.class));
+        } catch (Exception e) {
+            throw new PublicDataException("detailPetTour2 응답 item을 해석하지 못했습니다: contentId=" + contentId, e);
+        }
+    }
+
+    /**
+     * HTTP GET 후 본문을 반환한다. 4xx/5xx라도 본문이 있으면 data.go.kr 게이트웨이의 실제 오류 사유를 담고 있는
+     * 경우가 많으므로, 본문을 버리지 않고 오류 사유를 추출해 예외로 노출한다.
+     */
+    private String fetchRaw(URI targetUri) {
         String rawBody;
         try {
             rawBody = restClient.get()
@@ -86,33 +172,26 @@ public class TourApiClient {
                     .retrieve()
                     .body(String.class);
         } catch (RestClientResponseException e) {
-            // 4xx/5xx 상태 코드라도 data.go.kr 게이트웨이는 본문에 실제 오류 코드(OpenAPI_ServiceResponse)를
-            // 담아 보내는 경우가 많으므로, 본문이 있으면 버리지 않고 동일한 파싱 경로로 넘겨 실제 사유를 노출한다.
             String errorBody = e.getResponseBodyAsString();
             if (errorBody != null && !errorBody.isBlank()) {
-                log.warn("TourAPI 오류 상태 응답 수신: status={}, URI={}", e.getStatusCode(), targetUri);
-                validateResponse(parseSuccessBody(errorBody), errorBody);
-                // validateResponse가 항상 예외를 던지므로 이 지점에는 도달하지 않는다.
-                throw new PublicDataException("TourAPI 오류 응답을 처리하지 못했습니다: " + e.getStatusCode());
+                log.warn("TourAPI 오류 상태 응답 수신: status={}, URI={}", e.getStatusCode(), maskServiceKey(targetUri));
+                throw gatewayError(errorBody);
             }
-            log.error("TourAPI 통신 중 오류 발생(본문 없음): URI={}", targetUri, e);
+            log.error("TourAPI 통신 중 오류 발생(본문 없음): URI={}", maskServiceKey(targetUri), e);
             throw new PublicDataException("TourAPI 통신 중 예외가 발생했습니다: " + e.getMessage(), e);
         } catch (Exception e) {
-            log.error("TourAPI 통신 중 오류 발생: URI={}", targetUri, e);
+            log.error("TourAPI 통신 중 오류 발생: URI={}", maskServiceKey(targetUri), e);
             throw new PublicDataException("TourAPI 통신 중 예외가 발생했습니다: " + e.getMessage(), e);
         }
 
         if (rawBody == null || rawBody.isBlank()) {
             throw new PublicDataException("TourAPI 응답 본문이 null이거나 비어 있습니다.");
         }
-
-        TourApiResponseDto responseDto = parseSuccessBody(rawBody);
-        validateResponse(responseDto, rawBody);
-        return responseDto;
+        return rawBody;
     }
 
-    private URI buildUri(String path, int numOfRows, int pageNo, String contentTypeId) {
-        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUrl + path)
+    private URI buildListUri(int numOfRows, int pageNo, String contentTypeId) {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUrl + LIST_OPERATION_PATH)
                 .queryParam("serviceKey", serviceKey)
                 .queryParam("numOfRows", numOfRows)
                 .queryParam("pageNo", pageNo)
@@ -129,36 +208,27 @@ public class TourApiClient {
         return builder.build(true).toUri();
     }
 
+    /** 로그에 서비스키가 남지 않도록 쿼리의 serviceKey 값을 가린다. */
+    private String maskServiceKey(URI uri) {
+        return uri.toString().replaceAll("serviceKey=[^&]*", "serviceKey=***");
+    }
+
     /**
      * 정상 응답 스키마({@code response.header/body})로 우선 파싱을 시도한다.
-     * JSON 파싱 자체가 실패하면(XML 오류 응답 등 포함) PublicDataException으로 변환한다.
+     * JSON 파싱 자체가 실패하면(XML 오류 응답 등 포함) null을 반환해 게이트웨이 오류 처리로 넘긴다.
      */
     private TourApiResponseDto parseSuccessBody(String rawBody) {
         try {
             return objectMapper.readValue(rawBody, TourApiResponseDto.class);
         } catch (Exception e) {
-            // JSON이 아닌 응답(XML 오류 등)일 수 있으므로 원문 일부를 남기고 게이트웨이 오류 처리로 넘긴다.
             log.warn("TourAPI 응답을 표준 스키마로 파싱하지 못했습니다. 게이트웨이 오류 여부를 확인합니다.");
             return null;
         }
     }
 
-    /**
-     * data.go.kr 게이트웨이는 정상 응답과 별개로 완전히 다른 루트 키({@code OpenAPI_ServiceResponse})를
-     * 갖는 오류 응답을 반환할 수 있다 (서비스키 미등록, 존재하지 않는 오퍼레이션 등).
-     * 이 경우 표준 DTO만으로는 header가 항상 null이 되므로, 실제 오류 코드/메시지를 추출해 예외로 노출한다.
-     */
     private void validateResponse(TourApiResponseDto responseDto, String rawBody) {
         if (responseDto == null || responseDto.getResponse() == null || responseDto.getResponse().getHeader() == null) {
-            TourApiErrorEnvelopeDto errorEnvelope = tryParseErrorEnvelope(rawBody);
-            if (errorEnvelope != null && errorEnvelope.isPresent()) {
-                TourApiErrorEnvelopeDto.CmmMsgHeader header = errorEnvelope.getOpenApiServiceResponse().getCmmMsgHeader();
-                log.warn("TourAPI Gateway Error: reasonCode={}, errMsg={}, authMsg={}",
-                        header.getReturnReasonCode(), header.getErrMsg(), header.getReturnAuthMsg());
-                throw new PublicDataException("TourAPI 게이트웨이 오류: [" + header.getReturnReasonCode() + "] "
-                        + header.getErrMsg() + " (" + header.getReturnAuthMsg() + ")");
-            }
-            throw new PublicDataException("TourAPI 응답 데이터 형식이 올바르지 않습니다 (Header Null).");
+            throw gatewayError(rawBody);
         }
 
         TourApiResponseDto.Header header = responseDto.getResponse().getHeader();
@@ -166,6 +236,44 @@ public class TourApiClient {
             log.warn("TourAPI Error Result: code={}, msg={}", header.getResultCode(), header.getResultMsg());
             throw new PublicDataException("TourAPI 오류 응답: [" + header.getResultCode() + "] " + header.getResultMsg());
         }
+    }
+
+    /**
+     * 표준 봉투가 아닌 오류 응답에서 실제 사유를 추출한다.
+     * <ol>
+     *   <li>{@code OpenAPI_ServiceResponse.cmmMsgHeader} (서비스키 미등록, 존재하지 않는 서비스 등)</li>
+     *   <li>루트의 {@code resultCode}/{@code resultMsg} (예: {@code 11 NO_MANDATORY_REQUEST_PARAMETERS_ERROR1(contentId)},
+     *       {@code 10 INVALID_REQUEST_PARAMETER_ERROR(contentId)} - 2026-11-19 실제 관찰)</li>
+     *   <li>표준 봉투의 non-0000 header</li>
+     * </ol>
+     */
+    private PublicDataException gatewayError(String rawBody) {
+        TourApiErrorEnvelopeDto errorEnvelope = tryParseErrorEnvelope(rawBody);
+        if (errorEnvelope != null && errorEnvelope.isPresent()) {
+            TourApiErrorEnvelopeDto.CmmMsgHeader header = errorEnvelope.getOpenApiServiceResponse().getCmmMsgHeader();
+            log.warn("TourAPI Gateway Error: reasonCode={}, errMsg={}, authMsg={}",
+                    header.getReturnReasonCode(), header.getErrMsg(), header.getReturnAuthMsg());
+            return new PublicDataException("TourAPI 게이트웨이 오류: [" + header.getReturnReasonCode() + "] "
+                    + header.getErrMsg() + " (" + header.getReturnAuthMsg() + ")");
+        }
+
+        try {
+            JsonNode root = objectMapper.readTree(rawBody);
+            if (root.hasNonNull("resultCode")) {
+                String code = root.path("resultCode").asText();
+                String msg = root.path("resultMsg").asText();
+                log.warn("TourAPI Gateway Error (flat): resultCode={}, resultMsg={}", code, msg);
+                return new PublicDataException("TourAPI 게이트웨이 오류: [" + code + "] " + msg);
+            }
+            JsonNode header = root.path("response").path("header");
+            if (header.hasNonNull("resultCode") && !SUCCESS_RESULT_CODE.equals(header.path("resultCode").asText())) {
+                return new PublicDataException("TourAPI 오류 응답: [" + header.path("resultCode").asText() + "] "
+                        + header.path("resultMsg").asText());
+            }
+        } catch (Exception ignored) {
+            // JSON이 아닌 응답(XML 등) - 아래 일반 오류로 처리
+        }
+        return new PublicDataException("TourAPI 응답 데이터 형식이 올바르지 않습니다 (Header Null).");
     }
 
     private TourApiErrorEnvelopeDto tryParseErrorEnvelope(String rawBody) {

@@ -1,0 +1,6 @@
+{
+  "_fixtureNote": "ADR-009/TSK-DATA-009: detailPetTour2를 contentId 없이 호출했을 때의 실제 게이트웨이 오류 응답(2026-11-19). response 봉투도 OpenAPI_ServiceResponse 봉투도 아닌, 루트에 resultCode/resultMsg만 있는 평평한 형식. serviceKey는 포함하지 않음.",
+  "responseTime": "2026-11-19T15:26:49.307",
+  "resultCode": "11",
+  "resultMsg": "NO_MANDATORY_REQUEST_PARAMETERS_ERROR1(contentId)"
+}

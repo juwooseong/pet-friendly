@@ -31,8 +31,6 @@ class TourApiPlaceMapperTest {
                 .rawLongitude("126.901234")
                 .rawLatitude("37.556789")
                 .firstImage("https://example.com/image.jpg")
-                .petPolicyInfo("실내 목줄 필수")
-                .petWeightLimitText("15kg 이하 소형견/중형견 가능")
                 .category3("카페")
                 .build();
 
@@ -54,8 +52,8 @@ class TourApiPlaceMapperTest {
         assertThat(place.getLocation().getX()).isEqualTo(126.901234);
         assertThat(place.getLocation().getY()).isEqualTo(37.556789);
 
-        // 체중 정제 검증
-        assertThat(place.getMaxWeightLimitKg()).isEqualByComparingTo("15");
+        // 반려동물 정책은 목록 응답에 없으므로 매핑 단계에서는 채우지 않는다(detailPetTour2 + TourApiPetPolicyParser 담당, ADR-009)
+        assertThat(place.getMaxWeightLimitKg()).isNull();
     }
 
     /**
@@ -98,23 +96,6 @@ class TourApiPlaceMapperTest {
 
         // then
         assertThat(place).isNull();
-    }
-
-    @Test
-    @DisplayName("체중 제한 텍스트에 kg 표기가 없으면 maxWeightLimitKg는 null이어야 한다")
-    void toEntity_NoWeightLimitText_ReturnsNull() {
-        TourApiPlaceItemDto dto = TourApiPlaceItemDto.builder()
-                .contentId("NO-WEIGHT-1")
-                .title("체중 정보 없는 장소")
-                .petWeightLimitText("소형견만 가능")
-                .rawLongitude("127.0")
-                .rawLatitude("37.5")
-                .build();
-
-        Place place = mapper.toEntity(dto);
-
-        assertThat(place).isNotNull();
-        assertThat(place.getMaxWeightLimitKg()).isNull();
     }
 
     /**

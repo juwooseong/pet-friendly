@@ -106,7 +106,6 @@ class TourApiClientTest {
         System.out.println("[RESULT ITEM] Title: " + item.getTitle());
         System.out.println("[RESULT ITEM] FullAddress: " + item.getFullAddress());
         System.out.println("[RESULT ITEM] Coordinates: (" + item.getLatitude() + ", " + item.getLongitude() + ")");
-        System.out.println("[RESULT ITEM] Pet Policy Text: " + item.getPetWeightLimitText());
         System.out.println("==================================================");
 
         assertThat(item.getContentId()).isEqualTo("123456");
@@ -114,7 +113,6 @@ class TourApiClientTest {
         assertThat(item.getFullAddress()).isEqualTo("서울특별시 마포구 월드컵북로 100 1층");
         assertThat(item.getLongitude()).isEqualTo(126.901234);
         assertThat(item.getLatitude()).isEqualTo(37.556789);
-        assertThat(item.getPetWeightLimitText()).isEqualTo("10kg 이하 소형견 가능");
     }
 
     @Test

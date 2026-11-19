@@ -1,0 +1,15 @@
+{
+  "_fixtureNote": "ADR-009/TSK-DATA-009: detailPetTour2 정상 응답이지만 정책이 등록되지 않은 장소(2026-11-19, contentId=2707444, contentTypeId=32/숙박). items가 빈 문자열(\"\")로 내려온다. serviceKey는 포함하지 않음.",
+  "response": {
+    "header": {
+      "resultCode": "0000",
+      "resultMsg": "OK"
+    },
+    "body": {
+      "items": "",
+      "numOfRows": 0,
+      "pageNo": 1,
+      "totalCount": 0
+    }
+  }
+}

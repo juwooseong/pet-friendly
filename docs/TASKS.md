@@ -226,12 +226,18 @@
 - [x] `TSK-BE-035` [P3] 비즈니스 예외가 `ErrorCode`/`BusinessException`을 사용하지 않음 (Refactoring Sprint "Exception 개선" 항목의 구체화, 2026-11-19) — **완료 (2026-11-19, 아래 "완료 기록" 참조)**
   - **배경**: `ErrorCode` enum과 `BusinessException`이 정의되어 있지만 실제 예외 클래스(`PlaceNotFoundException` 등)는 모두 `RuntimeException`을 직접 상속하고, 메시지가 서비스 코드 곳곳에 하드코딩되어 있다(예: "장소를 찾을 수 없습니다." vs "장소 정보를 찾을 수 없습니다."). `GlobalExceptionHandler`도 예외 타입마다 처리기를 하나씩 두고 있다. `TSK-BE-023`에서는 Swagger 에러 명세의 기준으로 `ErrorCode`를 사용했으므로, 런타임 메시지와 문서 예시 사이에 문구 차이가 일부 있다.
   - **DoD**: 예외 클래스가 `BusinessException(ErrorCode)`를 상속하도록 통일, `GlobalExceptionHandler`를 `BusinessException` 단일 처리기로 단순화, 필요 시 응답 본문에 에러 코드 필드 추가(프런트엔드 영향 검토).
+- [x] `TSK-DATA-009` [P0] TourAPI `detailPetTour2` 클라이언트·DTO·정책 텍스트 파서 구현 (2026-11-19 완료, 아래 "완료 기록" 참조, ADR-009)
+- [ ] `TSK-DATA-010` [P0] 해석한 반려동물 정책을 `Place`에 반영하는 적재 단계 설계·구현 (`TSK-DATA-009` 후속, `TSK-DATA-003-C` 선행)
+  - **범위**: 적재 파이프라인에서 장소별 `detailPetTour2` 호출 → `TourApiPetPolicyParser` → `Place` 정책 필드 반영. 원문 텍스트·출처·확인일 보존 컬럼(ADR-007 7번 메타데이터 설계) 추가 여부 결정, `Place`에 없는 항목(목줄/이동장/예방접종/마릿수/동반 구역) 저장 방식 결정(`policy_checklist` JSONB 활용 검토), 관리자 검증 값 보호 규칙(재동기화 시 덮어쓰기 금지), 숙박·음식점 유형 샘플 추가 확보로 채움률·표현 확인, 일일 트래픽 한도 내 호출 계획.
+  - **DoD**: 소량(예: 5건) 실제 적재 시 정책 필드가 해석 결과대로 저장되고 크기 필터 검색에 노출됨을 통합 테스트로 확인.
 - [x] `TSK-DATA-002` [P0] 한국관광공사 TourAPI(반려동물 동반여행 서비스) 클라이언트 실제 검증 및 스키마 확정 (2026-09-09 완료, 아래 "완료 기록" 참조)
+  - **정정 (2026-11-19, ADR-009)**: 아래 기록 중 "`detailPetTour1`/`detailPetTour2` … 존재하지 않는 경로" 판정은 틀렸다. 서비스키 승인 전의 게이트웨이 응답을 근거로 한 오판이며, 승인된 키로는 `detailPetTour2`가 정상 응답한다(`TSK-DATA-009`).
   - **범위**: `infrastructure/publicdata/` 기존 클라이언트(`TourApiClient`/DTO/Mapper/Service/Batch)에 대한 실제 HTTP 호출 기반 검증, `baseUrl`/오퍼레이션 경로 오류 수정, 게이트웨이 오류 응답 처리 보강, 오프라인 테스트 추가. **DB 대량 적재/시드/마이그레이션은 이번 범위에서 명시적으로 제외**(→ TSK-DATA-003 이후로 이관).
   - **핵심 발견**: `application.yml` 기본 `baseUrl`이 `B551011/KorPetTourService`(오퍼레이션 무관하게 항상 `NO_OPENAPI_SERVICE_ERROR`/reasonCode 12 = 존재하지 않는 경로)로 잘못되어 있었음 → `B551011/KorPetTourService2`로 수정. 로컬 프로필 시크릿은 확인된 유효 경로(`areaBasedList2` 등)에 대해서도 `SERVICE_KEY_IS_NOT_REGISTERED_ERROR`(reasonCode 30)를 반환해, 실제 반려동물 필드 payload는 이번 작업에서 확보하지 못함(아래 백로그 `TSK-DATA-004` 참조). 기존 `TourApiClient`가 존재하지 않는 오퍼레이션(`/detailPetTour1`)을 호출하고 있던 버그도 함께 발견/수정.
 - [x] `TSK-DATA-004` [P0] TourAPI 로컬 프로필 서비스키 활용신청 상태 확인 (2026-09-09 완료, 아래 "완료 기록" 참조)
   - **결론**: 활용신청 **승인완료**로 확인됨(data.go.kr 마이페이지 캡처로도 처리상태 "승인", 활용기간 2026-09-09~2028-09-09 재확인). `TSK-DATA-002` 시점에는 `SERVICE_KEY_IS_NOT_REGISTERED_ERROR`(reasonCode 30)가 발생했으나, 이후 두 차례 재확인(`areaBasedList2`, numOfRows=1 단건 호출) 모두 `resultCode 0000`으로 정상 응답(실제 장소 데이터 반환)했다. 원인은 활용신청 승인 처리 지연이었던 것으로 확정 — 코드/설정 문제가 아니었음. 실제 성공 응답 원문은 `backend/src/test/resources/tourapi/success-area-based-list2-real-2026-09-09.json`에 fixture로 저장(serviceKey 미포함). `TSK-DATA-005`(반려동물 필드 실제 검증) 착수 가능.
 - [x] `TSK-DATA-005` [P2] TourAPI 반려동물 전용 필드 실제 스키마 검증 (2026-09-14 완료, 아래 "완료 기록" 참조)
+  - **정정 (2026-11-19, ADR-009)**: "TourAPI에는 반려동물 정책 필드가 없다"는 결론은 4개 오퍼레이션에만 해당한다. 반려동물 전용 오퍼레이션 `detailPetTour2`를 검증하지 않았고, 실제로는 이 오퍼레이션이 체중/크기/필요 사항 등을 제공한다(`TSK-DATA-009`).
   - **결론**: `areaBasedList2`/`detailIntro2`/`detailInfo2`/`detailCommon2` 4개 오퍼레이션을 실제 승인 키로 호출한 결과, 기존 코드의 추측 필드(`acmpyTypeCd`/`claAcmpyInfo`/`relaAcmpyInfo`/`relaPosbleFclty`/`relaRqustFclty`/`etcAcmpyInfo`/`acmpyPsblCpam`)는 **전부 미존재로 확인됨**(contentTypeId=38/쇼핑, 32/숙박 두 종류 교차 검증). 체중 제한/크기/목줄/이동장/실내외/오프리쉬 필드도 전부 미존재. 반려동물 관련 필드는 `detailIntro2`의 `chkpetshopping`(contentTypeId=38 한정, 관찰된 샘플은 빈 값) 하나만 확인됨 — Place 필드 자동 매핑에 쓸 만한 정보는 사실상 없음. 상세는 아래 완료 기록 참조.
 
 ### 2026-09-09 완료 기록: TourAPI(반려동물 동반여행 서비스) 클라이언트 실제 검증 (`TSK-DATA-002`)
@@ -254,6 +260,19 @@
 - **fixture 저장**: 실제 성공 응답 원문을 `backend/src/test/resources/tourapi/success-area-based-list2-real-2026-09-09.json`에 저장(serviceKey 미포함). 기존 `success-area-based-list2-sample.json`(TSK-DATA-002 당시 가정치 샘플)은 그대로 유지 — 실물 데이터로 교체하는 것은 TSK-DATA-005 범위.
 - **TSK-DATA-005 진행 가능 여부**: **가능** — 키는 정상 작동하므로 다음 단계에서 반려동물 전용 필드가 포함되는 오퍼레이션을 찾아 실제 스키마를 검증할 수 있음. 단, 이번 작업에서는 반려동물 필드 검증을 수행하지 않았으므로 `TSK-DATA-005`는 별도로 진행 필요.
 - **테스트**: 코드 변경 없음(설정/구조 확인, fixture 추가, 총 2회 실제 API 호출만 수행) — 기존 백엔드 테스트 스위트에 영향 없음.
+
+### 2026-11-19 완료 기록: TourAPI `detailPetTour2` 클라이언트·DTO·정책 파서 (`TSK-DATA-009`, ADR-009)
+- **발견**: 공공 API 추가 검토 중 KorPetTourService2 오퍼레이션 목록에 "반려동물 동반여행 조회"(`detailPetTour2`)가 있음을 확인하고 승인된 키로 실제 호출(목록 1회 + 상세 10회 + 오류 확인 3회). 10곳 모두 정책 텍스트 반환 — `TSK-DATA-002`/`005`의 판정을 정정하고 ADR-009 작성.
+- **구현**:
+  - `TourApiPetTourItemDto`: 실제 필드명 기준 DTO(동반 구역, 동반 가능 동물, 필요 사항, 기타, 구비 시설 등).
+  - `TourApiClient.fetchPetTourDetail(contentId)`: 정책 미등록(`items: ""`)은 `Optional.empty()`. 공통 HTTP 처리를 `fetchRaw()`로 분리.
+  - **게이트웨이 오류 형식 추가 대응**: 루트에 `resultCode`/`resultMsg`만 있는 평평한 오류(예: `11 NO_MANDATORY_REQUEST_PARAMETERS_ERROR1(contentId)`)를 실제 사유와 함께 `PublicDataException`으로 변환(기존에는 "Header Null"로만 표시됨).
+  - **보안 수정**: 목록 조회가 서비스키를 포함한 전체 URL을 INFO 로그로 남기던 문제 수정(`serviceKey=***`로 마스킹).
+  - `TourApiPetPolicyParser` → `ParsedPetPolicy`: 동반 구역, 최대 체중, 허용 크기(10/20kg 경계), 최대 마릿수, 목줄·이동장·예방접종·맹견 입마개 필요 여부, 실내 출입 가능 여부 + 원문 보존. 근거 없는 항목은 `null`(ADR-007).
+  - `TourApiPlaceItemDto`의 추측 필드 7개와 `TourApiPlaceMapper`의 체중 추출 로직 제거(`TSK-DATA-007` 해결). 목록 매핑 단계는 정책을 채우지 않는다.
+- **fixture (serviceKey 미포함 자동 확인)**: `success-detail-pet-tour2-real-2026-11-19.json`(662268), `success-detail-pet-tour2-empty-real-2026-11-19.json`(2707444), `success-detail-pet-tour2-samples-real-2026-11-19.json`(10건), `error-flat-missing-content-id-real-2026-11-19.json`.
+- **테스트**: `TourApiPetPolicyParserTest` 20건(실제 원문 10건 기대값 표 + 크기 표현 7건 + 보존/미확인/보조 필드), `TourApiClientPetTourDetailTest` 5건. 제거 필드를 참조하던 기존 테스트 3개 파일 정리. 전체 `./gradlew test`: 238 tests, 실패/에러 0건, 2 skip.
+- **남은 작업**: Place 반영·적재(`TSK-DATA-010`), 전국 적재(`TSK-DATA-003-C`).
 
 ### 2026-11-19 완료 기록: Sprint 2 후속 백로그 정리 (`TSK-BE-032`~`035`)
 - **`TSK-BE-032` 리뷰 없는 장소 평점 통일**: `Place` 생성 기본값을 5.0 → `Place.NO_REVIEW_RATING`(0.0)으로 변경해 리뷰 전부 삭제 시 재계산 결과(0.0)와 일치시켰다. Flyway `V8__normalize_place_rating_without_reviews.sql`로 DB 기본값을 0.0으로 바꾸고 `review_count = 0`인 기존 장소의 평점을 0.0으로 정리. 결과적으로 대시보드 인기 장소(평점 내림차순)에 리뷰 없는 장소가 상위로 올라오지 않는다. 프런트엔드는 평점이 0/누락이면 `'5.0'`으로 대체 표시하던 5개 화면(홈/검색/지도/상세/즐겨찾기)을 공통 함수 `utils/rating.ts`의 `formatRating()`으로 바꿔, 리뷰 수가 0이면 "평가 없음"으로 표시한다.
@@ -319,7 +338,7 @@
   - **결론**: TourAPI = 장소 기본정보 Source of Truth, PetSpot(운영자 검증/관리자 입력) = 반려동물 정책 데이터 Source of Truth로 분리. `null`(미검증)/`false`(근거 있는 불가)/`true`(근거 있는 가능) 3단계 원칙을 채택하되, 현재 `TourApiPlaceMapper`와 `Place` 생성자가 이 원칙을 위반(정책 필드에 근거 없는 기본값을 채움)하고 있음을 발견 — 수정은 `TSK-DATA-008`로 이관. `PASS`/`WARN`/`DENY` 판정에서 정책 필드가 하나라도 `null`이면 보수적으로 `WARN` 처리하는 원칙 수립. `TSK-DATA-003`(초기 적재) 전략은 "TourAPI 기본정보 우선 적재 + 정책은 `null`로 유지 + `WARN` 노출"을 권장(단 `TSK-DATA-008` 선행 필요). 상세는 `docs/DECISIONS.md`의 **ADR-007** 참조.
   - **범위**: 설계/문서화만 수행. Entity/migration/대량 적재/배치/Frontend/PASS-WARN-DENY 실제 구현/AI/Redis/Elasticsearch는 전부 범위 밖으로 제외.
 
-- [ ] `TSK-DATA-007` [P2] TourAPI 미존재 확인된 반려동물 추측 필드 정리 (`TSK-DATA-005`에서 식별, 2026-09-14)
+- [x] `TSK-DATA-007` [P2] TourAPI 미존재 확인된 반려동물 추측 필드 정리 (`TSK-DATA-005`에서 식별, 2026-09-14) — **해결 (2026-11-19, `TSK-DATA-009`)**: 필드는 "미존재"가 아니라 `detailPetTour2`의 필드였다. 삭제 대신 `TourApiPetTourItemDto`(실제 필드명)로 이동하고, `TourApiPlaceItemDto`/`TourApiPlaceMapper`에서는 제거했다.
   - **배경**: `TSK-DATA-005`에서 `TourApiPlaceItemDto`의 `acmpyTypeCd`/`claAcmpyInfo`/`relaAcmpyInfo`/`relaPosbleFclty`/`relaRqustFclty`/`etcAcmpyInfo`/`acmpyPsblCpam` 7개 필드가 `areaBasedList2`/`detailIntro2`/`detailInfo2`/`detailCommon2` 어디에도 존재하지 않음이 실제 응답으로 확인되었다. 범위 제한(Entity/매핑 로직 변경 금지)으로 이번 작업에서는 문서화만 하고 코드는 그대로 두었다.
   - **DoD**: 위 7개 필드 및 이를 참조하는 `TourApiPlaceMapper`의 정규식 추출 로직(체중 등)을 제거하거나, PetSpot 자체 정책 데이터로 대체할 별도 소스가 결정되면 그에 맞게 교체. `success-area-based-list2-sample.json`(가정치 샘플, `acmpyTypeCd="PET002"` 등 포함)도 실물 스키마와 맞지 않으므로 함께 정리 검토.
 
