@@ -87,8 +87,14 @@ public class TourDataCollectorService {
     /**
      * 수집한 TourApiPlaceItemDto 리스트를 Entity로 변환하고 중복 방지 저장 (Transactional)
      *
+     * <p><b>TSK-DATA-003-B 좌표 결측 정책(ADR-008):</b> {@code contentId}가 없는 항목과 마찬가지로,
+     * 좌표({@code mapx}/{@code mapy})를 파싱할 수 없는 항목도 저장 대상에서 제외한다(전략 B). Place의
+     * 좌표 컬럼이 DB {@code NOT NULL}이라 임의 좌표를 만들어내지 않고는 저장할 방법이 없기 때문이다
+     * ({@link com.petspot.infrastructure.publicdata.mapper.TourApiPlaceMapper#toEntity}가 이 경우
+     * {@code null}을 반환한다).
+     *
      * @param items DTO 리스트
-     * @return [신규 저장 건수, 중복/업데이트 건수]
+     * @return [신규 저장 건수, 중복/업데이트 건수] (contentId 결측/좌표 결측으로 스킵된 항목은 어느 쪽에도 포함되지 않음)
      */
     @Transactional
     public int[] saveCollectedPlaces(List<TourApiPlaceItemDto> items) {
@@ -102,9 +108,21 @@ public class TourDataCollectorService {
 
         int savedCount = 0;
         int duplicateCount = 0;
+        int skippedCount = 0;
 
         for (TourApiPlaceItemDto dto : items) {
             if (dto.getContentId() == null || dto.getContentId().isBlank()) {
+                // contentId는 중복 방지 키(publicDataId)이므로, 없으면 upsert 판단이 불가능해 스킵한다.
+                skippedCount++;
+                continue;
+            }
+
+            Place mappedEntity = tourApiPlaceMapper.toEntity(dto);
+            if (mappedEntity == null) {
+                // 좌표를 파싱할 수 없어 유효한 Place를 만들 수 없는 경우(TSK-DATA-003-B) - 임의 좌표를
+                // 채워 넣지 않고 이 항목만 건너뛰고 나머지 배치는 계속 진행한다.
+                log.warn("Skipping place with unresolvable coordinates: contentId={}", dto.getContentId());
+                skippedCount++;
                 continue;
             }
 
@@ -113,29 +131,27 @@ public class TourDataCollectorService {
             if (existingPlaceOpt.isPresent()) {
                 // 중복 데이터 존재하는 경우: 기존 Entity 정보 업데이트
                 Place existingPlace = existingPlaceOpt.get();
-                Place tempEntity = tourApiPlaceMapper.toEntity(dto);
                 existingPlace.updateDetails(
-                        tempEntity.getName(),
-                        tempEntity.getAddress(),
-                        tempEntity.getLocation(),
-                        tempEntity.getLatitude(),
-                        tempEntity.getLongitude(),
-                        tempEntity.getImageUrl(),
-                        tempEntity.getPhone(),
-                        tempEntity.getCategoryName()
+                        mappedEntity.getName(),
+                        mappedEntity.getAddress(),
+                        mappedEntity.getLocation(),
+                        mappedEntity.getLatitude(),
+                        mappedEntity.getLongitude(),
+                        mappedEntity.getImageUrl(),
+                        mappedEntity.getPhone(),
+                        mappedEntity.getCategoryName()
                 );
                 duplicateCount++;
             } else {
-                // 신규 데이터인 경우: Entity 변환 후 DB 저장
-                Place newPlace = tourApiPlaceMapper.toEntity(dto);
-                placeRepository.save(newPlace);
+                // 신규 데이터인 경우: DB 저장
+                placeRepository.save(mappedEntity);
                 savedCount++;
             }
         }
 
         long elapsedTime = System.currentTimeMillis() - startTime;
-        log.info("[PERSISTENCE SUMMARY] Total Items: {}, Saved: {}, Duplicates Updated: {}, Elapsed Time: {} ms",
-                items.size(), savedCount, duplicateCount, elapsedTime);
+        log.info("[PERSISTENCE SUMMARY] Total Items: {}, Saved: {}, Duplicates Updated: {}, Skipped: {}, Elapsed Time: {} ms",
+                items.size(), savedCount, duplicateCount, skippedCount, elapsedTime);
 
         return new int[]{savedCount, duplicateCount};
     }

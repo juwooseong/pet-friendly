@@ -1,0 +1,49 @@
+{
+  "_fixtureNote": "TSK-DATA-005: 반려동물 필드가 contentTypeId에 따라 다른 이름으로 내려오는지 교차 검증하기 위해 추가로 확보한 detailIntro2 응답(2026-09-14, contentId=2707444, contentTypeId=32/숙박). serviceKey는 포함하지 않음. 이 응답에는 'chkpet' 계열 필드 자체가 존재하지 않는다 (쇼핑 타입의 chkpetshopping과 달리 숙박 타입에는 반려동물 동반 가능 여부 필드가 아예 없음). acmpyTypeCd 등 추측 필드도 존재하지 않는다.",
+  "response": {
+    "header": {
+      "resultCode": "0000",
+      "resultMsg": "OK"
+    },
+    "body": {
+      "items": {
+        "item": [
+          {
+            "contentid": "2707444",
+            "contenttypeid": "32",
+            "roomcount": "3",
+            "roomtype": "한실",
+            "refundregulation": "예약 후 취소 시 80% 환불, 숙박 3일 전까지 70% 환불, 숙박 2일 전까지 60% 환불, 숙박 1일 전까지 50% 환불, 숙박 당일 취소 시 환불 불가",
+            "checkintime": "15:00",
+            "checkouttime": "10:00",
+            "chkcooking": "가능",
+            "seminar": "1",
+            "sports": "0",
+            "sauna": "0",
+            "beauty": "0",
+            "beverage": "0",
+            "karaoke": "0",
+            "barbecue": "1",
+            "campfire": "0",
+            "bicycle": "0",
+            "fitness": "0",
+            "publicpc": "0",
+            "publicbath": "0",
+            "subfacility": "산책로",
+            "foodplace": "",
+            "reservationurl": "<a href=\"https://www.gayoungdang.com/\" target=\"_blank\" title=\"새창 : 가영당 홈페이지로 이동\">https://www.gayoungdang.com/</a>",
+            "pickup": "불가",
+            "infocenterlodging": "043-233-9966",
+            "parkinglodging": "가능",
+            "reservationlodging": "",
+            "scalelodging": "건물 3개동 대지면적 1,300㎡, 본채 165㎡, 별채 120㎡, 사랑채 57㎡",
+            "accomcountlodging": "19"
+          }
+        ]
+      },
+      "numOfRows": 1,
+      "pageNo": 1,
+      "totalCount": 1
+    }
+  }
+}

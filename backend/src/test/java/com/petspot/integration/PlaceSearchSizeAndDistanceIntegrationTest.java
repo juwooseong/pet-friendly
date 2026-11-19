@@ -72,7 +72,11 @@ class PlaceSearchSizeAndDistanceIntegrationTest {
                 .location(point(37.5569, 126.9238))
                 .latitude(37.5569)
                 .longitude(126.9238)
-                .build()); // allowedSizes 미지정 -> 기본값 SMALL/MEDIUM/LARGE 전체 허용
+                // TSK-DATA-008(ADR-007): allowedSizes 미지정 시 더 이상 전체 허용으로 자동 치환되지 않는다
+                // (null = 미검증). 이 테스트는 "실제 근거로 전체 크기가 확인된 장소"를 검증하려는 것이므로
+                // 명시적으로 전체 크기를 지정한다.
+                .allowedSizes(List.of("SMALL", "MEDIUM", "LARGE"))
+                .build());
 
         PlaceSearchCondition condition = PlaceSearchCondition.builder()
                 .sizeCategory("SMALL")
@@ -85,6 +89,47 @@ class PlaceSearchSizeAndDistanceIntegrationTest {
         assertThat(results).extracting(PlaceSearchResponseDto::getName)
                 .containsExactlyInAnyOrder("소형견 전용 카페", "전체 견종 동반 가능 카페");
         assertThat(results).noneMatch(dto -> dto.getName().equals("대형견 전용 운동장"));
+    }
+
+    /**
+     * TSK-DATA-008 (ADR-007): allowedSizes/isIndoorAllowed 등 정책 필드가 null(미검증)인 장소를
+     * 저장/조회해도 예외 없이 동작하고, 크기 필터 검색에서는 근거가 없으므로 매칭되지 않아야 한다
+     * (jsonb_exists(NULL, ...)는 NULL을 반환하므로 WHERE 절에서 자동으로 제외된다).
+     */
+    @Test
+    @DisplayName("반려동물 정책 필드가 null인 장소도 저장/상세조회는 정상 동작하고, 크기 필터 검색에서는 제외된다")
+    void searchPlaces_PolicyFieldsNull_PersistsSafelyAndExcludedFromSizeFilter() {
+        // given: 정책 정보가 전혀 검증되지 않은 장소(TourAPI 기본정보만 있는 상태를 재현)
+        Place savedPlace = placeRepository.save(Place.builder()
+                .name("정책 미검증 장소")
+                .category("ETC")
+                .categoryName("기타")
+                .address("서울 마포구")
+                .location(point(37.5570, 126.9239))
+                .latitude(37.5570)
+                .longitude(126.9239)
+                .build()); // allowedSizes/isIndoorAllowed/isOutdoorAllowed/hasOffLeashZone/maxWeightLimitKg 전부 미지정 -> null
+
+        // then: 저장 자체는 예외 없이 성공하고 null이 그대로 유지된다
+        assertThat(savedPlace.getAllowedSizes()).isNull();
+        assertThat(savedPlace.getIsIndoorAllowed()).isNull();
+        assertThat(savedPlace.getIsOutdoorAllowed()).isNull();
+        assertThat(savedPlace.getHasOffLeashZone()).isNull();
+        assertThat(savedPlace.getMaxWeightLimitKg()).isNull();
+
+        // when: 상세 조회(findPlaceDetail) - JSONB null 컬럼을 읽어도 예외가 발생하지 않아야 한다
+        var detail = placeRepository.findPlaceDetail(savedPlace.getId());
+        assertThat(detail).isPresent();
+        assertThat(detail.get().getAllowedSizes()).isNull();
+        assertThat(detail.get().getMaxWeightLimitKg()).isNull();
+
+        // when: SMALL 크기 필터로 검색 - 근거(allowedSizes) 없는 장소는 결과에 포함되지 않아야 한다
+        PlaceSearchCondition condition = PlaceSearchCondition.builder()
+                .sizeCategory("SMALL")
+                .build();
+        List<PlaceSearchResponseDto> results = placeRepository.searchPlaces(condition);
+
+        assertThat(results).noneMatch(dto -> dto.getName().equals("정책 미검증 장소"));
     }
 
     @Test

@@ -1,0 +1,37 @@
+{
+  "_fixtureNote": "TSK-DATA-005: 승인된 로컬 프로필 시크릿으로 실제 호출해 확보한 detailIntro2 성공 응답(2026-09-14, KorPetTourService2/detailIntro2, contentId=2930927, contentTypeId=38/쇼핑). serviceKey는 포함하지 않음. 반려동물 관련 필드는 'chkpetshopping' 하나만 존재하며(값은 빈 문자열 - 미기재), acmpyTypeCd/claAcmpyInfo 등 기존 코드의 추측 필드는 이 응답에 전혀 존재하지 않는다.",
+  "response": {
+    "header": {
+      "resultCode": "0000",
+      "resultMsg": "OK"
+    },
+    "body": {
+      "items": {
+        "item": [
+          {
+            "contentid": "2930927",
+            "contenttypeid": "38",
+            "saleitem": "의약품/의료용 기기",
+            "saleitemcost": "",
+            "fairday": "월-일요일",
+            "opendateshopping": "",
+            "shopguide": "",
+            "culturecenter": "",
+            "restroom": "없음",
+            "infocentershopping": "051-819-1421",
+            "scaleshopping": "",
+            "restdateshopping": "",
+            "parkingshopping": "불가능",
+            "chkbabycarriageshopping": "",
+            "chkpetshopping": "",
+            "chkcreditcardshopping": "가능",
+            "opentime": "09:00-20:00"
+          }
+        ]
+      },
+      "numOfRows": 1,
+      "pageNo": 1,
+      "totalCount": 1
+    }
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "_fixtureNote": "TSK-DATA-005: detailCommon2 실제 호출 결과(2026-09-14, contentId=2930927, contentTypeId=38/쇼핑). serviceKey는 포함하지 않음. 참고: defaultYN/firstImageYN/areacodeYN/catcodeYN/addrinfoYN/mapinfoYN/overviewYN 파라미터를 붙이면 resultCode=10 INVALID_REQUEST_PARAMETER_ERROR(defaultYN)가 발생한다 - 이 서비스(KorPetTourService2)의 detailCommon2는 해당 옵션 파라미터를 지원하지 않으며, 파라미터 없이 호출해야 정상 응답한다. mapx/mapy는 areaBasedList2와 동일한 값이 그대로 내려온다(중복). 반려동물 관련 필드는 존재하지 않는다.",
+  "response": {
+    "header": {
+      "resultCode": "0000",
+      "resultMsg": "OK"
+    },
+    "body": {
+      "items": {
+        "item": [
+          {
+            "contentid": "2930927",
+            "contenttypeid": "38",
+            "title": "가까운약국",
+            "createdtime": "20221030154457",
+            "modifiedtime": "20260316103559",
+            "tel": "",
+            "telname": "",
+            "homepage": "",
+            "firstimage": "https://tong.visitkorea.or.kr/cms/resource/90/4017190_image2_1.jpg",
+            "firstimage2": "https://tong.visitkorea.or.kr/cms/resource/90/4017190_image3_1.jpg",
+            "cpyrhtDivCd": "Type3",
+            "areacode": "",
+            "sigungucode": "",
+            "lDongRegnCd": "26",
+            "lDongSignguCd": "230",
+            "lclsSystm1": "SH",
+            "lclsSystm2": "SH04",
+            "lclsSystm3": "SH040300",
+            "cat1": "",
+            "cat2": "",
+            "cat3": "",
+            "addr1": "부산광역시 부산진구 가야대로 779 (부전동)",
+            "addr2": "",
+            "zipcode": "47257",
+            "mapx": "129.056805686045",
+            "mapy": "35.1579550616706",
+            "mlevel": "6",
+            "overview": "가까운약국은 이웃처럼 편안한 상담과 정직한 약료 서비스를 지향하는 지역 거점 약국 브랜드입니다. 고객의 건강 고민에 귀 기울이며 세심한 처방 안내와 건강 정보를 제공하여 신뢰받는 건강 지킴이 역할을 수행합니다."
+          }
+        ]
+      },
+      "numOfRows": 1,
+      "pageNo": 1,
+      "totalCount": 1
+    }
+  }
+}

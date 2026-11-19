@@ -12,12 +12,22 @@ import lombok.NoArgsConstructor;
  *
  * <p><b>TSK-DATA-002 검증 상태:</b> 표준 필드(contentid/title/addr1/addr2/tel/mapx/mapy/firstimage/
  * firstimage2/areacode/sigungucode/cat1~3/modifiedtime/contenttypeid)는 TourAPI 4.0 공통 스키마와
- * 동일하여 신뢰도가 높다. 다만 아래 반려동물 전용 필드(acmpyTypeCd 등)는 이 작업에서 실제 성공 응답으로
- * 실물 검증을 완료하지 못했다 — 로컬 프로필 시크릿이 data.go.kr 게이트웨이에서
- * SERVICE_KEY_IS_NOT_REGISTERED_ERROR(reasonCode 30)를 반환해(활용신청 승인 대기/미승인 추정) 실제
- * item 페이로드를 받지 못했고, 이 필드명들은 기존 코드에 이미 존재하던 가정치를 그대로 유지한 것이다.
- * 체중 제한(kg) 수치 전용 필드가 실제로 존재하는지도 마찬가지로 미확인이며, 현재는 자유 텍스트
- * (acmpyPsblCpam 등)에서 정규식으로 추출하는 방식에 의존한다. 키 승인 후 재검증 필요 (백로그 참조).
+ * 동일하여 신뢰도가 높다.
+ *
+ * <p><b>TSK-DATA-005 검증 결과(2026-09-14, 실제 승인 키로 areaBasedList2/detailIntro2/detailInfo2/
+ * detailCommon2 실제 호출):</b> 아래 반려동물 전용 필드(acmpyTypeCd, claAcmpyInfo, relaAcmpyInfo,
+ * relaPosbleFclty, relaRqustFclty, etcAcmpyInfo, acmpyPsblCpam)는 <b>실제 응답 어디에도 존재하지 않음이
+ * 확인되었다</b> (contentTypeId=38/쇼핑, contentTypeId=32/숙박 두 종류 모두 미존재). 즉 areaBasedList2/
+ * detailIntro2/detailInfo2/detailCommon2 네 오퍼레이션 전체를 통틀어 이 필드들은 실물 스키마가 아니다 -
+ * 최초 구현 시점의 추측치가 그대로 남아 있던 것으로 확인됨. detailIntro2에서 contentTypeId=38(쇼핑)에
+ * 한해 "chkpetshopping"(반려동물 동반 가능 여부, 값은 관찰된 샘플에서 빈 문자열)이라는 필드가 존재하지만,
+ * contentTypeId=32(숙박)의 detailIntro2에는 그런 chkpet류 필드 자체가 없다 - 즉 필드 유무/이름이
+ * contentTypeId별로 다르다. 체중 제한(kg)/크기/목줄/이동장(케이지)/실내외/오프리쉬 관련 필드도 확인된
+ * 4개 오퍼레이션 어디에도 없었다. 상세 근거와 fixture 목록은 docs/TASKS.md TSK-DATA-005 기록 및
+ * src/test/resources/tourapi/success-detail-*-real-2026-09-14.json 참조.
+ *
+ * <p>이 필드들은 실제로 존재하지 않는 것으로 검증되었지만, TSK-DATA-005 범위 제한(Entity/매핑 로직 변경
+ * 금지)에 따라 이 DTO 자체는 아직 수정하지 않았다 - 제거/교체는 별도 작업에서 처리한다.
  */
 @Getter
 @NoArgsConstructor
@@ -103,6 +113,9 @@ public class TourApiPlaceItemDto {
     private String modifiedTime;
 
     // --- 반려동물 전용 동반 정보 (Pet Policy Details) ---
+    // [주의] TSK-DATA-005(2026-09-14) 실제 호출 검증 결과, 아래 7개 필드는 TourAPI 실제 응답에 존재하지 않는
+    // 최초 구현 당시의 추측 필드다. 실제 응답에서는 항상 null로 역직렬화되며, 실데이터 근거로 사용하면 안 된다.
+    // 제거/교체는 TSK-DATA-007(백로그)에서 처리한다.
 
     @JsonProperty("acmpyTypeCd")
     private String accompanyTypeCd;

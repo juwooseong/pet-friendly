@@ -1,0 +1,15 @@
+{
+  "_fixtureNote": "TSK-DATA-005: detailInfo2(반복정보) 실제 호출 결과(2026-09-14, contentId=2930927, contentTypeId=38/쇼핑). serviceKey는 포함하지 않음. 이 contentId에는 반복정보 자체가 없다(items가 빈 문자열, totalCount=0) - 반려동물 정보의 존재/부재를 판단할 데이터가 아예 없는 '데이터 없음' 케이스로, '반려동물 정보 없음'과는 다른 결과이므로 구분해서 기록한다.",
+  "response": {
+    "header": {
+      "resultCode": "0000",
+      "resultMsg": "OK"
+    },
+    "body": {
+      "items": "",
+      "numOfRows": 0,
+      "pageNo": 1,
+      "totalCount": 0
+    }
+  }
+}

@@ -76,18 +76,30 @@ public class Place {
 
     /**
      * 동반 가능 반려동물 크기 목록 (JSONB, 예: ["SMALL", "MEDIUM"])
-     * PetSizeCategory 문자열 값으로 저장되며, DB 컬럼 기본값은 전체 크기 허용이다.
+     * PetSizeCategory 문자열 값으로 저장된다.
+     *
+     * <p><b>TSK-DATA-008 (ADR-007) NULL 정책:</b> {@code null} = 아직 검증되지 않음(미확인),
+     * 빈 리스트 {@code []} = 실제 근거로 "허용 크기 없음"이 확인됨, 값이 채워진 리스트 = 실제
+     * 근거로 확인된 허용 크기 목록. 근거 없이 전체 크기 허용으로 채우지 않는다 - 과거에는 생성자가
+     * {@code null} 입력을 자동으로 전체 허용 목록으로 치환했으나, 이는 "정보 없음"과 "실제로 전체
+     * 허용됨"을 구분하지 못하게 하는 버그였다(TSK-DATA-006 ADR-007에서 식별, 이번 작업에서 제거).
      */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "allowed_sizes", columnDefinition = "jsonb")
     private List<String> allowedSizes;
 
+    /**
+     * <b>TSK-DATA-008 (ADR-007) NULL 정책:</b> {@code null} = 아직 검증되지 않음(미확인),
+     * {@code false} = 실제 근거로 불가능함이 확인됨, {@code true} = 실제 근거로 가능함이 확인됨.
+     */
     @Column(name = "is_indoor_allowed")
     private Boolean isIndoorAllowed;
 
+    /** {@link #isIndoorAllowed}와 동일한 NULL 정책을 따른다. */
     @Column(name = "is_outdoor_allowed")
     private Boolean isOutdoorAllowed;
 
+    /** {@link #isIndoorAllowed}와 동일한 NULL 정책을 따른다. */
     @Column(name = "has_off_leash_zone")
     private Boolean hasOffLeashZone;
 
@@ -98,8 +110,6 @@ public class Place {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private ZonedDateTime updatedAt;
-
-    private static final List<String> DEFAULT_ALLOWED_SIZES = List.of("SMALL", "MEDIUM", "LARGE");
 
     @Builder
     public Place(UUID id, String publicDataId, String name, String category, String categoryName,
@@ -122,11 +132,13 @@ public class Place {
         this.description = description;
         this.rating = rating != null ? rating : BigDecimal.valueOf(5.0);
         this.reviewCount = reviewCount != null ? reviewCount : 0;
+        // TSK-DATA-008 (ADR-007): 반려동물 정책 필드는 실제 근거 없이 기본값을 채우지 않는다.
+        // null 입력을 그대로 유지한다("아직 검증되지 않음") - maxWeightLimitKg와 동일한 정책.
         this.maxWeightLimitKg = maxWeightLimitKg;
-        this.allowedSizes = (allowedSizes != null && !allowedSizes.isEmpty()) ? allowedSizes : DEFAULT_ALLOWED_SIZES;
-        this.isIndoorAllowed = isIndoorAllowed != null ? isIndoorAllowed : true;
-        this.isOutdoorAllowed = isOutdoorAllowed != null ? isOutdoorAllowed : true;
-        this.hasOffLeashZone = hasOffLeashZone != null ? hasOffLeashZone : false;
+        this.allowedSizes = allowedSizes;
+        this.isIndoorAllowed = isIndoorAllowed;
+        this.isOutdoorAllowed = isOutdoorAllowed;
+        this.hasOffLeashZone = hasOffLeashZone;
     }
 
     /**
