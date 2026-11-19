@@ -23,8 +23,8 @@ public class TourDataBatch {
 
     private final TourDataCollectorService tourDataCollectorService;
 
-    @Value("${public-data.batch.enabled:true}")
-    private boolean batchEnabled = true;
+    @Value("${public-data.batch.enabled:false}")
+    private boolean batchEnabled = false; // 설정 누락 시에도 자동 수집이 돌지 않도록 안전한 기본값(비활성)
 
     @Value("${public-data.batch.page-size:100}")
     private int pageSize = 100;

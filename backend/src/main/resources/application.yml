@@ -60,7 +60,10 @@ public-data:
     mobile-os: ETC
     mobile-app: PetSpot
   batch:
-    enabled: true
+    # 자동 수집 비활성화(2026-11-19): collectAllPlaces는 전체 페이지를 순회하므로, 호출 속도 제한/일일 트래픽
+    # 한도 대응이 설계된 TSK-DATA-003-C(전국 초기 적재) 완료 전까지는 스케줄 실행을 막는다.
+    # 필요 시 -Dpublic-data.batch.enabled=true 또는 프로필 설정으로만 명시적으로 켠다.
+    enabled: false
     cron: "0 0 3 * * *"
     page-size: 100
 

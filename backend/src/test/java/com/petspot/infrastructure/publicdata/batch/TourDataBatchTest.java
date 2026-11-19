@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 
@@ -22,6 +23,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class TourDataBatchTest {
@@ -108,7 +110,8 @@ class TourDataBatchTest {
     @Test
     @DisplayName("TourDataBatch 스케줄러 실행 및 정상 동작 검증")
     void runIngestionBatch_Success() {
-        // given
+        // given: 배치 기본값은 비활성(false)이므로, 실행 로직 검증을 위해 명시적으로 활성화한다.
+        ReflectionTestUtils.setField(tourDataBatch, "batchEnabled", true);
         TourApiPlaceItemDto item = TourApiPlaceItemDto.builder().contentId("1001").title("배치 수집 장소").build();
         TourApiResponseDto response = createMockResponse(List.of(item), 1, 1, 100);
 
@@ -124,7 +127,8 @@ class TourDataBatchTest {
     @Test
     @DisplayName("API 호출 예외 발생 시 PublicDataException 처리 및 배치 무사 종료 검증")
     void runIngestionBatch_ApiException_HandledGracefully() {
-        // given
+        // given: 배치를 명시적으로 활성화한 상태에서 API 예외 발생
+        ReflectionTestUtils.setField(tourDataBatch, "batchEnabled", true);
         given(tourApiClient.fetchPetPlaces(anyInt(), anyInt()))
                 .willThrow(new PublicDataException("TourAPI Timeout or Connection Error"));
 
@@ -133,6 +137,17 @@ class TourDataBatchTest {
         tourDataBatch.runIngestionBatch();
 
         verify(tourApiClient).fetchPetPlaces(100, 1);
+    }
+
+    @Test
+    @DisplayName("배치 기본값은 비활성이며, 명시적으로 켜지 않으면 스케줄 실행 시 TourAPI를 호출하지 않는다")
+    void runIngestionBatch_DisabledByDefault_DoesNotCallApi() {
+        // TSK-DATA-003-C(전국 적재: 속도 제한/일일 한도 대응) 설계 전 의도치 않은 전체 수집을 막기 위한 안전장치 검증
+        // when
+        tourDataBatch.runIngestionBatch();
+
+        // then
+        verifyNoInteractions(tourApiClient);
     }
 
     private TourApiResponseDto createMockResponse(List<TourApiPlaceItemDto> items, int totalCount, int pageNo, int numOfRows) {
