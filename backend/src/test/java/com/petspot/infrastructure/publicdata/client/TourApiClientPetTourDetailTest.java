@@ -105,6 +105,41 @@ class TourApiClientPetTourDetailTest {
         mockServer.verify(); // 호출 기대가 없으므로 어떤 요청도 나가지 않았어야 한다
     }
 
+    @Test
+    @DisplayName("data.go.kr 'Decoding' 형태 키(+, /, = 포함)도 URL 인코딩해 정상 요청한다 (2026-11-19 실제 장애 재현)")
+    void decodedServiceKey_IsEncodedInRequest() throws IOException {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        TourApiClient decodedKeyClient = new TourApiClient(builder.build(), "ab+cd/ef==", BASE_URL);
+
+        server.expect(requestTo(org.hamcrest.Matchers.containsString("serviceKey=ab%2Bcd%2Fef%3D%3D")))
+                .andRespond(withSuccess(fixture("success-detail-pet-tour2-empty-real-2026-11-19.json"), MediaType.APPLICATION_JSON));
+
+        assertThat(decodedKeyClient.fetchPetTourDetail("2707444")).isEmpty();
+        server.verify();
+        // 이미 인코딩된('Encoding' 형태) 키는 이중 인코딩하지 않는다
+        assertThat(new TourApiClient(builder.build(), "ab%2Bcd", BASE_URL).encodedServiceKey()).isEqualTo("ab%2Bcd");
+    }
+
+    @Test
+    @DisplayName("통신 오류 메시지에 서비스키가 섞여 있어도 예외 메시지에는 가려서 남긴다")
+    void errorMessage_DoesNotExposeServiceKey() {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        String secret = "SECRET+KEY/value==";
+        TourApiClient secretClient = new TourApiClient(builder.build(), secret, BASE_URL);
+        server.expect(requestTo(startsWith(BASE_URL + "/detailPetTour2")))
+                .andRespond(request -> {
+                    throw new java.io.IOException("connection reset while calling ?serviceKey=" + secret);
+                });
+
+        assertThatThrownBy(() -> secretClient.fetchPetTourDetail("1"))
+                .isInstanceOf(PublicDataException.class)
+                .hasMessageNotContaining(secret)
+                .hasMessageContaining("***")
+                .hasNoCause();
+    }
+
     private String fixture(String name) throws IOException {
         try (InputStream in = getClass().getResourceAsStream("/tourapi/" + name)) {
             return new String(in.readAllBytes(), StandardCharsets.UTF_8);

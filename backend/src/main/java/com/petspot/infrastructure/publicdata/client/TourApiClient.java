@@ -15,6 +15,8 @@ import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 /**
@@ -116,12 +118,13 @@ public class TourApiClient {
             throw new IllegalArgumentException("contentId는 필수입니다.");
         }
         URI targetUri = UriComponentsBuilder.fromUriString(baseUrl + PET_TOUR_DETAIL_OPERATION_PATH)
-                .queryParam("serviceKey", serviceKey)
+                .queryParam("serviceKey", encodedServiceKey())
                 .queryParam("MobileOS", mobileOs)
                 .queryParam("MobileApp", mobileApp)
                 .queryParam("_type", "json")
                 .queryParam("contentId", contentId)
                 .build(true).toUri();
+        // (build(true)는 이미 인코딩된 값을 가정한다 - 서비스키는 encodedServiceKey()로 항상 인코딩해 넘긴다)
         log.debug("Requesting TourAPI detailPetTour2: contentId={}", contentId);
 
         String rawBody = fetchRaw(targetUri);
@@ -177,11 +180,12 @@ public class TourApiClient {
                 log.warn("TourAPI 오류 상태 응답 수신: status={}, URI={}", e.getStatusCode(), maskServiceKey(targetUri));
                 throw gatewayError(errorBody);
             }
-            log.error("TourAPI 통신 중 오류 발생(본문 없음): URI={}", maskServiceKey(targetUri), e);
-            throw new PublicDataException("TourAPI 통신 중 예외가 발생했습니다: " + e.getMessage(), e);
+            log.error("TourAPI 통신 중 오류 발생(본문 없음): URI={}, error={}", maskServiceKey(targetUri), maskSecret(e.getMessage()));
+            throw new PublicDataException("TourAPI 통신 중 예외가 발생했습니다: " + maskSecret(e.getMessage()));
         } catch (Exception e) {
-            log.error("TourAPI 통신 중 오류 발생: URI={}", maskServiceKey(targetUri), e);
-            throw new PublicDataException("TourAPI 통신 중 예외가 발생했습니다: " + e.getMessage(), e);
+            // 원인 예외를 그대로 연결하면 스택트레이스/메시지에 서비스키가 섞일 수 있어 가린 메시지만 남긴다
+            log.error("TourAPI 통신 중 오류 발생: URI={}, error={}", maskServiceKey(targetUri), maskSecret(e.getMessage()));
+            throw new PublicDataException("TourAPI 통신 중 예외가 발생했습니다: " + maskSecret(e.getMessage()));
         }
 
         if (rawBody == null || rawBody.isBlank()) {
@@ -192,7 +196,7 @@ public class TourApiClient {
 
     private URI buildListUri(int numOfRows, int pageNo, String contentTypeId) {
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUrl + LIST_OPERATION_PATH)
-                .queryParam("serviceKey", serviceKey)
+                .queryParam("serviceKey", encodedServiceKey())
                 .queryParam("numOfRows", numOfRows)
                 .queryParam("pageNo", pageNo)
                 .queryParam("MobileOS", mobileOs)
@@ -204,8 +208,30 @@ public class TourApiClient {
             builder.queryParam("contentTypeId", contentTypeId);
         }
 
-        // ServiceKey 인코딩 중복 방지를 위한 build(true) 사용
+        // build(true)는 쿼리 값이 이미 인코딩되었다고 가정한다 - 서비스키는 encodedServiceKey()로 인코딩해 넘긴다
         return builder.build(true).toUri();
+    }
+
+    /**
+     * data.go.kr는 같은 키를 "Encoding"(%2B 등 인코딩됨)과 "Decoding"(+, /, = 포함 원문) 두 형태로 보여준다.
+     * 어느 쪽을 설정해도 동작하도록, 이미 인코딩된 키(% 포함)는 그대로 쓰고 원문 키는 URL 인코딩한다.
+     * (2026-11-19: Decoding 키 설정 시 "Invalid character '=' for QUERY_PARAM"으로 요청 전에 실패하던 문제 수정)
+     */
+    String encodedServiceKey() {
+        if (serviceKey == null) {
+            return "";
+        }
+        return serviceKey.contains("%") ? serviceKey : URLEncoder.encode(serviceKey, StandardCharsets.UTF_8);
+    }
+
+    /** 예외/로그 메시지에 서비스키(원문·인코딩 형태 모두)가 섞여 있으면 가린다. */
+    private String maskSecret(String message) {
+        if (message == null || serviceKey == null || serviceKey.isBlank()) {
+            return message;
+        }
+        String masked = message.replace(serviceKey, "***");
+        String encoded = encodedServiceKey();
+        return encoded.isBlank() ? masked : masked.replace(encoded, "***");
     }
 
     /** 로그에 서비스키가 남지 않도록 쿼리의 serviceKey 값을 가린다. */
