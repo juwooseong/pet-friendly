@@ -7,6 +7,7 @@ import com.petspot.infrastructure.publicdata.exception.PublicDataException;
 import com.petspot.infrastructure.publicdata.client.TourApiClient;
 import com.petspot.infrastructure.publicdata.mapper.TourApiPlaceMapper;
 import com.petspot.infrastructure.publicdata.service.TourDataCollectorService;
+import com.petspot.infrastructure.publicdata.service.TourPetPolicySyncService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,13 +38,16 @@ class TourDataBatchTest {
     @Mock
     private PlaceRepository placeRepository;
 
+    @Mock
+    private TourPetPolicySyncService tourPetPolicySyncService;
+
     private TourDataCollectorService tourDataCollectorService;
     private TourDataBatch tourDataBatch;
 
     @BeforeEach
     void setUp() {
         tourDataCollectorService = new TourDataCollectorService(tourApiClient, tourApiPlaceMapper, placeRepository);
-        tourDataBatch = new TourDataBatch(tourDataCollectorService);
+        tourDataBatch = new TourDataBatch(tourDataCollectorService, tourPetPolicySyncService);
     }
 
     @Test
@@ -148,6 +152,44 @@ class TourDataBatchTest {
 
         // then
         verifyNoInteractions(tourApiClient);
+    }
+
+    @Test
+    @DisplayName("TSK-DATA-010: 목록을 페이지 단위로 저장한 뒤 정책 조회 단계를 설정된 호출 수로 실행한다")
+    void runOnce_SavesListThenSyncsPolicies() {
+        // given: 마지막 페이지(페이지 크기보다 적은 1건)
+        TourApiPlaceItemDto item = TourApiPlaceItemDto.builder().contentId("1001").title("장소").build();
+        given(tourApiClient.fetchPetPlaces(100, 1)).willReturn(createMockResponse(List.of(item), 1, 1, 100));
+
+        // when
+        tourDataBatch.runOnce();
+
+        // then: 1페이지만 호출(마지막 페이지 감지)하고 정책 단계는 기본 800건/100ms로 실행
+        verify(tourApiClient).fetchPetPlaces(100, 1);
+        verify(tourPetPolicySyncService).syncPendingPolicies(800, 100L);
+    }
+
+    @Test
+    @DisplayName("TSK-DATA-010: 목록 단계에서 일일 호출 한도를 초과하면 정책 단계는 호출하지 않는다")
+    void runOnce_QuotaExceededOnList_SkipsPolicySync() {
+        given(tourApiClient.fetchPetPlaces(anyInt(), anyInt()))
+                .willThrow(new PublicDataException("TourAPI 게이트웨이 오류: [22] LIMITED_NUMBER_OF_SERVICE_REQUESTS_EXCEEDS_ERROR"));
+
+        TourDataBatch.BatchResult result = tourDataBatch.runOnce();
+
+        assertThat(result.placeList().quotaExceeded()).isTrue();
+        verifyNoInteractions(tourPetPolicySyncService);
+    }
+
+    @Test
+    @DisplayName("TSK-DATA-010: sync-place-list=false이면 목록 호출 없이 정책 조회만 이어서 진행한다")
+    void runOnce_PolicyOnly() {
+        ReflectionTestUtils.setField(tourDataBatch, "syncPlaceList", false);
+
+        tourDataBatch.runOnce();
+
+        verifyNoInteractions(tourApiClient);
+        verify(tourPetPolicySyncService).syncPendingPolicies(800, 100L);
     }
 
     private TourApiResponseDto createMockResponse(List<TourApiPlaceItemDto> items, int totalCount, int pageNo, int numOfRows) {

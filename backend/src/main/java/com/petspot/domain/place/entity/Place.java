@@ -14,6 +14,7 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -107,6 +108,27 @@ public class Place {
     @Column(name = "has_off_leash_zone")
     private Boolean hasOffLeashZone;
 
+    /** 정책 출처: TourAPI detailPetTour2 자동 반영 (TSK-DATA-010, ADR-009) */
+    public static final String POLICY_SOURCE_TOURAPI = "TOURAPI";
+    /** 정책 출처: 관리자가 검증한 값 - TourAPI 재동기화로 덮어쓰지 않는다 */
+    public static final String POLICY_SOURCE_ADMIN = "ADMIN";
+
+    /**
+     * 전용 컬럼이 없는 반려동물 정책 해석 결과와 원문 (예: accompanyScope, leashRequired, carrierRequired,
+     * vaccinationRequired, maxPetCount, allowedPetsText, requirementsText, etcText). 근거 없는 항목은 키 자체가 없다.
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "pet_policy_detail", columnDefinition = "jsonb")
+    private Map<String, Object> petPolicyDetail;
+
+    /** 정책 값 출처 ({@link #POLICY_SOURCE_TOURAPI} / {@link #POLICY_SOURCE_ADMIN}), 정책이 없으면 null */
+    @Column(name = "pet_policy_source", length = 20)
+    private String petPolicySource;
+
+    /** 마지막 TourAPI 정책 조회 시각. null이면 아직 조회 전이라 배치가 우선 처리한다 */
+    @Column(name = "pet_policy_synced_at")
+    private ZonedDateTime petPolicySyncedAt;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private ZonedDateTime createdAt;
@@ -166,6 +188,43 @@ public class Place {
         }
         if (categoryName != null && !categoryName.isBlank()) {
             this.categoryName = categoryName;
+        }
+    }
+
+    /**
+     * TourAPI {@code detailPetTour2}에서 해석한 반려동물 정책을 반영한다 (TSK-DATA-010, ADR-009).
+     *
+     * <p>관리자가 검증한 정책({@link #POLICY_SOURCE_ADMIN})은 덮어쓰지 않고 조회 시각만 기록한다.
+     * 해석하지 못한 항목은 null 그대로 반영한다(ADR-007 - 근거 없는 기본값 금지).
+     *
+     * @return 정책 값을 실제로 갱신했으면 true, 관리자 값 보호로 건너뛰었으면 false
+     */
+    public boolean applyTourApiPetPolicy(BigDecimal maxWeightLimitKg, List<String> allowedSizes, Boolean indoorAllowed,
+                                         Map<String, Object> policyDetail, ZonedDateTime syncedAt) {
+        this.petPolicySyncedAt = syncedAt;
+        if (POLICY_SOURCE_ADMIN.equals(this.petPolicySource)) {
+            return false;
+        }
+        this.maxWeightLimitKg = maxWeightLimitKg;
+        this.allowedSizes = allowedSizes;
+        this.isIndoorAllowed = indoorAllowed;
+        this.petPolicyDetail = policyDetail;
+        this.petPolicySource = POLICY_SOURCE_TOURAPI;
+        return true;
+    }
+
+    /**
+     * TourAPI에 이 장소의 반려동물 정책이 등록되어 있지 않음을 기록한다.
+     * 이전에 TourAPI에서 가져온 정책이 있었다면(출처 TOURAPI) 더 이상 근거가 없으므로 비운다. 관리자 값은 유지한다.
+     */
+    public void markTourApiPetPolicyNotProvided(ZonedDateTime syncedAt) {
+        this.petPolicySyncedAt = syncedAt;
+        if (POLICY_SOURCE_TOURAPI.equals(this.petPolicySource)) {
+            this.maxWeightLimitKg = null;
+            this.allowedSizes = null;
+            this.isIndoorAllowed = null;
+            this.petPolicyDetail = null;
+            this.petPolicySource = null;
         }
     }
 

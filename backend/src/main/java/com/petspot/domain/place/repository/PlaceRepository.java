@@ -32,4 +32,11 @@ public interface PlaceRepository extends JpaRepository<Place, UUID>, PlaceReposi
      * 최근 등록 장소 Top 10 조회 (최신순)
      */
     java.util.List<Place> findTop10ByOrderByCreatedAtDesc();
+
+    /**
+     * TourAPI 반려동물 정책(detailPetTour2)을 아직 조회하지 않은 공공데이터 장소 (TSK-DATA-010).
+     * 조회 시각이 없는 장소만 대상이라 배치를 여러 날에 나눠 실행해도 이어서 처리된다(최근 등록 순).
+     */
+    java.util.List<Place> findByPublicDataIdIsNotNullAndPetPolicySyncedAtIsNullOrderByCreatedAtDesc(
+            org.springframework.data.domain.Pageable pageable);
 }
