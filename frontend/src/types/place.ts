@@ -1,6 +1,50 @@
 import type { SizeCategory } from './user';
 
-export type PlaceCategory = 'CAFE' | 'HOTEL' | 'PARK' | 'HOSPITAL' | 'SALON';
+export type PlaceCategory =
+  | 'CAFE'
+  | 'HOTEL'
+  | 'PARK'
+  | 'HOSPITAL'
+  | 'SALON'
+  | 'SHOPPING'
+  | 'CULTURE'
+  | 'FESTIVAL'
+  | 'COURSE'
+  | 'ETC';
+
+/** 상세 사진 한 장 (TourAPI detailImage2) */
+export interface PlaceGalleryImage {
+  url: string;
+  thumbnailUrl: string;
+  /** 공공누리 유형 (Type1 등) */
+  copyrightType?: string;
+}
+
+/** 상세 부가 정보 (값이 없는 키는 생략됨) */
+export interface PlaceDetailInfo {
+  homepage?: string;
+  parking?: string;
+  infoCenter?: string;
+  babyCarriage?: string;
+  useFee?: string;
+}
+
+/** 반려동물 정책 해석 상세 (근거가 없는 항목은 키가 없음 - ADR-007) */
+export interface PetPolicyDetail {
+  accompanyScope?: 'ALL_AREAS' | 'PARTIAL_AREAS';
+  maxPetCount?: number;
+  leashRequired?: boolean;
+  carrierRequired?: boolean;
+  vaccinationRequired?: boolean;
+  muzzleRequiredForDangerousDogs?: boolean;
+  allowedPetsText?: string;
+  requirementsText?: string;
+  etcText?: string;
+  facilities?: string;
+  furnishedItems?: string;
+  purchasableItems?: string;
+  rentalItems?: string;
+}
 
 /**
  * 장소 검색 API(`GET /places/search`)의 실제 응답 Projection 구조.
@@ -28,6 +72,13 @@ export interface PlaceSearchItem {
   allowedSizes: SizeCategory[] | null;
   /** 위도/경도 조건이 주어졌을 때만 값이 채워지는 DB 계산 거리(km) */
   distanceKm: number | null;
+  /** 목록용 작은 대표 이미지 (없으면 imageUrl 사용) */
+  thumbnailUrl?: string | null;
+  /** 대표 이미지 공공누리 유형 */
+  imageCopyrightType?: string | null;
+  detailInfo?: PlaceDetailInfo | null;
+  galleryImages?: PlaceGalleryImage[] | null;
+  petPolicyDetail?: PetPolicyDetail | null;
 }
 
 /** 장소 검색 요청 쿼리 파라미터 (`PlaceSearchCondition` + Pageable) */

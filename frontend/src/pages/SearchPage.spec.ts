@@ -248,4 +248,38 @@ describe('SearchPage', () => {
       expect(thumb.find('.ri-image-line').exists()).toBe(true);
     });
   });
+
+  describe('목록 카드 (썸네일 / 분류 / 출처)', () => {
+    it('작은 썸네일(thumbnailUrl)이 있으면 원본 대신 사용하고, 분류 이름과 데이터 출처를 표시한다', async () => {
+      (apiClient.get as any).mockResolvedValue(
+        mockSearchResponse({
+          content: [
+            {
+              id: 'p-1', name: '와룡공원', category: 'PARK', categoryName: '관광지', address: '서울 종로구',
+              latitude: 37.59, longitude: 126.99, phone: null, operatingHours: null,
+              imageUrl: 'https://tong.visitkorea.or.kr/original.jpg', thumbnailUrl: 'https://tong.visitkorea.or.kr/small.jpg',
+              rating: 0, reviewCount: 0, maxWeightLimitKg: null, allowedSizes: null, distanceKm: null,
+            },
+          ],
+        })
+      );
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      expect(wrapper.find('[data-testid="place-thumbnail"] img').attributes('src')).toBe('https://tong.visitkorea.or.kr/small.jpg');
+      expect(wrapper.text()).toContain('관광지');
+      expect(wrapper.find('[data-testid="data-source"]').text()).toContain('한국관광공사');
+    });
+
+    it('카테고리 필터에 쇼핑·문화시설·축제·여행코스가 있다', async () => {
+      (apiClient.get as any).mockResolvedValue(mockSearchResponse());
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      const values = wrapper.findAll('option').map((o) => o.attributes('value'));
+      expect(values).toEqual(expect.arrayContaining(['SHOPPING', 'CULTURE', 'FESTIVAL', 'COURSE']));
+    });
+  });
 });

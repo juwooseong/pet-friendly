@@ -535,4 +535,120 @@ describe('PlaceDetailPage', () => {
       expect(wrapper.find('[data-testid="place-operating-hours"]').exists()).toBe(false);
     });
   });
+
+  describe('공공데이터 상세 정보 (갤러리 / 출처 / 부가 정보 / 반려견 편의 / 길찾기)', () => {
+    const publicPlace = (overrides: Partial<Record<string, unknown>> = {}) =>
+      mockDetailResponse({
+        publicDataId: '1019041',
+        name: '와룡공원',
+        latitude: 37.59,
+        longitude: 126.99,
+        imageUrl: 'https://tong.visitkorea.or.kr/main.jpg',
+        imageCopyrightType: 'Type1',
+        galleryImages: [
+          { url: 'https://tong.visitkorea.or.kr/1.jpg', thumbnailUrl: 'https://tong.visitkorea.or.kr/1s.jpg', copyrightType: 'Type1' },
+          { url: 'https://tong.visitkorea.or.kr/2.jpg', thumbnailUrl: 'https://tong.visitkorea.or.kr/2s.jpg', copyrightType: 'Type3' },
+        ],
+        ...overrides,
+      });
+
+    it('상세 사진이 여러 장이면 썸네일을 눌러 큰 사진을 바꾸고, 사진의 공공누리 유형과 출처를 표시한다', async () => {
+      (apiClient.get as any).mockResolvedValue(publicPlace());
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      const gallery = wrapper.find('[data-testid="place-gallery"]');
+      expect(gallery.find('img').attributes('src')).toBe('https://tong.visitkorea.or.kr/1.jpg');
+      expect(wrapper.find('[data-testid="image-source"]').text()).toContain('한국관광공사');
+      expect(wrapper.find('[data-testid="image-source"]').text()).toContain('공공누리 제1유형(출처표시)');
+
+      await gallery.find('button[aria-label="사진 2"]').trigger('click');
+
+      expect(gallery.find('img').attributes('src')).toBe('https://tong.visitkorea.or.kr/2.jpg');
+      expect(wrapper.find('[data-testid="image-source"]').text()).toContain('공공누리 제3유형(출처표시·변경금지)');
+    });
+
+    it('직접 등록한 장소(publicDataId 없음)에는 한국관광공사 출처를 표시하지 않는다', async () => {
+      (apiClient.get as any).mockResolvedValue(mockDetailResponse());
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      expect(wrapper.find('[data-testid="image-source"]').exists()).toBe(false);
+    });
+
+    it('주차·문의·유모차·요금과 홈페이지(http/https만)를 표시한다', async () => {
+      (apiClient.get as any).mockResolvedValue(
+        publicPlace({
+          detailInfo: { homepage: 'https://park.example.com', parking: '가능', infoCenter: '02-111-2222', useFee: '무료' },
+        })
+      );
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      const info = wrapper.find('[data-testid="place-extra-info"]');
+      expect(info.text()).toContain('주차');
+      expect(info.text()).toContain('02-111-2222');
+      expect(info.text()).toContain('무료');
+      const link = info.find('a');
+      expect(link.attributes('href')).toBe('https://park.example.com');
+      expect(link.attributes('rel')).toBe('noopener noreferrer');
+    });
+
+    it('http/https가 아닌 홈페이지 값은 링크로 만들지 않는다', async () => {
+      (apiClient.get as any).mockResolvedValue(publicPlace({ detailInfo: { homepage: 'javascript:alert(1)' } }));
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      expect(wrapper.find('[data-testid="place-extra-info"]').exists()).toBe(false);
+      expect(wrapper.html()).not.toContain('javascript:alert(1)');
+    });
+
+    it('반려동물 동반 조건 배지와 반려견 편의시설을 근거가 있는 항목만 표시한다', async () => {
+      (apiClient.get as any).mockResolvedValue(
+        publicPlace({
+          allowedSizes: null,
+          petPolicyDetail: {
+            accompanyScope: 'PARTIAL_AREAS',
+            leashRequired: true,
+            vaccinationRequired: true,
+            maxPetCount: 2,
+            etcText: '예방 접종이 완료된 반려견만 동반 가능합니다.',
+            facilities: '잔디구장, 산책로',
+            rentalItems: '목줄',
+          },
+        })
+      );
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      const badges = wrapper.find('[data-testid="pet-requirements"]').text();
+      expect(badges).toContain('일부 구역만 동반 가능');
+      expect(badges).toContain('목줄 필수');
+      expect(badges).toContain('예방접종 필수');
+      expect(badges).toContain('최대 2마리');
+      expect(badges).not.toContain('이동장'); // 근거 없는 항목은 표시하지 않는다
+      expect(wrapper.text()).toContain('예방 접종이 완료된 반려견만 동반 가능합니다.');
+
+      const amenities = wrapper.find('[data-testid="pet-amenities"]').text();
+      expect(amenities).toContain('잔디구장, 산책로');
+      expect(amenities).toContain('대여 가능');
+      expect(amenities).not.toContain('구매 가능');
+    });
+
+    it('카카오맵 길찾기 링크를 장소명과 좌표로 만든다', async () => {
+      (apiClient.get as any).mockResolvedValue(publicPlace());
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      const link = wrapper.find('[data-testid="kakao-directions"]');
+      expect(link.attributes('href')).toBe('https://map.kakao.com/link/to/%EC%99%80%EB%A3%A1%EA%B3%B5%EC%9B%90,37.59,126.99');
+      expect(link.attributes('target')).toBe('_blank');
+    });
+  });
 });

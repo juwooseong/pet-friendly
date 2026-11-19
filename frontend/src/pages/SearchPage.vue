@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { formatRating } from '@/utils/rating';
+import { TOUR_API_SOURCE } from '@/utils/publicData';
 import { useRouter } from 'vue-router';
 import apiClient from '@/api/apiClient';
 import { useAuthStore } from '@/stores/authStore';
@@ -181,6 +182,10 @@ onMounted(async () => {
           <option value="HOTEL">숙소/펜션</option>
           <option value="PARK">공원/놀이터</option>
           <option value="HOSPITAL">동물병원</option>
+          <option value="SHOPPING">쇼핑</option>
+          <option value="CULTURE">문화시설</option>
+          <option value="FESTIVAL">축제·공연·행사</option>
+          <option value="COURSE">여행코스</option>
           <option value="SALON">미용/스파</option>
         </select>
         <select
@@ -246,8 +251,8 @@ onMounted(async () => {
         <BaseCard v-for="place in places" :key="place.id" hoverable @click="router.push(`/place/${place.id}`)">
           <div class="h-36 -mx-5 -mt-5 mb-3 bg-stone-100 rounded-t-2xl overflow-hidden" data-testid="place-thumbnail">
             <img
-              v-if="place.imageUrl && !failedImageIds.has(place.id)"
-              :src="place.imageUrl"
+              v-if="(place.thumbnailUrl || place.imageUrl) && !failedImageIds.has(place.id)"
+              :src="place.thumbnailUrl || place.imageUrl || ''"
               :alt="place.name"
               loading="lazy"
               class="w-full h-full object-cover"
@@ -257,6 +262,7 @@ onMounted(async () => {
               <i class="ri-image-line text-3xl"></i>
             </div>
           </div>
+          <span v-if="place.categoryName" class="text-[11px] font-bold text-amber-700">{{ place.categoryName }}</span>
           <h3 class="font-bold text-stone-800 text-base truncate">{{ place.name }}</h3>
           <p class="text-xs text-stone-500 truncate mt-1">{{ place.address }}</p>
           <div class="mt-2 flex flex-wrap gap-1">
@@ -305,6 +311,10 @@ onMounted(async () => {
           다음
         </button>
       </div>
+
+      <p class="text-[11px] text-stone-400 text-center" data-testid="data-source">
+        장소 정보와 사진 일부는 {{ TOUR_API_SOURCE }}에서 제공받았습니다(공공누리).
+      </p>
     </template>
 
     <EmptyState v-else icon="ri-search-line" title="검색 결과가 없습니다." description="키워드나 필터 조건을 변경해 다시 검색해보세요." />

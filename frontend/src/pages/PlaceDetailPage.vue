@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { formatRating } from '@/utils/rating';
+import { TOUR_API_SOURCE, isHttpUrl, kakaoDirectionsUrl, koglLicenseLabel } from '@/utils/publicData';
 import { useRoute, useRouter } from 'vue-router';
 import apiClient, { extractErrorMessage } from '@/api/apiClient';
 import { useAuthStore } from '@/stores/authStore';
 import type { ApiResponse } from '@/types/api';
-import type { PlaceSearchItem } from '@/types/place';
+import type { PlaceGalleryImage, PlaceSearchItem } from '@/types/place';
 import type { FavoriteItem } from '@/types/favorite';
 import type { Review } from '@/types/review';
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue';
@@ -29,8 +30,81 @@ const imageLoadError = ref(false);
  * 엔티티에는 존재하지만 API 응답에 아직 노출되지 않은 isIndoorAllowed/isOutdoorAllowed/hasOffLeashZone은
  * 다루지 않는다(TSK-BE-031 백로그 참조).
  */
+const policyDetail = computed(() => place.value?.petPolicyDetail ?? {});
+
+/** 반려동물 동반 조건 배지 (근거가 있는 항목만) */
+const petRequirementBadges = computed(() => {
+  const d = policyDetail.value;
+  const badges: string[] = [];
+  if (d.accompanyScope === 'ALL_AREAS') badges.push('전 구역 동반 가능');
+  if (d.accompanyScope === 'PARTIAL_AREAS') badges.push('일부 구역만 동반 가능');
+  if (d.leashRequired) badges.push('목줄 필수');
+  if (d.carrierRequired) badges.push('이동장·유모차 필요');
+  if (d.vaccinationRequired) badges.push('예방접종 필수');
+  if (d.muzzleRequiredForDangerousDogs) badges.push('맹견 입마개 필수');
+  if (d.maxPetCount) badges.push(`최대 ${d.maxPetCount}마리`);
+  return badges;
+});
+
+/** 반려견 편의시설·품목 (원문) */
+const petAmenities = computed(() => {
+  const d = policyDetail.value;
+  return [
+    { label: '구비 시설', value: d.facilities },
+    { label: '비치 품목', value: d.furnishedItems },
+    { label: '구매 가능', value: d.purchasableItems },
+    { label: '대여 가능', value: d.rentalItems },
+  ].filter((item): item is { label: string; value: string } => !!item.value);
+});
+
 const hasPetPolicyInfo = computed(
-  () => !!place.value && ((place.value.allowedSizes?.length ?? 0) > 0 || place.value.maxWeightLimitKg != null)
+  () =>
+    !!place.value &&
+    ((place.value.allowedSizes?.length ?? 0) > 0 ||
+      place.value.maxWeightLimitKg != null ||
+      petRequirementBadges.value.length > 0 ||
+      !!policyDetail.value.allowedPetsText ||
+      !!policyDetail.value.etcText)
+);
+
+/** 사진: 상세 사진(detailImage2)이 있으면 그 목록, 없으면 대표 이미지 1장 */
+const selectedImageIndex = ref(0);
+const galleryImages = computed<PlaceGalleryImage[]>(() => {
+  if (!place.value) return [];
+  const gallery = place.value.galleryImages;
+  if (gallery && gallery.length > 0) return gallery;
+  if (!place.value.imageUrl) return [];
+  return [
+    {
+      url: place.value.imageUrl,
+      thumbnailUrl: place.value.imageUrl,
+      copyrightType: place.value.imageCopyrightType ?? undefined,
+    },
+  ];
+});
+const currentImage = computed(() => galleryImages.value[selectedImageIndex.value] ?? null);
+const selectImage = (index: number) => {
+  selectedImageIndex.value = index;
+  imageLoadError.value = false;
+};
+
+const isPublicDataPlace = computed(() => !!place.value?.publicDataId);
+const homepageUrl = computed(() => {
+  const homepage = place.value?.detailInfo?.homepage;
+  return isHttpUrl(homepage) ? homepage : null;
+});
+const extraInfoItems = computed(() => {
+  const info = place.value?.detailInfo;
+  if (!info) return [];
+  return [
+    { icon: 'ri-parking-box-line', label: '주차', value: info.parking },
+    { icon: 'ri-customer-service-2-line', label: '문의', value: info.infoCenter },
+    { icon: 'ri-walk-line', label: '유모차', value: info.babyCarriage },
+    { icon: 'ri-ticket-2-line', label: '이용 요금', value: info.useFee },
+  ].filter((item): item is { icon: string; label: string; value: string } => !!item.value);
+});
+const directionsUrl = computed(() =>
+  place.value ? kakaoDirectionsUrl(place.value.name, place.value.latitude, place.value.longitude) : ''
 );
 
 const isFavorited = ref(false);
@@ -49,6 +123,7 @@ const fetchPlaceDetail = async () => {
   notFound.value = false;
   errorMessage.value = '';
   imageLoadError.value = false;
+  selectedImageIndex.value = 0;
   try {
     const response = await apiClient.get<ApiResponse<PlaceSearchItem>>(`/places/${placeId}`);
     if (response.data && response.data.success) {
@@ -191,23 +266,41 @@ onMounted(async () => {
     <ErrorMessage v-else-if="errorMessage" :message="errorMessage" />
 
     <div v-else-if="place" class="bg-white p-8 rounded-3xl border border-stone-100 shadow-sm space-y-4">
-      <div class="h-56 bg-stone-100 rounded-2xl overflow-hidden">
-        <img
-          v-if="place.imageUrl && !imageLoadError"
-          :src="place.imageUrl"
-          :alt="place.name"
-          class="w-full h-full object-cover"
-          @error="imageLoadError = true"
-        />
-        <div v-else class="w-full h-full flex items-center justify-center text-stone-300">
-          <i class="ri-image-line text-4xl"></i>
+      <div class="space-y-2" data-testid="place-gallery">
+        <div class="h-56 bg-stone-100 rounded-2xl overflow-hidden">
+          <img
+            v-if="currentImage && !imageLoadError"
+            :src="currentImage.url"
+            :alt="place.name"
+            class="w-full h-full object-cover"
+            @error="imageLoadError = true"
+          />
+          <div v-else class="w-full h-full flex items-center justify-center text-stone-300">
+            <i class="ri-image-line text-4xl"></i>
+          </div>
         </div>
+        <div v-if="galleryImages.length > 1" class="flex gap-2 overflow-x-auto pb-1">
+          <button
+            v-for="(image, index) in galleryImages"
+            :key="image.url"
+            type="button"
+            :aria-label="`사진 ${index + 1}`"
+            class="w-16 h-12 flex-shrink-0 rounded-lg overflow-hidden border-2 transition"
+            :class="index === selectedImageIndex ? 'border-amber-500' : 'border-transparent opacity-70 hover:opacity-100'"
+            @click="selectImage(index)"
+          >
+            <img :src="image.thumbnailUrl" :alt="`${place.name} 사진 ${index + 1}`" loading="lazy" class="w-full h-full object-cover" />
+          </button>
+        </div>
+        <p v-if="isPublicDataPlace" class="text-[11px] text-stone-400" data-testid="image-source">
+          사진·정보 출처: {{ TOUR_API_SOURCE }} · {{ koglLicenseLabel(currentImage?.copyrightType ?? place.imageCopyrightType) }}
+        </p>
       </div>
 
       <div class="flex justify-between items-start">
         <div>
           <span class="bg-amber-100 text-amber-700 text-xs font-bold px-2.5 py-1 rounded-lg">
-            {{ place.category }}
+            {{ place.categoryName || place.category }}
           </span>
           <h1 class="text-3xl font-extrabold text-stone-800 mt-2">{{ place.name }}</h1>
           <p class="text-stone-500 text-sm mt-1">{{ place.address }}</p>
@@ -255,6 +348,19 @@ onMounted(async () => {
             <i class="ri-scales-3-line text-amber-500"></i>
             <span>최대 체중 {{ place.maxWeightLimitKg }}kg까지 동반 가능</span>
           </p>
+          <div v-if="petRequirementBadges.length > 0" class="flex flex-wrap gap-1.5" data-testid="pet-requirements">
+            <span
+              v-for="badge in petRequirementBadges"
+              :key="badge"
+              class="text-xs font-bold px-2.5 py-1 rounded-full bg-stone-50 text-stone-600 border border-stone-200"
+            >
+              {{ badge }}
+            </span>
+          </div>
+          <p v-if="policyDetail.allowedPetsText" class="text-sm text-stone-600 whitespace-pre-line">
+            {{ policyDetail.allowedPetsText }}
+          </p>
+          <p v-if="policyDetail.etcText" class="text-xs text-stone-500 whitespace-pre-line">{{ policyDetail.etcText }}</p>
         </template>
         <p v-else class="text-sm text-stone-400">등록된 반려동물 동반 수칙 정보가 없습니다.</p>
       </div>
@@ -276,15 +382,56 @@ onMounted(async () => {
         <p class="text-sm text-stone-600 leading-relaxed whitespace-pre-line">{{ place.operatingHours }}</p>
       </div>
 
+      <div v-if="petAmenities.length > 0" class="pt-4 border-t border-stone-100 space-y-2" data-testid="pet-amenities">
+        <h3 class="text-sm font-bold text-stone-700 flex items-center gap-1.5">
+          <i class="ri-service-line text-amber-500"></i>
+          <span>반려견 편의시설</span>
+        </h3>
+        <dl class="text-sm text-stone-600 space-y-1">
+          <div v-for="item in petAmenities" :key="item.label" class="flex gap-2">
+            <dt class="font-bold text-stone-500 flex-shrink-0">{{ item.label }}</dt>
+            <dd class="whitespace-pre-line">{{ item.value }}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div
+        v-if="extraInfoItems.length > 0 || homepageUrl"
+        class="pt-4 border-t border-stone-100 space-y-2 text-sm text-stone-600"
+        data-testid="place-extra-info"
+      >
+        <div v-for="item in extraInfoItems" :key="item.label" class="flex gap-2">
+          <i :class="[item.icon, 'text-amber-500']"></i>
+          <span class="font-bold text-stone-500 flex-shrink-0">{{ item.label }}</span>
+          <span class="whitespace-pre-line">{{ item.value }}</span>
+        </div>
+        <a
+          v-if="homepageUrl"
+          :href="homepageUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-1.5 text-amber-600 font-bold hover:underline"
+        >
+          <i class="ri-global-line"></i>
+          <span>홈페이지</span>
+        </a>
+      </div>
+
       <div class="pt-4 border-t border-stone-100 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-stone-600">
         <div v-if="place.phone" class="flex items-center gap-2">
           <i class="ri-phone-line text-amber-500"></i>
           <span>{{ place.phone }}</span>
         </div>
-        <div class="flex items-center gap-2">
-          <i class="ri-map-pin-line text-amber-500"></i>
-          <span>{{ place.latitude }}, {{ place.longitude }}</span>
-        </div>
+        <a
+          :href="directionsUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="flex items-center gap-2 text-amber-600 font-bold hover:underline"
+          data-testid="kakao-directions"
+        >
+          <i class="ri-route-line"></i>
+          <span>카카오맵 길찾기</span>
+        </a>
       </div>
     </div>
 
