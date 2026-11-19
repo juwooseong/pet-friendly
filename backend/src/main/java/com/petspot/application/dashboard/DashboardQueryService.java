@@ -44,12 +44,12 @@ public class DashboardQueryService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> {
                     log.warn("[DASHBOARD GET FAILED] User not found with id: {}", userId);
-                    return new UserNotFoundException("사용자를 찾을 수 없습니다.");
+                    return new UserNotFoundException();
                 });
 
         if (user.getStatus() != UserStatus.ACTIVE) {
             log.warn("[DASHBOARD GET FAILED] User is inactive: status={}, userId={}", user.getStatus(), userId);
-            throw new UserNotFoundException("사용자를 찾을 수 없습니다.");
+            throw new UserNotFoundException();
         }
 
         // 1. 대표 반려동물 및 즐겨찾기 수 조회

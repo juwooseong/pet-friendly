@@ -1,9 +1,11 @@
 package com.petspot.api.auth.dto;
 
+import com.petspot.global.util.PasswordPolicy;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,8 +28,8 @@ public class UserRegisterRequestDto {
     private String email;
 
     @NotBlank(message = "비밀번호는 필수 입력값입니다.")
-    @Size(min = 8, max = 100, message = "비밀번호는 8자 이상 100자 이하이어야 합니다.")
-    @Schema(description = "비밀번호 (8~100자)", example = "Password123!")
+    @Pattern(regexp = PasswordPolicy.REGEX, message = PasswordPolicy.MESSAGE) // TSK-BE-034: 비밀번호 변경과 같은 규칙
+    @Schema(description = "비밀번호 (8~100자, 영문·숫자·특수문자 모두 포함)", example = "Password123!")
     private String password;
 
     @NotBlank(message = "닉네임은 필수 입력값입니다.")

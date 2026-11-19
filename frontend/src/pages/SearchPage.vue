@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { formatRating } from '@/utils/rating';
 import { useRouter } from 'vue-router';
 import apiClient from '@/api/apiClient';
 import { useAuthStore } from '@/stores/authStore';
@@ -247,7 +248,7 @@ onMounted(async () => {
             </span>
           </div>
           <div class="mt-3 flex items-center justify-between text-xs text-amber-600">
-            <span>★ {{ place.rating ? place.rating.toFixed(1) : '5.0' }}</span>
+            <span>★ {{ formatRating(place.rating, place.reviewCount) }}</span>
             <span v-if="place.distanceKm !== null" class="text-stone-500">{{ place.distanceKm }}km</span>
             <span>상세보기 →</span>
           </div>

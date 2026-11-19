@@ -56,7 +56,7 @@ public class UserController {
             security = @SecurityRequirement(name = SwaggerConfig.SECURITY_SCHEME_NAME)
     )
     @PutMapping("/me")
-    @ApiErrorCodes({ErrorCode.USER_NOT_FOUND})
+    @ApiErrorCodes({ErrorCode.USER_NOT_FOUND, ErrorCode.DUPLICATE_NICKNAME})
     public ResponseEntity<ApiResponse<UserProfileResponseDto>> updateMyProfile(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody UserProfileUpdateRequestDto request) {

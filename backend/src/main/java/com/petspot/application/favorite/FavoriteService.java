@@ -41,18 +41,18 @@ public class FavoriteService {
         log.info("[FAVORITE ADD START] userId: {}, placeId: {}", userId, placeId);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new UserNotFoundException());
 
         if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new UserNotFoundException("사용자를 찾을 수 없습니다.");
+            throw new UserNotFoundException();
         }
 
         Place place = placeRepository.findById(placeId)
-                .orElseThrow(() -> new PlaceNotFoundException("장소를 찾을 수 없습니다."));
+                .orElseThrow(() -> new PlaceNotFoundException());
 
         if (favoriteRepository.existsByUserIdAndPlaceId(userId, placeId)) {
             log.warn("[FAVORITE ADD FAILED] Duplicate favorite attempt: userId={}, placeId={}", userId, placeId);
-            throw new DuplicateFavoriteException("이미 즐겨찾기에 등록된 장소입니다.");
+            throw new DuplicateFavoriteException();
         }
 
         Favorite favorite = Favorite.create(user, place);
@@ -74,7 +74,7 @@ public class FavoriteService {
 
         if (!favoriteRepository.existsByUserIdAndPlaceId(userId, placeId)) {
             log.warn("[FAVORITE REMOVE FAILED] Favorite not found for userId: {}, placeId: {}", userId, placeId);
-            throw new FavoriteNotFoundException("즐겨찾기 항목을 찾을 수 없습니다.");
+            throw new FavoriteNotFoundException();
         }
 
         favoriteRepository.deleteByUserIdAndPlaceId(userId, placeId);

@@ -1,5 +1,6 @@
 package com.petspot.global.security;
 
+import com.petspot.global.error.ErrorCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.petspot.global.dto.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
@@ -50,7 +51,7 @@ public class PasswordChangeRequiredInterceptor implements HandlerInterceptor {
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             response.setCharacterEncoding("UTF-8");
             response.getWriter().write(objectMapper.writeValueAsString(
-                    ApiResponse.error("비밀번호 변경이 필요합니다. 먼저 비밀번호를 변경해주세요.")));
+                    ApiResponse.error(ErrorCode.PASSWORD_CHANGE_REQUIRED.getMessage())));
             return false;
         }
 

@@ -55,13 +55,13 @@ public class AuthService {
         // 1. 이메일 중복 검사
         if (userRepository.existsByEmail(request.getEmail())) {
             log.warn("[AUTH REGISTER FAILED] Duplicate email: {}", request.getEmail());
-            throw new DuplicateEmailException("이미 사용 중인 이메일입니다.");
+            throw new DuplicateEmailException();
         }
 
         // 1-1. 닉네임 중복 검사
         if (userRepository.existsByNickname(request.getNickname())) {
             log.warn("[AUTH REGISTER FAILED] Duplicate nickname: {}", request.getNickname());
-            throw new DuplicateNicknameException("이미 사용 중인 닉네임입니다.");
+            throw new DuplicateNicknameException();
         }
 
         // 2. 비밀번호 BCrypt 암호화
@@ -118,19 +118,19 @@ public class AuthService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> {
                     log.warn("[AUTH LOGIN FAILED] Email not found: {}", request.getEmail());
-                    return new InvalidCredentialsException("이메일 또는 비밀번호가 올바르지 않습니다.");
+                    return new InvalidCredentialsException();
                 });
 
         // 2. 계정 활성화 상태 확인 (ACTIVE 만 로그인 가능)
         if (user.getStatus() != UserStatus.ACTIVE) {
             log.warn("[AUTH LOGIN FAILED] Inactive or withdrawn status: status={}, email={}", user.getStatus(), request.getEmail());
-            throw new InvalidCredentialsException("이메일 또는 비밀번호가 올바르지 않습니다.");
+            throw new InvalidCredentialsException();
         }
 
         // 3. 비밀번호 BCrypt 검증
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             log.warn("[AUTH LOGIN FAILED] Password mismatch for email: {}", request.getEmail());
-            throw new InvalidCredentialsException("이메일 또는 비밀번호가 올바르지 않습니다.");
+            throw new InvalidCredentialsException();
         }
 
         // 4. JWT Access Token 발급
@@ -214,7 +214,7 @@ public class AuthService {
         }
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new UserNotFoundException());
 
         String newPasswordHash = passwordEncoder.encode(request.getNewPassword());
         user.completePasswordChange(newPasswordHash);

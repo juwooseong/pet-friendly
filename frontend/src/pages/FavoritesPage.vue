@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { formatRating } from '@/utils/rating';
 import { useRouter } from 'vue-router';
 import apiClient, { extractErrorMessage } from '@/api/apiClient';
 import { useAuthStore } from '@/stores/authStore';
@@ -109,7 +110,7 @@ onMounted(async () => {
 
           <div class="flex items-center justify-between mt-3">
             <div class="text-amber-500 font-bold text-sm">
-              ★ {{ fav.rating ? fav.rating.toFixed(1) : '5.0' }}
+              ★ {{ formatRating(fav.rating, fav.reviewCount) }}
               <span class="text-stone-400 font-normal">리뷰 {{ fav.reviewCount }}개</span>
             </div>
             <button

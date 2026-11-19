@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { formatRating } from '@/utils/rating';
 import { useRoute, useRouter } from 'vue-router';
 import apiClient, { extractErrorMessage } from '@/api/apiClient';
 import { useAuthStore } from '@/stores/authStore';
@@ -227,7 +228,7 @@ onMounted(async () => {
             <span>{{ isFavorited ? '즐겨찾기됨' : '즐겨찾기' }}</span>
           </button>
           <div class="text-amber-500 font-extrabold text-2xl text-right">
-            <div>★ {{ place.rating ? place.rating.toFixed(1) : '5.0' }}</div>
+            <div>★ {{ formatRating(place.rating, place.reviewCount) }}</div>
             <div class="text-stone-400 text-xs font-normal mt-0.5">리뷰 {{ place.reviewCount }}개</div>
           </div>
         </div>

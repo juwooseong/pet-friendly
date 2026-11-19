@@ -1,5 +1,6 @@
 package com.petspot.application.user;
 
+import com.petspot.global.error.exception.DuplicateNicknameException;
 import com.petspot.api.user.dto.UserProfileResponseDto;
 import com.petspot.api.user.dto.UserProfileUpdateRequestDto;
 import com.petspot.domain.user.entity.User;
@@ -20,6 +21,8 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 class UserProfileServiceTest {
@@ -81,6 +84,47 @@ class UserProfileServiceTest {
         assertThat(response.getAvatarUrl()).isEqualTo("https://example.com/new.png");
 
         verify(userRepository).findById(userId);
+    }
+
+    @Test
+    @DisplayName("TSK-BE-033: 다른 회원이 사용 중인 닉네임으로 변경하면 DuplicateNicknameException이 발생하고 닉네임은 바뀌지 않는다")
+    void updateProfile_DuplicateNickname_ThrowsAndKeepsNickname() {
+        // given
+        User user = User.register("user@petspot.com", "hash", "구닉네임", null);
+        UUID userId = user.getId();
+        UserProfileUpdateRequestDto updateRequest = UserProfileUpdateRequestDto.builder()
+                .nickname("이미있는닉네임")
+                .build();
+
+        given(userRepository.findById(userId)).willReturn(Optional.of(user));
+        given(userRepository.existsByNickname("이미있는닉네임")).willReturn(true);
+
+        // when & then
+        assertThatThrownBy(() -> userProfileService.updateProfile(userId, updateRequest))
+                .isInstanceOf(DuplicateNicknameException.class)
+                .hasMessage("이미 사용 중인 닉네임입니다.");
+        assertThat(user.getNickname()).isEqualTo("구닉네임");
+    }
+
+    @Test
+    @DisplayName("TSK-BE-033: 현재 닉네임을 그대로 두고 프로필 이미지만 바꾸면 중복 검사 없이 성공한다")
+    void updateProfile_SameNickname_SkipsDuplicateCheck() {
+        // given
+        User user = User.register("user@petspot.com", "hash", "구닉네임", null);
+        UUID userId = user.getId();
+        UserProfileUpdateRequestDto updateRequest = UserProfileUpdateRequestDto.builder()
+                .nickname("구닉네임")
+                .avatarUrl("https://example.com/new.png")
+                .build();
+
+        given(userRepository.findById(userId)).willReturn(Optional.of(user));
+
+        // when
+        UserProfileResponseDto response = userProfileService.updateProfile(userId, updateRequest);
+
+        // then
+        assertThat(response.getAvatarUrl()).isEqualTo("https://example.com/new.png");
+        verify(userRepository, never()).existsByNickname(anyString());
     }
 
     @Test

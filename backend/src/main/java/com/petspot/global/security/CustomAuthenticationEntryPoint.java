@@ -1,5 +1,6 @@
 package com.petspot.global.security;
 
+import com.petspot.global.error.ErrorCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.petspot.global.dto.ApiResponse;
 import jakarta.servlet.ServletException;
@@ -36,7 +37,7 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding("UTF-8");
 
-        ApiResponse<Void> apiResponse = ApiResponse.error("인증이 필요한 요청입니다.");
+        ApiResponse<Void> apiResponse = ApiResponse.error(ErrorCode.UNAUTHENTICATED.getMessage());
         response.getWriter().write(objectMapper.writeValueAsString(apiResponse));
     }
 }

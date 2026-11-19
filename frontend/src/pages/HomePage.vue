@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { formatRating } from '@/utils/rating';
 import apiClient from '@/api/apiClient';
 import BaseCard from '@/components/common/BaseCard.vue';
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue';
@@ -111,7 +112,7 @@ onMounted(() => {
           <div class="mt-3 pt-3 border-t border-stone-100 flex items-center justify-between text-xs">
             <div class="flex items-center gap-1 text-amber-500 font-bold">
               <i class="ri-star-fill"></i>
-              <span>{{ place.rating ? place.rating.toFixed(1) : '5.0' }}</span>
+              <span>{{ formatRating(place.rating, place.reviewCount) }}</span>
               <span class="text-stone-400 font-normal">({{ place.reviewCount || 0 }})</span>
             </div>
             <span class="text-amber-600 font-medium hover:underline">상세보기 →</span>

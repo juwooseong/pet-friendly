@@ -65,6 +65,10 @@ public class Place {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
+    /** 리뷰가 하나도 없는 장소의 평점 값 (TSK-BE-032) */
+    public static final BigDecimal NO_REVIEW_RATING = new BigDecimal("0.0");
+
+    /** 리뷰 평균 평점(소수 첫째 자리). 리뷰가 없으면 {@link #NO_REVIEW_RATING} */
     @Column(name = "rating", precision = 2, scale = 1)
     private BigDecimal rating;
 
@@ -130,7 +134,10 @@ public class Place {
         this.operatingHours = operatingHours;
         this.imageUrl = imageUrl;
         this.description = description;
-        this.rating = rating != null ? rating : BigDecimal.valueOf(5.0);
+        // TSK-BE-032: 리뷰가 없는 장소의 평점은 0.0으로 통일한다(리뷰 전부 삭제 시 재계산 결과와 동일).
+        // 과거 기본값 5.0은 리뷰 없는 장소를 만점으로 노출하고 인기 장소(평점 내림차순) 상위에 올리는 문제가 있었다.
+        // 화면에서는 reviewCount == 0 이면 평점 대신 "리뷰 없음"으로 표시한다.
+        this.rating = rating != null ? rating : NO_REVIEW_RATING;
         this.reviewCount = reviewCount != null ? reviewCount : 0;
         // TSK-DATA-008 (ADR-007): 반려동물 정책 필드는 실제 근거 없이 기본값을 채우지 않는다.
         // null 입력을 그대로 유지한다("아직 검증되지 않음") - maxWeightLimitKg와 동일한 정책.
@@ -166,7 +173,7 @@ public class Place {
      * 리뷰 등록/수정/삭제 시 평균 평점 및 리뷰 개수를 갱신하는 도메인 메서드
      */
     public void updateRatingAndReviewCount(BigDecimal newRating, Integer newReviewCount) {
-        this.rating = newRating != null ? newRating : BigDecimal.valueOf(0.0);
+        this.rating = newRating != null ? newRating : NO_REVIEW_RATING;
         this.reviewCount = newReviewCount != null ? newReviewCount : 0;
     }
 }

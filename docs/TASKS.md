@@ -214,16 +214,16 @@
 - [ ] `TSK-BE-031` [P2] `Place` 엔티티의 실내/실외/목줄 자유구역 정책 필드가 API 응답에 노출되지 않음 (`TSK-FE-008` 반려동물 동반 수칙 보강에서 식별, 2026-08-27)
   - **배경**: `Place` 엔티티에는 `isIndoorAllowed`/`isOutdoorAllowed`/`hasOffLeashZone` 컬럼이 이미 존재하지만, `PlaceSearchResponseDto`(검색/상세 공용 Projection)에는 `allowedSizes`/`maxWeightLimitKg`만 포함되어 있어 프런트엔드가 이 값을 받을 수 없다. 이번 작업(장소 상세 반려동물 동반 수칙 섹션)에서는 요구사항에 따라 실제 API가 제공하는 필드만 표시했고, 임의로 DTO를 확장하지 않았다.
   - **DoD**: 실내/실외/목줄 자유구역 정보를 반려동물 동반 수칙에 노출할 필요가 있는지 제품 우선순위를 확인한 뒤, 필요 시 `PlaceSearchResponseDto`에 해당 필드 추가(QueryDSL Projection 컬럼 추가) 및 프런트엔드 표시 UI 구현.
-- [ ] `TSK-BE-032` [P2] 장소 평점(`rating`) 기본값 불일치 — 리뷰 0건인데 신규 생성 시 5.0, 리뷰 전부 삭제 시 0.0 (`TSK-BE-022` 보강 중 식별, 2026-11-19)
+- [x] `TSK-BE-032` [P2] 장소 평점(`rating`) 기본값 불일치 — 리뷰 0건인데 신규 생성 시 5.0, 리뷰 전부 삭제 시 0.0 (`TSK-BE-022` 보강 중 식별, 2026-11-19) — **완료 (2026-11-19, 아래 "완료 기록" 참조)**
   - **배경**: `Place` 생성자는 `rating`이 `null`이면 `5.0`으로 채우지만(리뷰가 하나도 없는데 만점으로 표시됨), `ReviewService.updatePlaceRatingAndReviewCount()`는 남은 리뷰가 0건이면 `0.0`으로 재계산한다. 같은 "리뷰 0건" 상태가 생성 경로에 따라 5.0/0.0으로 달라지고, TourAPI로 적재되는 모든 신규 장소가 평점 5.0으로 노출된다(평점 기준 정렬/인기 장소에서 리뷰 없는 장소가 상위에 올 수 있음). `Sprint2FullFlowIntegrationTest`는 현재 동작(생성 5.0 → 삭제 후 0.0)을 그대로 고정해 두었다.
   - **DoD**: "리뷰 없음"의 표현을 하나로 통일(권장: `rating=null` 또는 0.0 + 프런트에서 "평점 없음" 표시)하고, 기존 데이터 마이그레이션 여부 결정, 대시보드 인기/추천 정렬 기준 영향 확인, 위 통합 테스트 기대값 갱신.
-- [ ] `TSK-BE-033` [P1] 프로필 수정(`PUT /api/v1/users/me`) 시 닉네임 중복 검증 누락 (`TSK-BE-023` 에러 명세 작성 중 식별, 2026-11-19)
+- [x] `TSK-BE-033` [P1] 프로필 수정(`PUT /api/v1/users/me`) 시 닉네임 중복 검증 누락 (`TSK-BE-023` 에러 명세 작성 중 식별, 2026-11-19) — **완료 (2026-11-19, 아래 "완료 기록" 참조)**
   - **배경**: 회원가입은 `existsByNickname`으로 중복을 막지만(`DUPLICATE_NICKNAME` 409), `UserProfileService.updateProfile()`은 중복 확인 없이 닉네임을 변경한다. DB에도 `nickname` UNIQUE 제약이 없다. 아이디 찾기(`POST /api/v1/auth/find-id`)는 닉네임으로 `findFirstByNicknameAndStatus`를 조회하므로, 중복 닉네임이 생기면 **다른 회원의 (마스킹된) 이메일이 반환될 수 있다**.
   - **DoD**: 프로필 수정 시 본인 제외 닉네임 중복 검사 + 409 응답(`@ApiErrorCodes`에 `DUPLICATE_NICKNAME` 추가), 기존 중복 데이터 점검 후 `nickname` UNIQUE 제약 추가(Flyway) 검토, 테스트 추가.
-- [ ] `TSK-BE-034` [P2] 회원가입과 비밀번호 변경의 비밀번호 규칙 불일치 (`TSK-BE-023` 에러 명세 작성 중 식별, 2026-11-19)
+- [x] `TSK-BE-034` [P2] 회원가입과 비밀번호 변경의 비밀번호 규칙 불일치 (`TSK-BE-023` 에러 명세 작성 중 식별, 2026-11-19) — **완료 (2026-11-19, 아래 "완료 기록" 참조)**
   - **배경**: `ChangePasswordRequestDto`는 `@Pattern`(영문+숫자+특수문자, 8~100자)을 강제하지만 `UserRegisterRequestDto`는 `@Size(8~100)`만 검사한다. 프런트엔드 회원가입 화면은 패턴을 검사하므로 정상 사용 시에는 드러나지 않지만, API를 직접 호출하면 약한 비밀번호로 가입할 수 있다.
   - **DoD**: 회원가입 DTO에 동일한 `@Pattern` 적용(또는 공통 커스텀 어노테이션으로 통합), 테스트 추가.
-- [ ] `TSK-BE-035` [P3] 비즈니스 예외가 `ErrorCode`/`BusinessException`을 사용하지 않음 (Refactoring Sprint "Exception 개선" 항목의 구체화, 2026-11-19)
+- [x] `TSK-BE-035` [P3] 비즈니스 예외가 `ErrorCode`/`BusinessException`을 사용하지 않음 (Refactoring Sprint "Exception 개선" 항목의 구체화, 2026-11-19) — **완료 (2026-11-19, 아래 "완료 기록" 참조)**
   - **배경**: `ErrorCode` enum과 `BusinessException`이 정의되어 있지만 실제 예외 클래스(`PlaceNotFoundException` 등)는 모두 `RuntimeException`을 직접 상속하고, 메시지가 서비스 코드 곳곳에 하드코딩되어 있다(예: "장소를 찾을 수 없습니다." vs "장소 정보를 찾을 수 없습니다."). `GlobalExceptionHandler`도 예외 타입마다 처리기를 하나씩 두고 있다. `TSK-BE-023`에서는 Swagger 에러 명세의 기준으로 `ErrorCode`를 사용했으므로, 런타임 메시지와 문서 예시 사이에 문구 차이가 일부 있다.
   - **DoD**: 예외 클래스가 `BusinessException(ErrorCode)`를 상속하도록 통일, `GlobalExceptionHandler`를 `BusinessException` 단일 처리기로 단순화, 필요 시 응답 본문에 에러 코드 필드 추가(프런트엔드 영향 검토).
 - [x] `TSK-DATA-002` [P0] 한국관광공사 TourAPI(반려동물 동반여행 서비스) 클라이언트 실제 검증 및 스키마 확정 (2026-09-09 완료, 아래 "완료 기록" 참조)
@@ -254,6 +254,14 @@
 - **fixture 저장**: 실제 성공 응답 원문을 `backend/src/test/resources/tourapi/success-area-based-list2-real-2026-09-09.json`에 저장(serviceKey 미포함). 기존 `success-area-based-list2-sample.json`(TSK-DATA-002 당시 가정치 샘플)은 그대로 유지 — 실물 데이터로 교체하는 것은 TSK-DATA-005 범위.
 - **TSK-DATA-005 진행 가능 여부**: **가능** — 키는 정상 작동하므로 다음 단계에서 반려동물 전용 필드가 포함되는 오퍼레이션을 찾아 실제 스키마를 검증할 수 있음. 단, 이번 작업에서는 반려동물 필드 검증을 수행하지 않았으므로 `TSK-DATA-005`는 별도로 진행 필요.
 - **테스트**: 코드 변경 없음(설정/구조 확인, fixture 추가, 총 2회 실제 API 호출만 수행) — 기존 백엔드 테스트 스위트에 영향 없음.
+
+### 2026-11-19 완료 기록: Sprint 2 후속 백로그 정리 (`TSK-BE-032`~`035`)
+- **`TSK-BE-032` 리뷰 없는 장소 평점 통일**: `Place` 생성 기본값을 5.0 → `Place.NO_REVIEW_RATING`(0.0)으로 변경해 리뷰 전부 삭제 시 재계산 결과(0.0)와 일치시켰다. Flyway `V8__normalize_place_rating_without_reviews.sql`로 DB 기본값을 0.0으로 바꾸고 `review_count = 0`인 기존 장소의 평점을 0.0으로 정리. 결과적으로 대시보드 인기 장소(평점 내림차순)에 리뷰 없는 장소가 상위로 올라오지 않는다. 프런트엔드는 평점이 0/누락이면 `'5.0'`으로 대체 표시하던 5개 화면(홈/검색/지도/상세/즐겨찾기)을 공통 함수 `utils/rating.ts`의 `formatRating()`으로 바꿔, 리뷰 수가 0이면 "평가 없음"으로 표시한다.
+- **`TSK-BE-033` 프로필 수정 닉네임 중복 검사**: `UserProfileService.updateProfile()`에서 닉네임이 바뀌는 경우에만 `existsByNickname`으로 중복을 확인하고 `DuplicateNicknameException`(409)을 던진다. Swagger `@ApiErrorCodes`에 `DUPLICATE_NICKNAME` 추가. **DB UNIQUE 제약은 추가하지 않았다** — 기존 DB에 중복 닉네임이 있으면 마이그레이션이 애플리케이션 기동을 막기 때문(중복 데이터 점검 후 별도 진행 필요, 동시 요청 경합도 그때 해결).
+- **`TSK-BE-034` 비밀번호 규칙 통일**: `global/util/PasswordPolicy`(정규식/메시지 상수)를 만들어 회원가입·비밀번호 변경 DTO가 같은 `@Pattern`을 사용. 프런트엔드 `validators.ts`와 같은 정규식임을 양쪽에 주석으로 명시.
+- **`TSK-BE-035` 예외 구조 통일**: 비즈니스 예외 12종이 모두 `BusinessException(ErrorCode)`를 상속하도록 바꾸고, `GlobalExceptionHandler`의 예외별 처리기 12개를 `BusinessException` 단일 처리기로 합쳤다(상태 코드는 ErrorCode에서 결정). 서비스 코드에 흩어져 있던 하드코딩 메시지 34곳을 제거해 ErrorCode 메시지를 사용(아이디 찾기 전용 문구 1곳만 유지). 인증 실패(401)/비밀번호 변경 필요(403) 응답 메시지도 ErrorCode를 사용. 이로써 Swagger 에러 예시 문구와 실제 응답 문구가 일치한다. 응답 본문에 에러 코드 필드를 추가하는 것은 API 계약 변경이라 이번에는 하지 않았다.
+- **테스트**: `BusinessExceptionMappingTest`(13건: 예외 12종의 상태 코드/메시지 매핑 + 메시지 덮어쓰기), 프로필 닉네임 중복/유지(2건), 회원가입 약한 비밀번호 거부(1건), 통합 테스트에 신규 장소 평점 0.0 검증 추가, 프런트엔드 `rating.spec.ts`(2건).
+- **검증**: 백엔드 `./gradlew test` 214 tests 실패/에러 0건(2 skip, 의도된 opt-in), 프런트엔드 Vitest 113/113, `type-check`·`build` 통과.
 
 ### 2026-11-19 완료 기록: Sprint 2 마감 — 통합 테스트 보강(`TSK-BE-022`) 및 Swagger 문서 정리(`TSK-BE-023`)
 - **`TSK-BE-022` 통합 테스트 보강** (`Sprint2FullFlowIntegrationTest`)

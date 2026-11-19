@@ -45,19 +45,19 @@ public class ReviewService {
         log.info("[REVIEW CREATE] Creating review for userId: {}, placeId: {}", userId, request.getPlaceId());
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new UserNotFoundException());
 
         if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new UserNotFoundException("사용자를 찾을 수 없습니다.");
+            throw new UserNotFoundException();
         }
 
         Place place = placeRepository.findById(request.getPlaceId())
-                .orElseThrow(() -> new PlaceNotFoundException("장소를 찾을 수 없습니다."));
+                .orElseThrow(() -> new PlaceNotFoundException());
 
         // 장소당 한 번만 작성 가능 (중복 검사)
         if (reviewRepository.existsByUserIdAndPlaceId(userId, request.getPlaceId())) {
             log.warn("[REVIEW CREATE FAILED] Duplicate review attempt by userId: {} for placeId: {}", userId, request.getPlaceId());
-            throw new DuplicateReviewException("이미 이 장소에 리뷰를 작성하셨습니다.");
+            throw new DuplicateReviewException();
         }
 
         Review review = Review.create(user, place, request.getRating(), request.getContent(), request.getImageUrl());
@@ -113,7 +113,7 @@ public class ReviewService {
         log.info("[REVIEW GET PLACE] Fetching reviews for placeId: {}", placeId);
 
         if (!placeRepository.existsById(placeId)) {
-            throw new PlaceNotFoundException("장소를 찾을 수 없습니다.");
+            throw new PlaceNotFoundException();
         }
 
         List<Review> reviews = reviewRepository.findAllByPlaceId(placeId);
@@ -140,14 +140,14 @@ public class ReviewService {
      */
     private void updatePlaceRatingAndReviewCount(UUID placeId) {
         Place place = placeRepository.findById(placeId)
-                .orElseThrow(() -> new PlaceNotFoundException("장소를 찾을 수 없습니다."));
+                .orElseThrow(() -> new PlaceNotFoundException());
 
         Double avgRatingDouble = reviewRepository.averageRatingByPlaceId(placeId);
         long count = reviewRepository.countByPlaceId(placeId);
 
         BigDecimal avgRating = avgRatingDouble != null
                 ? BigDecimal.valueOf(avgRatingDouble).setScale(1, RoundingMode.HALF_UP)
-                : BigDecimal.valueOf(0.0);
+                : Place.NO_REVIEW_RATING;
 
         place.updateRatingAndReviewCount(avgRating, (int) count);
         log.debug("[PLACE RATING SYNCED] placeId: {}, newRating: {}, newCount: {}", placeId, avgRating, count);
@@ -158,15 +158,15 @@ public class ReviewService {
      */
     private Review findActiveReviewAndValidateOwner(UUID userId, UUID reviewId) {
         Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new ReviewNotFoundException("리뷰를 찾을 수 없습니다."));
+                .orElseThrow(() -> new ReviewNotFoundException());
 
         if (review.isDeleted()) {
-            throw new ReviewNotFoundException("리뷰를 찾을 수 없습니다.");
+            throw new ReviewNotFoundException();
         }
 
         if (!review.getUser().getId().equals(userId)) {
             log.warn("[REVIEW ACCESS DENIED] userId: {} attempted to modify reviewId: {} owned by userId: {}", userId, reviewId, review.getUser().getId());
-            throw new ReviewAccessDeniedException("해당 리뷰를 수정 또는 삭제할 권한이 없습니다.");
+            throw new ReviewAccessDeniedException();
         }
 
         return review;

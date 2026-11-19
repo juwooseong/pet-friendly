@@ -1,6 +1,7 @@
 package com.petspot.global.error;
 
 import com.petspot.global.dto.ApiResponse;
+import com.petspot.global.error.exception.BusinessException;
 import com.petspot.infrastructure.publicdata.exception.PublicDataException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -100,76 +101,16 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(ApiResponse.error(ex.getMessage()));
     }
 
-    @ExceptionHandler(com.petspot.global.error.exception.DuplicateEmailException.class)
-    public ResponseEntity<ApiResponse<Void>> handleDuplicateEmail(com.petspot.global.error.exception.DuplicateEmailException ex) {
-        log.warn("[CLIENT ERROR] DuplicateEmailException: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(ex.getMessage()));
-    }
-
-    @ExceptionHandler(com.petspot.global.error.exception.DuplicateNicknameException.class)
-    public ResponseEntity<ApiResponse<Void>> handleDuplicateNickname(com.petspot.global.error.exception.DuplicateNicknameException ex) {
-        log.warn("[CLIENT ERROR] DuplicateNicknameException: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(ex.getMessage()));
-    }
-
-    @ExceptionHandler(com.petspot.global.error.exception.InvalidCredentialsException.class)
-    public ResponseEntity<ApiResponse<Void>> handleInvalidCredentials(com.petspot.global.error.exception.InvalidCredentialsException ex) {
-        log.warn("[AUTH FAILED] InvalidCredentialsException: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(ex.getMessage()));
-    }
-
-    @ExceptionHandler(com.petspot.global.error.exception.UserNotFoundException.class)
-    public ResponseEntity<ApiResponse<Void>> handleUserNotFound(com.petspot.global.error.exception.UserNotFoundException ex) {
-        log.warn("[CLIENT ERROR] UserNotFoundException: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ex.getMessage()));
-    }
-
-    @ExceptionHandler(com.petspot.global.error.exception.PetNotFoundException.class)
-    public ResponseEntity<ApiResponse<Void>> handlePetNotFound(com.petspot.global.error.exception.PetNotFoundException ex) {
-        log.warn("[CLIENT ERROR] PetNotFoundException: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ex.getMessage()));
-    }
-
-    @ExceptionHandler(com.petspot.global.error.exception.PetAccessDeniedException.class)
-    public ResponseEntity<ApiResponse<Void>> handlePetAccessDenied(com.petspot.global.error.exception.PetAccessDeniedException ex) {
-        log.warn("[ACCESS DENIED] PetAccessDeniedException: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(ex.getMessage()));
-    }
-
-    @ExceptionHandler(com.petspot.global.error.exception.PlaceNotFoundException.class)
-    public ResponseEntity<ApiResponse<Void>> handlePlaceNotFound(com.petspot.global.error.exception.PlaceNotFoundException ex) {
-        log.warn("[CLIENT ERROR] PlaceNotFoundException: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ex.getMessage()));
-    }
-
-    @ExceptionHandler(com.petspot.global.error.exception.ReviewNotFoundException.class)
-    public ResponseEntity<ApiResponse<Void>> handleReviewNotFound(com.petspot.global.error.exception.ReviewNotFoundException ex) {
-        log.warn("[CLIENT ERROR] ReviewNotFoundException: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ex.getMessage()));
-    }
-
-    @ExceptionHandler(com.petspot.global.error.exception.DuplicateReviewException.class)
-    public ResponseEntity<ApiResponse<Void>> handleDuplicateReview(com.petspot.global.error.exception.DuplicateReviewException ex) {
-        log.warn("[CLIENT ERROR] DuplicateReviewException: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(ex.getMessage()));
-    }
-
-    @ExceptionHandler(com.petspot.global.error.exception.ReviewAccessDeniedException.class)
-    public ResponseEntity<ApiResponse<Void>> handleReviewAccessDenied(com.petspot.global.error.exception.ReviewAccessDeniedException ex) {
-        log.warn("[ACCESS DENIED] ReviewAccessDeniedException: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(ex.getMessage()));
-    }
-
-    @ExceptionHandler(com.petspot.global.error.exception.FavoriteNotFoundException.class)
-    public ResponseEntity<ApiResponse<Void>> handleFavoriteNotFound(com.petspot.global.error.exception.FavoriteNotFoundException ex) {
-        log.warn("[CLIENT ERROR] FavoriteNotFoundException: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ex.getMessage()));
-    }
-
-    @ExceptionHandler(com.petspot.global.error.exception.DuplicateFavoriteException.class)
-    public ResponseEntity<ApiResponse<Void>> handleDuplicateFavorite(com.petspot.global.error.exception.DuplicateFavoriteException ex) {
-        log.warn("[CLIENT ERROR] DuplicateFavoriteException: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(ex.getMessage()));
+    /**
+     * 모든 비즈니스 예외(중복/없음/권한 등) 공통 처리 (TSK-BE-035).
+     * HTTP 상태는 예외가 가진 {@link ErrorCode}에서 결정한다 - 예외 종류가 늘어나도 처리기를 추가할 필요가 없다.
+     * 이전에는 예외 클래스마다 처리기를 하나씩(12개) 두고 상태 코드를 손으로 적었다.
+     */
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException ex) {
+        ErrorCode errorCode = ex.getErrorCode();
+        log.warn("[CLIENT ERROR] {} ({}): {}", ex.getClass().getSimpleName(), errorCode.getCode(), ex.getMessage());
+        return ResponseEntity.status(errorCode.getStatus()).body(ApiResponse.error(ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)

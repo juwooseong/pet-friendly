@@ -65,6 +65,6 @@ public class PlaceQueryService {
     public PlaceSearchResponseDto getPlaceDetail(UUID placeId) {
         log.info("[PLACE DETAIL REQUEST] placeId={}", placeId);
         return placeRepository.findPlaceDetail(placeId)
-                .orElseThrow(() -> new PlaceNotFoundException("장소 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new PlaceNotFoundException());
     }
 }

@@ -172,8 +172,12 @@ class Sprint2FullFlowIntegrationTest {
         // ==========================================
         // 7. 리뷰 등록 (POST /api/v1/reviews) -> Place rating/reviewCount 동기화
         // ==========================================
-        // TSK-BE-022 보강: 신규 Place는 리뷰가 0건이어도 rating 기본값이 5.0으로 생성된다(Place 생성자).
-        // 5점 리뷰로는 "평점이 실제로 갱신되었는지"를 구분할 수 없으므로 3점으로 작성해 동기화를 검증한다.
+        // TSK-BE-032: 리뷰가 없는 신규 Place의 평점은 0.0이다(과거 기본값 5.0에서 변경).
+        mockMvc.perform(get("/api/v1/places/" + mockPlace.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.rating", is(0.0)))
+                .andExpect(jsonPath("$.data.reviewCount", is(0)));
+
         ReviewCreateRequestDto reviewDto = ReviewCreateRequestDto.builder()
                 .placeId(mockPlace.getId())
                 .rating(3)
@@ -195,7 +199,7 @@ class Sprint2FullFlowIntegrationTest {
         // ==========================================
         // 7-1. 리뷰 작성 후 장소 평점 동기화 검증 (GET /api/v1/places/{placeId})
         // ==========================================
-        // Place 생성 시 기본값(rating=5.0, reviewCount=0) -> 3점 리뷰 1건 반영 후 rating=3.0, reviewCount=1
+        // 리뷰 없음(rating=0.0, reviewCount=0) -> 3점 리뷰 1건 반영 후 rating=3.0, reviewCount=1
         mockMvc.perform(get("/api/v1/places/" + mockPlace.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.rating", is(3.0)))
@@ -301,7 +305,7 @@ class Sprint2FullFlowIntegrationTest {
         // ==========================================
         // 15. 리뷰 삭제 후 장소 평점/리뷰 수 동기화 검증
         // ==========================================
-        // 현재 동작: 남은 리뷰가 0건이면 rating이 0.0으로 재계산된다(생성 시 기본값 5.0과 다름 - docs/TASKS.md TSK-BE-032 참고).
+        // 남은 리뷰가 0건이면 rating이 0.0으로 재계산된다 - 신규 생성 시 기본값(0.0)과 같은 "리뷰 없음" 상태(TSK-BE-032).
         mockMvc.perform(get("/api/v1/places/" + mockPlace.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.rating", is(0.0)))

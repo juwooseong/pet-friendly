@@ -129,6 +129,25 @@ class AuthControllerTest {
     }
 
     @Test
+    @DisplayName("TSK-BE-034: 길이는 충분해도 특수문자가 없는 비밀번호로 가입하면 400과 비밀번호 규칙 메시지를 반환한다")
+    void register_PasswordWithoutSpecialCharacter_BadRequest() throws Exception {
+        // given: 이메일/닉네임은 정상, 비밀번호만 규칙 위반(영문+숫자, 특수문자 없음)
+        UserRegisterRequestDto weakPasswordRequest = UserRegisterRequestDto.builder()
+                .email("weak@petspot.com")
+                .password("password1234")
+                .nickname("약한비번유저")
+                .build();
+
+        // when & then
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(weakPasswordRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.error", is(com.petspot.global.util.PasswordPolicy.MESSAGE)));
+    }
+
+    @Test
     @DisplayName("중복 이메일 회원가입 요청 시 409 Conflict 반환 (DuplicateEmailException)")
     void register_DuplicateEmail_Conflict() throws Exception {
         // given

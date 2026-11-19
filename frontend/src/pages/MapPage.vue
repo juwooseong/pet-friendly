@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, nextTick, onMounted, onUnmounted } from 'vue';
+import { formatRating } from '@/utils/rating';
 import { useRouter } from 'vue-router';
 import { loadKakaoMaps } from '@/utils/kakaoMap';
 import apiClient from '@/api/apiClient';
@@ -202,7 +203,7 @@ onUnmounted(() => {
           </button>
         </div>
         <div class="flex items-center gap-2 text-sm text-amber-600">
-          <span>★ {{ selectedPlace.rating ? selectedPlace.rating.toFixed(1) : '5.0' }}</span>
+          <span>★ {{ formatRating(selectedPlace.rating, selectedPlace.reviewCount) }}</span>
           <span class="text-stone-400">·</span>
           <span class="text-stone-500">리뷰 {{ selectedPlace.reviewCount }}개</span>
         </div>

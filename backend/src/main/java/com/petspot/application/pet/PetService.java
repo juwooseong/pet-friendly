@@ -39,10 +39,10 @@ public class PetService {
         log.info("[PET REGISTER] Registering pet for userId: {}, petName: {}", userId, request.getName());
 
         User owner = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new UserNotFoundException());
 
         if (owner.getStatus() != UserStatus.ACTIVE) {
-            throw new UserNotFoundException("사용자를 찾을 수 없습니다.");
+            throw new UserNotFoundException();
         }
 
         // 이미 대표 반려동물이 존재하는지 확인
@@ -174,11 +174,11 @@ public class PetService {
      */
     private Pet findPetAndValidateOwner(UUID userId, UUID petId) {
         Pet pet = petRepository.findById(petId)
-                .orElseThrow(() -> new PetNotFoundException("반려동물을 찾을 수 없습니다."));
+                .orElseThrow(() -> new PetNotFoundException());
 
         if (!pet.getOwner().getId().equals(userId)) {
             log.warn("[PET ACCESS DENIED] userId: {} attempted to access petId: {} owned by userId: {}", userId, petId, pet.getOwner().getId());
-            throw new PetAccessDeniedException("해당 반려동물 정보에 접근할 권한이 없습니다.");
+            throw new PetAccessDeniedException();
         }
 
         return pet;

@@ -1,15 +1,20 @@
 package com.petspot.global.error.exception;
 
+import com.petspot.global.error.ErrorCode;
+
 /**
- * 다른 사용자의 반려동물 정보에 접근을 시도할 때 발생하는 예외 (403 Forbidden)
+ * 다른 회원의 반려동물 접근 (403 Forbidden)
+ *
+ * <p>HTTP 상태와 기본 메시지는 {@link ErrorCode#PET_ACCESS_DENIED}에서 가져온다(TSK-BE-035).
+ * 기본 생성자를 쓰면 ErrorCode 메시지가 그대로 응답되며, 특정 상황에서만 다른 문구가 필요할 때 메시지 생성자를 쓴다.
  */
-public class PetAccessDeniedException extends RuntimeException {
+public class PetAccessDeniedException extends BusinessException {
 
     public PetAccessDeniedException() {
-        super("해당 반려동물 정보에 접근할 권한이 없습니다.");
+        super(ErrorCode.PET_ACCESS_DENIED);
     }
 
     public PetAccessDeniedException(String message) {
-        super(message);
+        super(ErrorCode.PET_ACCESS_DENIED, message);
     }
 }
