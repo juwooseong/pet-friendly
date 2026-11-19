@@ -13,6 +13,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.petspot.global.config.SwaggerConfig;
+import com.petspot.global.error.ErrorCode;
+import com.petspot.global.swagger.ApiErrorCodes;
 
 /**
  * 메인 대시보드(Home) 데이터 조회 REST Controller
@@ -28,9 +31,10 @@ public class DashboardController {
     @Operation(
             summary = "메인 대시보드(Home) 데이터 통합 조회",
             description = "앱 실행 시 필요한 유저 프로필 요약, 대표 반려동물, 즐겨찾기 수, 인기 장소 Top10, 최신 장소 Top10 및 추천 장소를 통합 조회합니다.",
-            security = @SecurityRequirement(name = "bearerAuth")
+            security = @SecurityRequirement(name = SwaggerConfig.SECURITY_SCHEME_NAME)
     )
     @GetMapping("/api/v1/dashboard")
+    @ApiErrorCodes({ErrorCode.USER_NOT_FOUND})
     public ResponseEntity<ApiResponse<DashboardResponseDto>> getDashboardSummary(
             @AuthenticationPrincipal CustomUserDetails userDetails) {
 

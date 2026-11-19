@@ -6,6 +6,7 @@ import com.petspot.api.auth.dto.UserLoginRequestDto;
 import com.petspot.api.auth.dto.UserRegisterRequestDto;
 import com.petspot.api.pet.dto.PetCreateRequestDto;
 import com.petspot.api.review.dto.ReviewCreateRequestDto;
+import com.petspot.api.review.dto.ReviewUpdateRequestDto;
 import com.petspot.domain.pet.entity.PetGender;
 import com.petspot.domain.place.entity.Place;
 import com.petspot.domain.place.repository.PlaceRepository;
@@ -171,9 +172,11 @@ class Sprint2FullFlowIntegrationTest {
         // ==========================================
         // 7. 리뷰 등록 (POST /api/v1/reviews) -> Place rating/reviewCount 동기화
         // ==========================================
+        // TSK-BE-022 보강: 신규 Place는 리뷰가 0건이어도 rating 기본값이 5.0으로 생성된다(Place 생성자).
+        // 5점 리뷰로는 "평점이 실제로 갱신되었는지"를 구분할 수 없으므로 3점으로 작성해 동기화를 검증한다.
         ReviewCreateRequestDto reviewDto = ReviewCreateRequestDto.builder()
                 .placeId(mockPlace.getId())
-                .rating(5)
+                .rating(3)
                 .content("정말 친절하고 대형견도 편하게 쉴 수 있었습니다!")
                 .build();
 
@@ -183,11 +186,40 @@ class Sprint2FullFlowIntegrationTest {
                         .content(objectMapper.writeValueAsString(reviewDto)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success", is(true)))
-                .andExpect(jsonPath("$.data.rating", is(5)))
+                .andExpect(jsonPath("$.data.rating", is(3)))
                 .andReturn();
 
         String reviewIdStr = objectMapper.readTree(reviewResult.getResponse().getContentAsString()).get("data").get("id").asText();
         UUID reviewId = UUID.fromString(reviewIdStr);
+
+        // ==========================================
+        // 7-1. 리뷰 작성 후 장소 평점 동기화 검증 (GET /api/v1/places/{placeId})
+        // ==========================================
+        // Place 생성 시 기본값(rating=5.0, reviewCount=0) -> 3점 리뷰 1건 반영 후 rating=3.0, reviewCount=1
+        mockMvc.perform(get("/api/v1/places/" + mockPlace.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.rating", is(3.0)))
+                .andExpect(jsonPath("$.data.reviewCount", is(1)));
+
+        // ==========================================
+        // 7-2. 리뷰 수정 (PUT /api/v1/reviews/{reviewId}) -> 장소 평점 재계산 검증
+        // ==========================================
+        ReviewUpdateRequestDto reviewUpdateDto = ReviewUpdateRequestDto.builder()
+                .rating(4)
+                .content("다시 방문해 보니 더 좋았어요.")
+                .build();
+
+        mockMvc.perform(put("/api/v1/reviews/" + reviewId)
+                        .header("Authorization", authHeader)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reviewUpdateDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.rating", is(4)));
+
+        mockMvc.perform(get("/api/v1/places/" + mockPlace.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.rating", is(4.0)))
+                .andExpect(jsonPath("$.data.reviewCount", is(1)));
 
         // ==========================================
         // 8. 장소 검색 (GET /api/v1/places/search)
@@ -264,6 +296,15 @@ class Sprint2FullFlowIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.petCount", is(0)))
                 .andExpect(jsonPath("$.data.favoriteCount", is(0)))
+                .andExpect(jsonPath("$.data.reviewCount", is(0)));
+
+        // ==========================================
+        // 15. 리뷰 삭제 후 장소 평점/리뷰 수 동기화 검증
+        // ==========================================
+        // 현재 동작: 남은 리뷰가 0건이면 rating이 0.0으로 재계산된다(생성 시 기본값 5.0과 다름 - docs/TASKS.md TSK-BE-032 참고).
+        mockMvc.perform(get("/api/v1/places/" + mockPlace.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.rating", is(0.0)))
                 .andExpect(jsonPath("$.data.reviewCount", is(0)));
     }
 }

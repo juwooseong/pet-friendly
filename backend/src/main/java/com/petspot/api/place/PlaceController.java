@@ -21,6 +21,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
+import com.petspot.global.error.ErrorCode;
+import com.petspot.global.swagger.ApiErrorCodes;
 
 /**
  * 반려동물 동반 장소 검색 REST Controller
@@ -59,6 +61,7 @@ public class PlaceController {
             description = "장소 ID로 단건 상세 정보를 조회합니다. 존재하지 않는 ID인 경우 404를 반환합니다."
     )
     @GetMapping("/{placeId}")
+    @ApiErrorCodes({ErrorCode.PLACE_NOT_FOUND})
     public ResponseEntity<ApiResponse<PlaceSearchResponseDto>> getPlaceDetail(@PathVariable UUID placeId) {
 
         log.info("GET /api/v1/places/{} called", placeId);

@@ -1,5 +1,7 @@
 package com.petspot.api.review.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -22,17 +24,21 @@ import java.util.UUID;
 public class ReviewCreateRequestDto {
 
     @NotNull(message = "장소 ID는 필수 입력값입니다.")
+    @Schema(description = "리뷰 대상 장소 ID", example = "7c9e6679-7425-40de-944b-e07fc1f90ae7")
     private UUID placeId;
 
     @NotNull(message = "평점은 필수 입력값입니다.")
     @Min(value = 1, message = "평점은 최소 1점 이상이어야 합니다.")
     @Max(value = 5, message = "평점은 최대 5점 이하이어야 합니다.")
+    @Schema(description = "평점 (1~5)", example = "4")
     private Integer rating;
 
     @NotBlank(message = "리뷰 내용은 필수 입력값입니다.")
     @Size(max = 1000, message = "리뷰 내용은 최대 1000자까지 입력 가능합니다.")
+    @Schema(description = "리뷰 내용 (최대 1000자)", example = "대형견도 편하게 쉴 수 있는 넓은 테라스가 좋았어요.")
     private String content;
 
     @Size(max = 1000, message = "이미지 URL은 최대 1000자까지 입력 가능합니다.")
+    @Schema(description = "리뷰 이미지 URL (최대 1000자, 선택)", example = "https://cdn.petspot.example/reviews/r-001.jpg")
     private String imageUrl;
 }

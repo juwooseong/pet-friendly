@@ -16,6 +16,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import com.petspot.global.config.SwaggerConfig;
+import com.petspot.global.error.ErrorCode;
+import com.petspot.global.swagger.ApiErrorCodes;
 
 /**
  * 마이페이지 사용자 프로필 및 요약 정보 관리 REST Controller
@@ -33,9 +36,10 @@ public class UserController {
     @Operation(
             summary = "현재 로그인 사용자 마이페이지 요약 정보 조회",
             description = "JWT 인증을 통해 현재 로그인한 사용자의 프로필, 대표 반려동물, 등록 펫 수, 즐겨찾기 수, 작성 리뷰 수를 통합 조회합니다.",
-            security = @SecurityRequirement(name = "bearerAuth")
+            security = @SecurityRequirement(name = SwaggerConfig.SECURITY_SCHEME_NAME)
     )
     @GetMapping("/me")
+    @ApiErrorCodes({ErrorCode.USER_NOT_FOUND})
     public ResponseEntity<ApiResponse<MyPageResponseDto>> getMyPageSummary(
             @AuthenticationPrincipal CustomUserDetails userDetails) {
 
@@ -49,9 +53,10 @@ public class UserController {
     @Operation(
             summary = "현재 로그인 사용자 프로필 수정",
             description = "JWT 인증을 통해 현재 로그인한 사용자 본인의 닉네임 및 프로필 이미지를 수정합니다.",
-            security = @SecurityRequirement(name = "bearerAuth")
+            security = @SecurityRequirement(name = SwaggerConfig.SECURITY_SCHEME_NAME)
     )
     @PutMapping("/me")
+    @ApiErrorCodes({ErrorCode.USER_NOT_FOUND})
     public ResponseEntity<ApiResponse<UserProfileResponseDto>> updateMyProfile(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody UserProfileUpdateRequestDto request) {

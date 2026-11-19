@@ -18,9 +18,12 @@ public enum ErrorCode {
     DUPLICATE_EMAIL("AUTH_001", HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다."),
     INVALID_CREDENTIALS("AUTH_002", HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다."),
     UNAUTHENTICATED("AUTH_003", HttpStatus.UNAUTHORIZED, "인증이 필요한 요청입니다."),
+    // 임시 비밀번호로 로그인한 사용자가 비밀번호 변경 전 다른 인증 API를 호출한 경우 (PasswordChangeRequiredInterceptor)
+    PASSWORD_CHANGE_REQUIRED("AUTH_004", HttpStatus.FORBIDDEN, "비밀번호 변경이 필요합니다. 먼저 비밀번호를 변경해주세요."),
 
     // ===== 회원 (USER) =====
     USER_NOT_FOUND("USER_001", HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
+    DUPLICATE_NICKNAME("USER_002", HttpStatus.CONFLICT, "이미 사용 중인 닉네임입니다."),
 
     // ===== 반려동물 (PET) =====
     PET_NOT_FOUND("PET_001", HttpStatus.NOT_FOUND, "반려동물을 찾을 수 없습니다."),

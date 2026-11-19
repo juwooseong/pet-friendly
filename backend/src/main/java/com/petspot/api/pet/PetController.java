@@ -19,6 +19,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import com.petspot.global.config.SwaggerConfig;
+import com.petspot.global.error.ErrorCode;
+import com.petspot.global.swagger.ApiErrorCodes;
 
 /**
  * 반려동물 CRUD 관리 REST Controller
@@ -35,9 +39,11 @@ public class PetController {
     @Operation(
             summary = "신규 반려동물 등록",
             description = "현재 로그인한 사용자의 신규 반려동물을 등록합니다. 최초 등록 시 자동으로 대표 반려동물로 지정됩니다.",
-            security = @SecurityRequirement(name = "bearerAuth")
+            security = @SecurityRequirement(name = SwaggerConfig.SECURITY_SCHEME_NAME)
     )
     @PostMapping
+    @ApiErrorCodes({ErrorCode.USER_NOT_FOUND})
+    @ResponseStatus(HttpStatus.CREATED) // 실제 응답 코드(201)를 Swagger 문서에 반영
     public ResponseEntity<ApiResponse<PetResponseDto>> registerPet(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody PetCreateRequestDto request) {
@@ -52,7 +58,7 @@ public class PetController {
     @Operation(
             summary = "내 반려동물 목록 조회",
             description = "현재 로그인한 사용자가 등록한 모든 반려동물 목록을 조회합니다.",
-            security = @SecurityRequirement(name = "bearerAuth")
+            security = @SecurityRequirement(name = SwaggerConfig.SECURITY_SCHEME_NAME)
     )
     @GetMapping
     public ResponseEntity<ApiResponse<List<PetResponseDto>>> getMyPets(
@@ -68,9 +74,10 @@ public class PetController {
     @Operation(
             summary = "반려동물 상세 조회",
             description = "반려동물 ID로 단건 정보를 조회합니다. (본인 소유 펫만 접근 가능)",
-            security = @SecurityRequirement(name = "bearerAuth")
+            security = @SecurityRequirement(name = SwaggerConfig.SECURITY_SCHEME_NAME)
     )
     @GetMapping("/{petId}")
+    @ApiErrorCodes({ErrorCode.PET_NOT_FOUND, ErrorCode.PET_ACCESS_DENIED})
     public ResponseEntity<ApiResponse<PetResponseDto>> getPet(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable UUID petId) {
@@ -85,9 +92,10 @@ public class PetController {
     @Operation(
             summary = "반려동물 정보 수정",
             description = "반려동물 정보를 수정합니다. (본인 소유 펫만 수정 가능)",
-            security = @SecurityRequirement(name = "bearerAuth")
+            security = @SecurityRequirement(name = SwaggerConfig.SECURITY_SCHEME_NAME)
     )
     @PutMapping("/{petId}")
+    @ApiErrorCodes({ErrorCode.PET_NOT_FOUND, ErrorCode.PET_ACCESS_DENIED})
     public ResponseEntity<ApiResponse<PetResponseDto>> updatePet(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable UUID petId,
@@ -103,9 +111,10 @@ public class PetController {
     @Operation(
             summary = "반려동물 삭제",
             description = "반려동물을 삭제합니다. 삭제한 펫이 대표 펫이었던 경우 남아있는 펫 중 하나가 대표 펫으로 자동 지정됩니다.",
-            security = @SecurityRequirement(name = "bearerAuth")
+            security = @SecurityRequirement(name = SwaggerConfig.SECURITY_SCHEME_NAME)
     )
     @DeleteMapping("/{petId}")
+    @ApiErrorCodes({ErrorCode.PET_NOT_FOUND, ErrorCode.PET_ACCESS_DENIED})
     public ResponseEntity<ApiResponse<Void>> deletePet(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable UUID petId) {
@@ -120,9 +129,10 @@ public class PetController {
     @Operation(
             summary = "대표 반려동물 변경",
             description = "선택한 반려동물을 대표 반려동물로 지정합니다. 기존 대표 반려동물은 자동으로 해제됩니다.",
-            security = @SecurityRequirement(name = "bearerAuth")
+            security = @SecurityRequirement(name = SwaggerConfig.SECURITY_SCHEME_NAME)
     )
     @PatchMapping("/{petId}/representative")
+    @ApiErrorCodes({ErrorCode.PET_NOT_FOUND, ErrorCode.PET_ACCESS_DENIED})
     public ResponseEntity<ApiResponse<PetResponseDto>> setRepresentativePet(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable UUID petId) {

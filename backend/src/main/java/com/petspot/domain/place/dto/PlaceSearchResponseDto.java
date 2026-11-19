@@ -1,5 +1,7 @@
 package com.petspot.domain.place.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import com.querydsl.core.annotations.QueryProjection;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,21 +17,37 @@ import java.util.UUID;
 @NoArgsConstructor
 public class PlaceSearchResponseDto {
 
+    @Schema(description = "장소 ID", example = "7c9e6679-7425-40de-944b-e07fc1f90ae7")
     private UUID id;
+    @Schema(description = "공공데이터(TourAPI) contentId (자체 등록 장소는 null)", example = "2930927", nullable = true)
     private String publicDataId;
+    @Schema(description = "장소명", example = "멍멍 테라스 카페")
     private String name;
+    @Schema(description = "카테고리 코드", example = "CAFE")
     private String category;
+    @Schema(description = "카테고리 표시명", example = "카페")
     private String categoryName;
+    @Schema(description = "주소", example = "서울특별시 마포구 와우산로 123")
     private String address;
+    @Schema(description = "위도", example = "37.5512")
     private Double latitude;
+    @Schema(description = "경도", example = "126.9229")
     private Double longitude;
+    @Schema(description = "전화번호 (없으면 null)", example = "02-123-4567", nullable = true)
     private String phone;
+    @Schema(description = "운영시간 (없으면 null)", example = "10:00~21:00", nullable = true)
     private String operatingHours;
+    @Schema(description = "대표 이미지 URL (없으면 null)", example = "https://cdn.petspot.example/images/place-001.jpg", nullable = true)
     private String imageUrl;
+    @Schema(description = "평균 평점", example = "4.5")
     private BigDecimal rating;
+    @Schema(description = "리뷰 수", example = "12")
     private Integer reviewCount;
+    @Schema(description = "동반 가능 최대 체중(kg). null=정보 미검증(ADR-007)", example = "10.0", nullable = true)
     private BigDecimal maxWeightLimitKg;
+    @Schema(description = "동반 가능 크기 목록. null=정보 미검증, []=허용 크기 없음 확인됨(ADR-007)", nullable = true)
     private List<String> allowedSizes; // 동반 가능 반려동물 크기 목록 ('SMALL', 'MEDIUM', 'LARGE')
+    @Schema(description = "검색 중심 좌표로부터의 직선 거리(km). 좌표 미지정 검색 시 null", example = "0.8", nullable = true)
     private Double distanceKm; // 중심 사용자 위치 기준 직선 거리(km)
 
     @QueryProjection

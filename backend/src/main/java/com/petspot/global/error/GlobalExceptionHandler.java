@@ -5,11 +5,13 @@ import com.petspot.infrastructure.publicdata.exception.PublicDataException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /**
  * 전역 예외 처리기 (Global Exception Handler)
@@ -69,6 +71,27 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleMissingParam(MissingServletRequestParameterException ex) {
         log.warn("[CLIENT ERROR] MissingServletRequestParameterException: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(ex.getMessage()));
+    }
+
+    /**
+     * 경로/쿼리 파라미터 타입 변환 실패 (예: {@code /api/v1/places/not-a-uuid}).
+     * TSK-BE-023 이전에는 처리기가 없어 최상위 {@code Exception} 처리기로 떨어져 500을 반환했다 - 클라이언트 입력 오류이므로 400으로 응답한다.
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Void>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        String errorMsg = "요청 파라미터 '" + ex.getName() + "'의 형식이 올바르지 않습니다.";
+        log.warn("[CLIENT ERROR] MethodArgumentTypeMismatchException: {} (value={})", errorMsg, ex.getValue());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(errorMsg));
+    }
+
+    /**
+     * 요청 본문(JSON) 파싱 실패 (문법 오류, enum/날짜/UUID 형식 오류, 본문 누락 등).
+     * TSK-BE-023 이전에는 500을 반환했다 - 400으로 응답하며, 내부 파서 메시지는 노출하지 않는다.
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNotReadable(HttpMessageNotReadableException ex) {
+        log.warn("[CLIENT ERROR] HttpMessageNotReadableException: {}", ex.getMostSpecificCause().getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error("요청 본문의 형식이 올바르지 않습니다."));
     }
 
     @ExceptionHandler(PublicDataException.class)

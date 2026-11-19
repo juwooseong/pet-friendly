@@ -32,6 +32,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import com.petspot.global.config.SwaggerConfig;
+import com.petspot.global.error.ErrorCode;
+import com.petspot.global.swagger.ApiErrorCodes;
 
 /**
  * 인증 및 회원가입 REST Controller
@@ -51,6 +55,8 @@ public class AuthController {
             description = "이메일, 비밀번호, 닉네임을 입력받아 신규 회원을 등록합니다."
     )
     @PostMapping("/register")
+    @ApiErrorCodes({ErrorCode.DUPLICATE_EMAIL, ErrorCode.DUPLICATE_NICKNAME})
+    @ResponseStatus(HttpStatus.CREATED) // 실제 응답 코드(201)를 Swagger 문서에 반영
     public ResponseEntity<ApiResponse<UserRegisterResponseDto>> register(
             @Valid @RequestBody UserRegisterRequestDto request) {
 
@@ -104,6 +110,7 @@ public class AuthController {
             description = "이메일과 비밀번호를 검증하여 JWT Access Token을 발급합니다."
     )
     @PostMapping("/login")
+    @ApiErrorCodes({ErrorCode.INVALID_CREDENTIALS})
     public ResponseEntity<ApiResponse<UserLoginResponseDto>> login(
             @Valid @RequestBody UserLoginRequestDto request) {
 
@@ -119,6 +126,7 @@ public class AuthController {
             description = "가입 시 등록한 닉네임으로 계정을 조회하여 마스킹된 이메일 주소를 반환합니다. 일치하는 계정이 없으면 404를 반환합니다."
     )
     @PostMapping("/find-id")
+    @ApiErrorCodes({ErrorCode.USER_NOT_FOUND})
     public ResponseEntity<ApiResponse<FindIdResponseDto>> findId(
             @Valid @RequestBody FindIdRequestDto request) {
 
@@ -147,9 +155,10 @@ public class AuthController {
     @Operation(
             summary = "비밀번호 변경",
             description = "현재 로그인한 사용자의 비밀번호를 변경합니다. 임시 비밀번호로 로그인한 사용자는 다른 API 이용 전 반드시 호출해야 합니다.",
-            security = @SecurityRequirement(name = "BearerAuth")
+            security = @SecurityRequirement(name = SwaggerConfig.SECURITY_SCHEME_NAME)
     )
     @PatchMapping("/password")
+    @ApiErrorCodes({ErrorCode.USER_NOT_FOUND})
     public ResponseEntity<ApiResponse<Void>> changePassword(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody ChangePasswordRequestDto request) {

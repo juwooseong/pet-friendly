@@ -6,6 +6,7 @@
 
 ## 📝 Change Log (변경 이력)
 
+- **2026-11-19**: **Sprint 2 완료** — `TSK-BE-022`(전체 흐름 통합 테스트에 장소 평점 생성/수정/삭제 동기화 검증 추가)와 `TSK-BE-023`(Swagger 정리: 보안 스킴 이름 불일치 버그 수정, 엔드포인트별 에러 응답·예시 자동 명세, 생성 API 201 표시, DTO 139개 필드 설명/예시, 문서-실제 동작 일치 검증 테스트) 완료. 부수적으로 잘못된 UUID/JSON 요청이 500으로 응답하던 버그를 400으로 수정. 후속 과제 `TSK-BE-032`~`035` 기록. 같은 날 TourAPI 수집 배치 자동 실행을 기본 비활성화(`TSK-DATA-003-C` 설계 전 의도치 않은 전체 수집 방지). 전체 `./gradlew test`: 198 tests, 실패/에러 0건, 2 skip. 상세는 `docs/TASKS.md` 참조.
 - **2026-09-14**: `TSK-DATA-003-B` 완료 — `TSK-DATA-003-A`에서 발견한 좌표 결측 시 `0.0`/`0.0`(Null Island) 대체 저장 문제에 대해, 전략 A(nullable migration)와 전략 B(좌표 없는 장소 적재 제외)를 비교해 **전략 B를 채택**(ADR-008, `docs/DECISIONS.md`). `Place.latitude`/`longitude`/`location`은 계속 `NOT NULL`로 유지(migration 없음), `TourApiPlaceMapper.toEntity()`는 좌표를 파싱할 수 없으면 임의 값 대신 `null`을 반환하도록 수정, `TourDataCollectorService.saveCollectedPlaces()`는 `contentId` 결측과 동일하게 이 경우를 스킵하도록 수정. 검색/지도 API는 전혀 변경하지 않음(좌표는 항상 유효하다는 기존 불변식 유지). 기존 0.0 기대 테스트 2개를 null 반환 기대로 교체, 좌표 없이 작성됐던 기존 정책/체중 테스트 2개에 유효 좌표 보강, 배치 스킵/검색 미노출을 검증하는 테스트 갱신. 전체 `./gradlew test`: 188 tests, 실패/에러 0건, 2 skip(변경 없음). `TSK-DATA-003-C`(전국 초기 적재) 착수의 선행 조건이 충족됨. 상세는 `docs/TASKS.md` 참조.
 - **2026-09-14**: `TSK-DATA-003-A` 완료 — TourAPI(`areaBasedList2`, numOfRows=5) 초기 데이터 적재 최소 파이프라인을 신규 코드 추가 없이 기존 `TourDataCollectorService`(`collectPage`/`saveCollectedPlaces`)+`TourApiPlaceMapper`+`PlaceRepository.findByPublicDataId()` 기반 중복 방지를 그대로 재사용해 검증. 실제 로컬 PostgreSQL/PostGIS에 장소 기본정보가 정상 저장되고, 반려동물 정책 5개 필드(`maxWeightLimitKg`/`allowedSizes`/`isIndoorAllowed`/`isOutdoorAllowed`/`hasOffLeashZone`)는 DB 재조회 후에도 전부 `null`로 유지됨을 확인(`TSK-DATA-008` 수정이 실제 저장 경로 전체에서 정상 작동함을 실증). 동일 5건 재적재 시 중복 생성되지 않음, contentId 결측 항목은 스킵되고 나머지는 정상 처리됨, 좌표 결측/파싱 실패가 섞여도 배치 전체가 깨지지 않음을 검증. **신규 발견**: `Place.latitude`/`longitude`/`location`이 DB `NOT NULL` 컬럼이라 좌표를 문자 그대로 `null` 저장할 수 없어 기존 `0.0`/`0.0` 대체 정책이 유지됨 — migration 필요 사항으로 `TSK-DATA-003-B`에 이관. 전체 대량 적재는 `TSK-DATA-003-C`로 이관. 오프라인 테스트 4개 + opt-in 실통합 테스트 1개 신규 추가, 전체 `./gradlew test`: 188 tests, 실패/에러 0건, 2 skip(의도된 게이팅). 상세는 `docs/TASKS.md` 참조.
 - **2026-09-14**: `TSK-DATA-008` 완료 — `TSK-DATA-006`(ADR-007)의 "정책 정보가 없으면 null로 유지한다" 원칙을 실제 코드에 반영. `TourApiPlaceMapper.toEntity()`가 `isIndoorAllowed=true`/`isOutdoorAllowed=true`/`hasOffLeashZone=false`를 근거 없이 하드코딩하던 것과, `Place` 생성자가 `allowedSizes`/`isIndoorAllowed`/`isOutdoorAllowed`/`hasOffLeashZone`에 `null` 입력을 전체 허용 기본값으로 자동 치환하던 구조적 버그를 함께 제거(`maxWeightLimitKg`처럼 null을 그대로 유지하도록 통일). Entity 구조/DB migration은 변경하지 않음(생성자 로직만 최소 수정, 컬럼은 원래도 nullable이었음). 암묵적 기본값에 의존하던 `PlaceSearchSizeAndDistanceIntegrationTest` 기존 케이스를 명시적 값 지정으로 수정, 정책 필드가 null인 장소의 저장/조회/검색 동작(크기 필터에서는 근거 없어 자동 제외됨, 예외는 없음)을 검증하는 테스트 신규 추가, `TourApiPlaceMapperTest`에 null 유지 검증 테스트 2개 추가. 전체 `./gradlew test`: 183 tests, 실패/에러 0건, 1 skip(의도된 게이팅). `TSK-DATA-003`(초기 대량 적재) 착수의 선행 조건이 충족됨. 상세는 `docs/TASKS.md` 참조.
@@ -38,13 +39,13 @@
 | :--- | :---: | :--- | :---: |
 | **Sprint 0** | Infrastructure | 개발 환경 구축, DB/PostGIS 초기화 & 프로젝트 스캐폴딩 | **[COMPLETED]** |
 | **Sprint 1** | Backend Core | 공공데이터 수집 파이프라인, PostGIS 위치 검색 API & 기초 모델 | **[COMPLETED]** |
-| **Sprint 2** | Backend Complete | **Review Service/API, My Page API, Dashboard API, E2E Integration Test & Swagger** | **[IN_PROGRESS]** |
+| **Sprint 2** | Backend Complete | **Review Service/API, My Page API, Dashboard API, E2E Integration Test & Swagger** | **[COMPLETED]** (2026-11-19) |
 | **Sprint 3** | Frontend MVP | **Vue 3 + Vite Frontend 9개 화면 구현 & Spring Boot 백엔드 API 실서비스 완전 연동** | **[IN_PROGRESS]** |
 | **Sprint 4** | Advanced AI & Infra | OpenAI AI 추천, Redis Caching, Elasticsearch, AWS & Docker CI/CD | [PLANNED] |
 
 ---
 
-## 🚀 Sprint 2: Backend Feature Completion (백엔드 핵심 기능 완결) [IN_PROGRESS]
+## 🚀 Sprint 2: Backend Feature Completion (백엔드 핵심 기능 완결) [COMPLETED] (2026-11-19)
 
 - **Sprint Goal**: 백엔드 도메인 및 API 레이어 완결 (Review, My Page, Dashboard, Integration Test, Swagger 정리).
 
@@ -57,9 +58,9 @@
    - 실제 엔드포인트는 `GET /api/v1/users/me`(사용자 정보 + 대표 반려동물 + 펫/즐겨찾기/리뷰 카운트 통합 응답). 즐겨찾기/내 리뷰/내 반려동물 "목록"은 각 화면이 기존 전용 API(`GET /users/me/favorites`, `GET /users/me/reviews`, `GET /pets`)를 그대로 재사용하는 구조로, 이 API가 목록까지 함께 내려주지는 않음(중복 응답 방지를 위한 의도적 설계로 확인).
 3. **Dashboard API** ✅ 완료 (2026-08-27 문서 반영 — 실제로는 이전에 이미 구현됨):
    - `GET /api/v1/dashboard`. 홈 화면(`HomePage.vue`)에서 이미 연동 중이었음.
-4. **Integration Test (통합 테스트)**:
+4. **Integration Test (통합 테스트)** ✅ 완료 (2026-11-19, `Sprint2FullFlowIntegrationTest` — 장소 평점 동기화 검증 보강):
    - 회원가입 ➔ 로그인 ➔ JWT 발급 ➔ Pet 등록 ➔ Favorite 등록 ➔ Review 작성 ➔ Place Rating 변경 ➔ 조회 전체 Flow 검증 E2E Test.
-5. **API Documentation**:
+5. **API Documentation** ✅ 완료 (2026-11-19, 에러 응답/예시 자동 명세 + 문서-실제 일치 검증 테스트):
    - Swagger OpenAPI 3.0 명세 정리, API Tag 분류, Request/Response/Error Example 작성.
 
 > [!NOTE]

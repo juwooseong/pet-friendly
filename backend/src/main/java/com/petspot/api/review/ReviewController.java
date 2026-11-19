@@ -19,6 +19,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import com.petspot.global.config.SwaggerConfig;
+import com.petspot.global.error.ErrorCode;
+import com.petspot.global.swagger.ApiErrorCodes;
 
 /**
  * 장소 리뷰 CUD 및 조회 REST Controller
@@ -34,9 +38,11 @@ public class ReviewController {
     @Operation(
             summary = "신규 장소 리뷰 작성",
             description = "방문한 장소에 대해 신규 리뷰를 작성합니다. (장소당 1회만 작성 가능)",
-            security = @SecurityRequirement(name = "bearerAuth")
+            security = @SecurityRequirement(name = SwaggerConfig.SECURITY_SCHEME_NAME)
     )
     @PostMapping("/api/v1/reviews")
+    @ApiErrorCodes({ErrorCode.USER_NOT_FOUND, ErrorCode.PLACE_NOT_FOUND, ErrorCode.DUPLICATE_REVIEW})
+    @ResponseStatus(HttpStatus.CREATED) // 실제 응답 코드(201)를 Swagger 문서에 반영
     public ResponseEntity<ApiResponse<ReviewResponseDto>> createReview(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody ReviewCreateRequestDto request) {
@@ -53,6 +59,7 @@ public class ReviewController {
             description = "장소 ID로 해당 장소에 작성된 모든 삭제되지 않은 리뷰 목록을 조회합니다."
     )
     @GetMapping("/api/v1/places/{placeId}/reviews")
+    @ApiErrorCodes({ErrorCode.PLACE_NOT_FOUND})
     public ResponseEntity<ApiResponse<List<ReviewResponseDto>>> getPlaceReviews(
             @PathVariable UUID placeId) {
 
@@ -66,7 +73,7 @@ public class ReviewController {
     @Operation(
             summary = "내가 작성한 리뷰 목록 조회",
             description = "현재 로그인한 사용자가 작성한 모든 삭제되지 않은 리뷰 목록을 조회합니다.",
-            security = @SecurityRequirement(name = "bearerAuth")
+            security = @SecurityRequirement(name = SwaggerConfig.SECURITY_SCHEME_NAME)
     )
     @GetMapping("/api/v1/users/me/reviews")
     public ResponseEntity<ApiResponse<List<ReviewResponseDto>>> getMyReviews(
@@ -82,9 +89,10 @@ public class ReviewController {
     @Operation(
             summary = "리뷰 수정",
             description = "자신이 작성한 리뷰의 평점, 내용, 이미지를 수정합니다.",
-            security = @SecurityRequirement(name = "bearerAuth")
+            security = @SecurityRequirement(name = SwaggerConfig.SECURITY_SCHEME_NAME)
     )
     @PutMapping("/api/v1/reviews/{reviewId}")
+    @ApiErrorCodes({ErrorCode.REVIEW_NOT_FOUND, ErrorCode.REVIEW_ACCESS_DENIED})
     public ResponseEntity<ApiResponse<ReviewResponseDto>> updateReview(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable UUID reviewId,
@@ -100,9 +108,10 @@ public class ReviewController {
     @Operation(
             summary = "리뷰 삭제",
             description = "자신이 작성한 리뷰를 삭제합니다. (Soft Delete 처리)",
-            security = @SecurityRequirement(name = "bearerAuth")
+            security = @SecurityRequirement(name = SwaggerConfig.SECURITY_SCHEME_NAME)
     )
     @DeleteMapping("/api/v1/reviews/{reviewId}")
+    @ApiErrorCodes({ErrorCode.REVIEW_NOT_FOUND, ErrorCode.REVIEW_ACCESS_DENIED})
     public ResponseEntity<ApiResponse<Void>> deleteReview(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable UUID reviewId) {

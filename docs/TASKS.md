@@ -19,7 +19,7 @@
 | :--- | :--- | :--- | :---: |
 | **Sprint 0** | Infrastructure | 개발 환경 구축, DB/PostGIS 초기화 & 프로젝트 스캐폴딩 | **[COMPLETED]** |
 | **Sprint 1** | Backend Core | 공공데이터 수집 파이프라인, PostGIS 반경/필터 검색 API | **[COMPLETED]** |
-| **Sprint 2** | Backend Complete | **User/Pet/Favorite/Review Core API, My Page API, Dashboard API, Integration Test & Swagger** | **[IN_PROGRESS]** |
+| **Sprint 2** | Backend Complete | **User/Pet/Favorite/Review Core API, My Page API, Dashboard API, Integration Test & Swagger** | **[COMPLETED]** (2026-11-19) |
 | **Sprint 3** | Frontend MVP | **Vue 3 + Vite Frontend 9개 화면 구축 및 백엔드 API 실서비스 100% 완전 연동** | **[IN_PROGRESS]** |
 | **Sprint 4** | Advanced AI & Infra | OpenAI AI 추천, Redis Caching, Elasticsearch, AWS CI/CD 및 모니터링 | [PLANNED] |
 
@@ -37,7 +37,7 @@
 
 ---
 
-## Sprint 2. Backend Feature Completion (백엔드 기능 완결) [IN_PROGRESS]
+## Sprint 2. Backend Feature Completion (백엔드 기능 완결) [COMPLETED] (2026-11-19)
 
 ### Feature 2.1 User & Auth Domain [COMPLETED]
 - [x] `TSK-BE-009` User Entity (`register` 정적 팩토리, `passwordHash`, `withdrawAt`), UserRepository & Flyway V1~V3
@@ -62,10 +62,11 @@
 - [x] `TSK-BE-021` [P0] Dashboard Home API (`GET /api/v1/dashboard`) — **완료 확인 (2026-08-27)**
   - `DashboardController`/`DashboardQueryService`로 이미 구현되어 있었고, `TSK-FE-005`(홈 화면)에서 이미 연동해 사용 중이었다. Sprint 2 체크리스트에 반영되지 않은 문서 누락이었음을 확인해 갱신.
 
-### Feature 2.5 Integration Test & API Documentation [IN_PROGRESS]
-- [ ] `TSK-BE-022` [P0] Full Flow End-to-End Integration Test (`BackendE2EFlowIntegrationTest`)
+### Feature 2.5 Integration Test & API Documentation [COMPLETED] (2026-11-19)
+- [x] `TSK-BE-022` [P0] Full Flow End-to-End Integration Test (`Sprint2FullFlowIntegrationTest`) — **완료 (2026-11-19, 아래 "완료 기록" 참조)**
   - **DoD**: 회원가입 ➔ 로그인 ➔ JWT 발급 ➔ Pet 등록 ➔ Favorite 등록 ➔ Review 작성 ➔ Place Rating 변경 ➔ 마이페이지 조회 전체 파이프라인 검증 테스트 통과.
-- [ ] `TSK-BE-023` [P0] Swagger / OpenAPI 3.0 Documentation Consolidation
+  - 테스트 자체는 2026-08-07에 `Sprint2FullFlowIntegrationTest`로 이미 구현되어 있었으나(문서에는 `BackendE2EFlowIntegrationTest`로 잘못 기재되어 미완료로 남아 있었음), DoD의 "Place Rating 변경" 검증이 빠져 있어 보강 후 완료 처리.
+- [x] `TSK-BE-023` [P0] Swagger / OpenAPI 3.0 Documentation Consolidation — **완료 (2026-11-19, 아래 "완료 기록" 참조)**
   - **DoD**: Swagger Tag 정리, Request/Response Example 및 Error Response 명세 작성 완료.
 
 > [!NOTE]
@@ -213,6 +214,18 @@
 - [ ] `TSK-BE-031` [P2] `Place` 엔티티의 실내/실외/목줄 자유구역 정책 필드가 API 응답에 노출되지 않음 (`TSK-FE-008` 반려동물 동반 수칙 보강에서 식별, 2026-08-27)
   - **배경**: `Place` 엔티티에는 `isIndoorAllowed`/`isOutdoorAllowed`/`hasOffLeashZone` 컬럼이 이미 존재하지만, `PlaceSearchResponseDto`(검색/상세 공용 Projection)에는 `allowedSizes`/`maxWeightLimitKg`만 포함되어 있어 프런트엔드가 이 값을 받을 수 없다. 이번 작업(장소 상세 반려동물 동반 수칙 섹션)에서는 요구사항에 따라 실제 API가 제공하는 필드만 표시했고, 임의로 DTO를 확장하지 않았다.
   - **DoD**: 실내/실외/목줄 자유구역 정보를 반려동물 동반 수칙에 노출할 필요가 있는지 제품 우선순위를 확인한 뒤, 필요 시 `PlaceSearchResponseDto`에 해당 필드 추가(QueryDSL Projection 컬럼 추가) 및 프런트엔드 표시 UI 구현.
+- [ ] `TSK-BE-032` [P2] 장소 평점(`rating`) 기본값 불일치 — 리뷰 0건인데 신규 생성 시 5.0, 리뷰 전부 삭제 시 0.0 (`TSK-BE-022` 보강 중 식별, 2026-11-19)
+  - **배경**: `Place` 생성자는 `rating`이 `null`이면 `5.0`으로 채우지만(리뷰가 하나도 없는데 만점으로 표시됨), `ReviewService.updatePlaceRatingAndReviewCount()`는 남은 리뷰가 0건이면 `0.0`으로 재계산한다. 같은 "리뷰 0건" 상태가 생성 경로에 따라 5.0/0.0으로 달라지고, TourAPI로 적재되는 모든 신규 장소가 평점 5.0으로 노출된다(평점 기준 정렬/인기 장소에서 리뷰 없는 장소가 상위에 올 수 있음). `Sprint2FullFlowIntegrationTest`는 현재 동작(생성 5.0 → 삭제 후 0.0)을 그대로 고정해 두었다.
+  - **DoD**: "리뷰 없음"의 표현을 하나로 통일(권장: `rating=null` 또는 0.0 + 프런트에서 "평점 없음" 표시)하고, 기존 데이터 마이그레이션 여부 결정, 대시보드 인기/추천 정렬 기준 영향 확인, 위 통합 테스트 기대값 갱신.
+- [ ] `TSK-BE-033` [P1] 프로필 수정(`PUT /api/v1/users/me`) 시 닉네임 중복 검증 누락 (`TSK-BE-023` 에러 명세 작성 중 식별, 2026-11-19)
+  - **배경**: 회원가입은 `existsByNickname`으로 중복을 막지만(`DUPLICATE_NICKNAME` 409), `UserProfileService.updateProfile()`은 중복 확인 없이 닉네임을 변경한다. DB에도 `nickname` UNIQUE 제약이 없다. 아이디 찾기(`POST /api/v1/auth/find-id`)는 닉네임으로 `findFirstByNicknameAndStatus`를 조회하므로, 중복 닉네임이 생기면 **다른 회원의 (마스킹된) 이메일이 반환될 수 있다**.
+  - **DoD**: 프로필 수정 시 본인 제외 닉네임 중복 검사 + 409 응답(`@ApiErrorCodes`에 `DUPLICATE_NICKNAME` 추가), 기존 중복 데이터 점검 후 `nickname` UNIQUE 제약 추가(Flyway) 검토, 테스트 추가.
+- [ ] `TSK-BE-034` [P2] 회원가입과 비밀번호 변경의 비밀번호 규칙 불일치 (`TSK-BE-023` 에러 명세 작성 중 식별, 2026-11-19)
+  - **배경**: `ChangePasswordRequestDto`는 `@Pattern`(영문+숫자+특수문자, 8~100자)을 강제하지만 `UserRegisterRequestDto`는 `@Size(8~100)`만 검사한다. 프런트엔드 회원가입 화면은 패턴을 검사하므로 정상 사용 시에는 드러나지 않지만, API를 직접 호출하면 약한 비밀번호로 가입할 수 있다.
+  - **DoD**: 회원가입 DTO에 동일한 `@Pattern` 적용(또는 공통 커스텀 어노테이션으로 통합), 테스트 추가.
+- [ ] `TSK-BE-035` [P3] 비즈니스 예외가 `ErrorCode`/`BusinessException`을 사용하지 않음 (Refactoring Sprint "Exception 개선" 항목의 구체화, 2026-11-19)
+  - **배경**: `ErrorCode` enum과 `BusinessException`이 정의되어 있지만 실제 예외 클래스(`PlaceNotFoundException` 등)는 모두 `RuntimeException`을 직접 상속하고, 메시지가 서비스 코드 곳곳에 하드코딩되어 있다(예: "장소를 찾을 수 없습니다." vs "장소 정보를 찾을 수 없습니다."). `GlobalExceptionHandler`도 예외 타입마다 처리기를 하나씩 두고 있다. `TSK-BE-023`에서는 Swagger 에러 명세의 기준으로 `ErrorCode`를 사용했으므로, 런타임 메시지와 문서 예시 사이에 문구 차이가 일부 있다.
+  - **DoD**: 예외 클래스가 `BusinessException(ErrorCode)`를 상속하도록 통일, `GlobalExceptionHandler`를 `BusinessException` 단일 처리기로 단순화, 필요 시 응답 본문에 에러 코드 필드 추가(프런트엔드 영향 검토).
 - [x] `TSK-DATA-002` [P0] 한국관광공사 TourAPI(반려동물 동반여행 서비스) 클라이언트 실제 검증 및 스키마 확정 (2026-09-09 완료, 아래 "완료 기록" 참조)
   - **범위**: `infrastructure/publicdata/` 기존 클라이언트(`TourApiClient`/DTO/Mapper/Service/Batch)에 대한 실제 HTTP 호출 기반 검증, `baseUrl`/오퍼레이션 경로 오류 수정, 게이트웨이 오류 응답 처리 보강, 오프라인 테스트 추가. **DB 대량 적재/시드/마이그레이션은 이번 범위에서 명시적으로 제외**(→ TSK-DATA-003 이후로 이관).
   - **핵심 발견**: `application.yml` 기본 `baseUrl`이 `B551011/KorPetTourService`(오퍼레이션 무관하게 항상 `NO_OPENAPI_SERVICE_ERROR`/reasonCode 12 = 존재하지 않는 경로)로 잘못되어 있었음 → `B551011/KorPetTourService2`로 수정. 로컬 프로필 시크릿은 확인된 유효 경로(`areaBasedList2` 등)에 대해서도 `SERVICE_KEY_IS_NOT_REGISTERED_ERROR`(reasonCode 30)를 반환해, 실제 반려동물 필드 payload는 이번 작업에서 확보하지 못함(아래 백로그 `TSK-DATA-004` 참조). 기존 `TourApiClient`가 존재하지 않는 오퍼레이션(`/detailPetTour1`)을 호출하고 있던 버그도 함께 발견/수정.
@@ -241,6 +254,20 @@
 - **fixture 저장**: 실제 성공 응답 원문을 `backend/src/test/resources/tourapi/success-area-based-list2-real-2026-09-09.json`에 저장(serviceKey 미포함). 기존 `success-area-based-list2-sample.json`(TSK-DATA-002 당시 가정치 샘플)은 그대로 유지 — 실물 데이터로 교체하는 것은 TSK-DATA-005 범위.
 - **TSK-DATA-005 진행 가능 여부**: **가능** — 키는 정상 작동하므로 다음 단계에서 반려동물 전용 필드가 포함되는 오퍼레이션을 찾아 실제 스키마를 검증할 수 있음. 단, 이번 작업에서는 반려동물 필드 검증을 수행하지 않았으므로 `TSK-DATA-005`는 별도로 진행 필요.
 - **테스트**: 코드 변경 없음(설정/구조 확인, fixture 추가, 총 2회 실제 API 호출만 수행) — 기존 백엔드 테스트 스위트에 영향 없음.
+
+### 2026-11-19 완료 기록: Sprint 2 마감 — 통합 테스트 보강(`TSK-BE-022`) 및 Swagger 문서 정리(`TSK-BE-023`)
+- **`TSK-BE-022` 통합 테스트 보강** (`Sprint2FullFlowIntegrationTest`)
+  - 기존 테스트는 리뷰 응답의 평점만 확인하고 장소(Place) 평점 갱신은 검증하지 않았다. 또한 신규 장소의 평점 기본값이 5.0이라 5점 리뷰로는 갱신 여부를 구분할 수 없었다.
+  - 리뷰를 3점으로 작성 → `GET /api/v1/places/{id}`로 `rating=3.0, reviewCount=1` 확인 → 리뷰를 4점으로 수정(`PUT /api/v1/reviews/{id}`, 신규 단계) → `rating=4.0` 확인 → 리뷰 삭제 후 `rating=0.0, reviewCount=0` 확인 단계를 추가했다. 마지막 값(0.0)은 현재 동작을 고정한 것으로, 기본값 불일치는 `TSK-BE-032`로 기록.
+- **`TSK-BE-023` Swagger(OpenAPI) 문서 정리**
+  - **보안 스킴 버그 수정**: 문서 전역 보안 스킴 이름은 `BearerAuth`, 컨트롤러 API 대부분은 `bearerAuth`(소문자)를 참조하고 있어 Swagger UI에서 Authorize를 눌러도 대부분의 API에 토큰이 전송되지 않았다. `SwaggerConfig.SECURITY_SCHEME_NAME` 상수로 통일하고, 전역 보안을 제거해 공개 API(회원가입/로그인/장소 조회 등)에는 자물쇠가 표시되지 않게 했다.
+  - **에러 응답 자동 명세**: `@ApiErrorCodes` 어노테이션(엔드포인트별 비즈니스 에러 선언)과 `ApiErrorResponseCustomizer`(공통 에러 자동 부착)를 추가. 공통 규칙: 입력이 있는 API는 400, 인증 API는 401, 비밀번호 강제 변경 인터셉터 대상 API는 403(`AUTH_004`), 전체 API는 500. 같은 상태 코드의 에러는 하나의 응답으로 묶고 에러 코드별 예시(`{"success":false,"data":null,"error":"...","timestamp":"..."}`)를 표시. 공통 `ErrorResponse` 스키마 등록. `ErrorCode`에 `PASSWORD_CHANGE_REQUIRED`(AUTH_004), `DUPLICATE_NICKNAME`(USER_002) 추가. 인터셉터 제외 경로는 `WebMvcConfig` 상수로 추출해 문서와 실제 설정이 같은 값을 사용.
+  - **201 응답 반영**: 실제로 201을 반환하는 생성 API 4개(회원가입/반려동물 등록/즐겨찾기 추가/리뷰 작성)가 문서에는 200으로 표시되던 문제를 `@ResponseStatus(HttpStatus.CREATED)`로 수정.
+  - **요청/응답 예시**: 요청·응답 DTO 22개(중첩 DTO 포함)의 139개 필드에 `@Schema(description, example)` 추가. 정책 필드(`allowedSizes`, `maxWeightLimitKg`)에는 ADR-007의 null 의미(미검증)를 명시.
+  - **입력 형식 오류 400 처리 (버그 수정)**: 잘못된 UUID 경로 변수(`MethodArgumentTypeMismatchException`)와 깨진 JSON 본문(`HttpMessageNotReadableException`)이 처리기 부재로 500을 반환하던 문제를 `GlobalExceptionHandler`에서 400으로 처리하도록 수정(내부 파서 메시지는 노출하지 않음).
+  - **문서-실제 일치 검증 테스트**: `OpenApiDocumentationIntegrationTest`(7건) — 생성된 `/v3/api-docs`를 읽어 보안 스킴 참조, 문서의 인증 표시와 실제 401 동작 일치(전 API를 토큰 없이 실제 호출), 공통/비즈니스 에러 예시, 403 적용 범위, 201 표시, DTO 예시 존재를 검증. `InvalidRequestFormatIntegrationTest`(2건) — 잘못된 UUID/JSON의 400 응답 검증.
+- **검증**: 전체 `./gradlew test`: 198 tests, 실패/에러 0건, 2 skip(의도된 opt-in 실 API 테스트).
+- **식별된 후속 과제**: `TSK-BE-032`(평점 기본값 불일치), `TSK-BE-033`(프로필 수정 닉네임 중복 미검증, P1), `TSK-BE-034`(회원가입 비밀번호 규칙 불일치), `TSK-BE-035`(ErrorCode 기반 예외 구조 통일).
 
 ### 2026-09-14 완료 기록: TourAPI 반려동물 필드 실제 스키마 검증 (`TSK-DATA-005`)
 - **범위**: 실제 API 오퍼레이션 호출을 통한 반려동물 전용 필드 스키마 검증만 수행. DB 대량 적재/Place 엔티티 변경/DB migration/프런트엔드/검색 API/지도 기능/Redis/Elasticsearch/AI 추천/전체 데이터 수집/배치 스케줄러/임의 반려동물 정책 데이터 생성은 전부 범위 밖으로 명시적으로 제외.

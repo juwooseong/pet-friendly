@@ -16,6 +16,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import com.petspot.global.config.SwaggerConfig;
+import com.petspot.global.error.ErrorCode;
+import com.petspot.global.swagger.ApiErrorCodes;
 
 /**
  * 즐겨찾기(Favorite) CUD 및 조회 REST Controller
@@ -31,9 +35,11 @@ public class FavoriteController {
     @Operation(
             summary = "즐겨찾기 추가",
             description = "특정 장소를 내 즐겨찾기에 등록합니다.",
-            security = @SecurityRequirement(name = "bearerAuth")
+            security = @SecurityRequirement(name = SwaggerConfig.SECURITY_SCHEME_NAME)
     )
     @PostMapping("/api/v1/favorites/{placeId}")
+    @ApiErrorCodes({ErrorCode.USER_NOT_FOUND, ErrorCode.PLACE_NOT_FOUND, ErrorCode.DUPLICATE_FAVORITE})
+    @ResponseStatus(HttpStatus.CREATED) // 실제 응답 코드(201)를 Swagger 문서에 반영
     public ResponseEntity<ApiResponse<FavoriteResponseDto>> addFavorite(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable UUID placeId) {
@@ -48,9 +54,10 @@ public class FavoriteController {
     @Operation(
             summary = "즐겨찾기 해제(삭제)",
             description = "내 즐겨찾기에서 특정 장소를 해제합니다.",
-            security = @SecurityRequirement(name = "bearerAuth")
+            security = @SecurityRequirement(name = SwaggerConfig.SECURITY_SCHEME_NAME)
     )
     @DeleteMapping("/api/v1/favorites/{placeId}")
+    @ApiErrorCodes({ErrorCode.FAVORITE_NOT_FOUND})
     public ResponseEntity<ApiResponse<Void>> removeFavorite(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable UUID placeId) {
@@ -65,7 +72,7 @@ public class FavoriteController {
     @Operation(
             summary = "내 즐겨찾기 목록 조회",
             description = "현재 로그인한 사용자가 즐겨찾기에 등록한 장소 목록을 조회합니다.",
-            security = @SecurityRequirement(name = "bearerAuth")
+            security = @SecurityRequirement(name = SwaggerConfig.SECURITY_SCHEME_NAME)
     )
     @GetMapping("/api/v1/users/me/favorites")
     public ResponseEntity<ApiResponse<List<FavoriteResponseDto>>> getMyFavorites(
