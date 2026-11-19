@@ -16,6 +16,12 @@ const router = useRouter();
 const authStore = useAuthStore();
 
 const PAGE_SIZE = 12;
+
+/** 이미지 로드에 실패한 장소 ID - 깨진 이미지 대신 기본 아이콘을 보여준다 */
+const failedImageIds = ref<Set<string>>(new Set());
+const markImageFailed = (placeId: string) => {
+  failedImageIds.value = new Set(failedImageIds.value).add(placeId);
+};
 const DEFAULT_RADIUS_KM = 3;
 
 const keyword = ref('');
@@ -236,6 +242,19 @@ onMounted(async () => {
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <BaseCard v-for="place in places" :key="place.id" hoverable @click="router.push(`/place/${place.id}`)">
+          <div class="h-36 -mx-5 -mt-5 mb-3 bg-stone-100 rounded-t-2xl overflow-hidden" data-testid="place-thumbnail">
+            <img
+              v-if="place.imageUrl && !failedImageIds.has(place.id)"
+              :src="place.imageUrl"
+              :alt="place.name"
+              loading="lazy"
+              class="w-full h-full object-cover"
+              @error="markImageFailed(place.id)"
+            />
+            <div v-else class="w-full h-full flex items-center justify-center text-stone-300">
+              <i class="ri-image-line text-3xl"></i>
+            </div>
+          </div>
           <h3 class="font-bold text-stone-800 text-base truncate">{{ place.name }}</h3>
           <p class="text-xs text-stone-500 truncate mt-1">{{ place.address }}</p>
           <div class="mt-2 flex flex-wrap gap-1">

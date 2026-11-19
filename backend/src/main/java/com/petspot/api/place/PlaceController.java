@@ -1,5 +1,6 @@
 package com.petspot.api.place;
 
+import com.petspot.infrastructure.publicdata.service.PlaceDetailEnrichmentService;
 import com.petspot.application.place.PlaceQueryService;
 import com.petspot.domain.place.dto.PlaceSearchCondition;
 import com.petspot.domain.place.dto.PlaceSearchResponseDto;
@@ -36,6 +37,7 @@ import com.petspot.global.swagger.ApiErrorCodes;
 public class PlaceController {
 
     private final PlaceQueryService placeQueryService;
+    private final PlaceDetailEnrichmentService placeDetailEnrichmentService;
 
     @Operation(
             summary = "반려동물 동반 장소 반경 및 복합 조건 검색 (페이징)",
@@ -66,6 +68,9 @@ public class PlaceController {
 
         log.info("GET /api/v1/places/{} called", placeId);
 
+        // 공공데이터 장소를 처음 조회하면 TourAPI에서 소개/운영시간을 가져와 저장한다(실패해도 조회는 계속).
+        // 외부 API 호출 동안 DB 커넥션/트랜잭션을 붙잡지 않도록 조회 트랜잭션(PlaceQueryService) 밖에서 먼저 실행한다.
+        placeDetailEnrichmentService.enrichIfNeeded(placeId);
         PlaceSearchResponseDto result = placeQueryService.getPlaceDetail(placeId);
 
         return ResponseEntity.ok(ApiResponse.success(result));

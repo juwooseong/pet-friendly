@@ -162,4 +162,62 @@ describe('SearchPage', () => {
     const lastSearchCall = (apiClient.get as any).mock.calls.at(-1);
     expect(lastSearchCall[1].params.page).toBe(1);
   });
+
+  describe('썸네일', () => {
+    const placeWith = (imageUrl: string | null) => ({
+      id: 'place-thumb',
+      name: '썸네일 테스트 장소',
+      category: 'PARK',
+      categoryName: '공원',
+      address: '강원특별자치도 강릉시',
+      latitude: 37.75,
+      longitude: 128.9,
+      phone: null,
+      operatingHours: null,
+      imageUrl,
+      rating: 0,
+      reviewCount: 0,
+      maxWeightLimitKg: null,
+      allowedSizes: null,
+      distanceKm: null,
+    });
+
+    it('imageUrl이 있으면 카드 상단에 지연 로딩 썸네일 이미지를 표시한다', async () => {
+      (apiClient.get as any).mockResolvedValue(
+        mockSearchResponse({ content: [placeWith('https://tong.visitkorea.or.kr/cms/resource/38/3573038_image2_1.jpg')] })
+      );
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      const img = wrapper.find('[data-testid="place-thumbnail"] img');
+      expect(img.exists()).toBe(true);
+      expect(img.attributes('src')).toBe('https://tong.visitkorea.or.kr/cms/resource/38/3573038_image2_1.jpg');
+      expect(img.attributes('loading')).toBe('lazy');
+      expect(img.attributes('alt')).toBe('썸네일 테스트 장소');
+    });
+
+    it('imageUrl이 없으면 기본 아이콘을 표시한다', async () => {
+      (apiClient.get as any).mockResolvedValue(mockSearchResponse({ content: [placeWith(null)] }));
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      const thumb = wrapper.find('[data-testid="place-thumbnail"]');
+      expect(thumb.find('img').exists()).toBe(false);
+      expect(thumb.find('.ri-image-line').exists()).toBe(true);
+    });
+
+    it('이미지 로드에 실패하면 깨진 이미지 대신 기본 아이콘으로 바꾼다', async () => {
+      (apiClient.get as any).mockResolvedValue(mockSearchResponse({ content: [placeWith('https://example.com/broken.jpg')] }));
+
+      const wrapper = mountPage();
+      await flushPromises();
+      await wrapper.find('[data-testid="place-thumbnail"] img').trigger('error');
+
+      const thumb = wrapper.find('[data-testid="place-thumbnail"]');
+      expect(thumb.find('img').exists()).toBe(false);
+      expect(thumb.find('.ri-image-line').exists()).toBe(true);
+    });
+  });
 });

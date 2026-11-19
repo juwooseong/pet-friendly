@@ -54,6 +54,9 @@ class TourPetPolicyIngestionIntegrationTest {
         TourApiResponseDto list = readFixture("tourapi/success-area-based-list2-real-2026-09-09.json", TourApiResponseDto.class);
         List<TourApiPlaceItemDto> items = list.getResponse().getBody().getItemList();
         String contentId = items.get(0).getContentId();
+        // 개발 DB에 실제 적재된 같은 장소가 있으면 테스트 트랜잭션 안에서 지운다(롤백되어 실제 데이터는 유지)
+        placeRepository.findByPublicDataId(contentId).ifPresent(placeRepository::delete);
+        entityManager.flush();
         given(tourApiClient.fetchPetTourDetail(contentId)).willReturn(Optional.of(TourApiPetTourItemDto.builder()
                 .contentId(contentId)
                 .accompanyType("일부구역 동반가능")

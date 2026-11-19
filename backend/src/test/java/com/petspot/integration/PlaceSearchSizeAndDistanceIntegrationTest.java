@@ -34,6 +34,13 @@ class PlaceSearchSizeAndDistanceIntegrationTest {
 
     private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory(new PrecisionModel(), 4326);
 
+    /**
+     * 테스트 장소는 실제 장소가 없는 서해 바다 위 좌표(34.00N, 124.52E 부근)에 만든다. 테스트가 개발 DB를 함께 쓰므로,
+     * 전국 실제 데이터(2026-11-19 적재, 9,630곳)가 검색 결과에 섞이지 않도록 검색 범위를 이 근처로 한정한다.
+     */
+    private static final double ISOLATED_LAT = 34.0067;
+    private static final double ISOLATED_LON = 124.5236;
+
     private Point point(double lat, double lon) {
         return GEOMETRY_FACTORY.createPoint(new Coordinate(lon, lat));
     }
@@ -47,9 +54,9 @@ class PlaceSearchSizeAndDistanceIntegrationTest {
                 .category("CAFE")
                 .categoryName("카페")
                 .address("서울 마포구")
-                .location(point(37.5567, 126.9236))
-                .latitude(37.5567)
-                .longitude(126.9236)
+                .location(point(34.0067, 124.5236))
+                .latitude(34.0067)
+                .longitude(124.5236)
                 .allowedSizes(List.of("SMALL"))
                 .build());
 
@@ -58,9 +65,9 @@ class PlaceSearchSizeAndDistanceIntegrationTest {
                 .category("PARK")
                 .categoryName("공원")
                 .address("서울 마포구")
-                .location(point(37.5568, 126.9237))
-                .latitude(37.5568)
-                .longitude(126.9237)
+                .location(point(34.0068, 124.5237))
+                .latitude(34.0068)
+                .longitude(124.5237)
                 .allowedSizes(List.of("LARGE"))
                 .build());
 
@@ -69,9 +76,9 @@ class PlaceSearchSizeAndDistanceIntegrationTest {
                 .category("CAFE")
                 .categoryName("카페")
                 .address("서울 마포구")
-                .location(point(37.5569, 126.9238))
-                .latitude(37.5569)
-                .longitude(126.9238)
+                .location(point(34.0069, 124.5238))
+                .latitude(34.0069)
+                .longitude(124.5238)
                 // TSK-DATA-008(ADR-007): allowedSizes 미지정 시 더 이상 전체 허용으로 자동 치환되지 않는다
                 // (null = 미검증). 이 테스트는 "실제 근거로 전체 크기가 확인된 장소"를 검증하려는 것이므로
                 // 명시적으로 전체 크기를 지정한다.
@@ -80,6 +87,9 @@ class PlaceSearchSizeAndDistanceIntegrationTest {
 
         PlaceSearchCondition condition = PlaceSearchCondition.builder()
                 .sizeCategory("SMALL")
+                .latitude(ISOLATED_LAT)
+                .longitude(ISOLATED_LON)
+                .radiusKm(1.0)
                 .build();
 
         // when
@@ -105,9 +115,9 @@ class PlaceSearchSizeAndDistanceIntegrationTest {
                 .category("ETC")
                 .categoryName("기타")
                 .address("서울 마포구")
-                .location(point(37.5570, 126.9239))
-                .latitude(37.5570)
-                .longitude(126.9239)
+                .location(point(34.0070, 124.5239))
+                .latitude(34.0070)
+                .longitude(124.5239)
                 .build()); // allowedSizes/isIndoorAllowed/isOutdoorAllowed/hasOffLeashZone/maxWeightLimitKg 전부 미지정 -> null
 
         // then: 저장 자체는 예외 없이 성공하고 null이 그대로 유지된다
@@ -126,6 +136,9 @@ class PlaceSearchSizeAndDistanceIntegrationTest {
         // when: SMALL 크기 필터로 검색 - 근거(allowedSizes) 없는 장소는 결과에 포함되지 않아야 한다
         PlaceSearchCondition condition = PlaceSearchCondition.builder()
                 .sizeCategory("SMALL")
+                .latitude(ISOLATED_LAT)
+                .longitude(ISOLATED_LON)
+                .radiusKm(1.0)
                 .build();
         List<PlaceSearchResponseDto> results = placeRepository.searchPlaces(condition);
 
@@ -135,9 +148,9 @@ class PlaceSearchSizeAndDistanceIntegrationTest {
     @Test
     @DisplayName("위도/경도 조건 검색 시 DB에서 계산된 거리(distanceKm) 오름차순으로 정렬되고 Pageable과 함께 동작한다")
     void searchPlaces_DistanceSort_WithPagination() {
-        // given: 기준 좌표(37.5567, 126.9236)로부터 거리가 서로 다른 3개 장소
-        double baseLat = 37.5567;
-        double baseLon = 126.9236;
+        // given: 기준 좌표(34.0067, 124.5236)로부터 거리가 서로 다른 3개 장소
+        double baseLat = 34.0067;
+        double baseLon = 124.5236;
 
         placeRepository.save(Place.builder()
                 .name("가장 먼 장소")

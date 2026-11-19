@@ -259,6 +259,23 @@ onMounted(async () => {
         <p v-else class="text-sm text-stone-400">등록된 반려동물 동반 수칙 정보가 없습니다.</p>
       </div>
 
+      <div v-if="place.description" class="pt-4 border-t border-stone-100 space-y-2" data-testid="place-description">
+        <h3 class="text-sm font-bold text-stone-700 flex items-center gap-1.5">
+          <i class="ri-information-line text-amber-500"></i>
+          <span>장소 소개</span>
+        </h3>
+        <!-- 서버가 HTML을 제거한 평문으로 내려준다. v-html을 쓰지 않고 텍스트로만 렌더링한다(XSS 방지). -->
+        <p class="text-sm text-stone-600 leading-relaxed whitespace-pre-line">{{ place.description }}</p>
+      </div>
+
+      <div v-if="place.operatingHours" class="pt-4 border-t border-stone-100 space-y-2" data-testid="place-operating-hours">
+        <h3 class="text-sm font-bold text-stone-700 flex items-center gap-1.5">
+          <i class="ri-time-line text-amber-500"></i>
+          <span>운영 시간</span>
+        </h3>
+        <p class="text-sm text-stone-600 leading-relaxed whitespace-pre-line">{{ place.operatingHours }}</p>
+      </div>
+
       <div class="pt-4 border-t border-stone-100 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-stone-600">
         <div v-if="place.phone" class="flex items-center gap-2">
           <i class="ri-phone-line text-amber-500"></i>

@@ -129,6 +129,10 @@ public class Place {
     @Column(name = "pet_policy_synced_at")
     private ZonedDateTime petPolicySyncedAt;
 
+    /** TourAPI 상세 정보(개요/운영시간)를 마지막으로 조회한 시각. null이면 상세 화면 첫 조회 시 가져온다 */
+    @Column(name = "detail_synced_at")
+    private ZonedDateTime detailSyncedAt;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private ZonedDateTime createdAt;
@@ -226,6 +230,25 @@ public class Place {
             this.petPolicyDetail = null;
             this.petPolicySource = null;
         }
+    }
+
+    /**
+     * TourAPI 상세 정보(detailCommon2 개요, detailIntro2 운영시간)를 반영한다.
+     * 값이 없는(null) 항목은 기존 값을 지우지 않는다 - 조회 시각만 기록해 다시 호출하지 않게 한다.
+     */
+    public void applyTourApiDetail(String description, String operatingHours, ZonedDateTime syncedAt) {
+        if (description != null && !description.isBlank()) {
+            this.description = description;
+        }
+        if (operatingHours != null && !operatingHours.isBlank()) {
+            this.operatingHours = operatingHours;
+        }
+        this.detailSyncedAt = syncedAt;
+    }
+
+    /** 상세 정보를 TourAPI에서 가져와야 하는지 (공공데이터 장소이고 아직 조회 전) */
+    public boolean needsTourApiDetail() {
+        return publicDataId != null && detailSyncedAt == null;
     }
 
     /**

@@ -2,6 +2,7 @@ package com.petspot.infrastructure.publicdata.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.petspot.infrastructure.publicdata.dto.TourApiDetailCommonDto;
 import com.petspot.infrastructure.publicdata.dto.TourApiErrorEnvelopeDto;
 import com.petspot.infrastructure.publicdata.dto.TourApiPetTourItemDto;
 import com.petspot.infrastructure.publicdata.dto.TourApiResponseDto;
@@ -17,6 +18,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -48,6 +51,12 @@ public class TourApiClient {
 
     /** 장소별 반려동물 동반 정책 조회 오퍼레이션 (contentId 필수, 목록 조회 불가) */
     private static final String PET_TOUR_DETAIL_OPERATION_PATH = "/detailPetTour2";
+
+    /** 장소 공통 정보(개요/홈페이지/장소 유형) 조회 오퍼레이션 (contentId 필수) */
+    private static final String DETAIL_COMMON_OPERATION_PATH = "/detailCommon2";
+
+    /** 장소 소개 정보(운영시간/쉬는 날 등) 조회 오퍼레이션 (contentId, contentTypeId 필수) */
+    private static final String DETAIL_INTRO_OPERATION_PATH = "/detailIntro2";
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -114,18 +123,63 @@ public class TourApiClient {
      * @throws PublicDataException      통신 실패 또는 게이트웨이/API 오류 응답
      */
     public Optional<TourApiPetTourItemDto> fetchPetTourDetail(String contentId) {
+        return fetchSingleItem(PET_TOUR_DETAIL_OPERATION_PATH, contentId, null)
+                .map(item -> toDto(item, TourApiPetTourItemDto.class, contentId));
+    }
+
+    /**
+     * 장소 공통 정보를 조회한다 ({@code detailCommon2}). 장소 개요({@code overview}), 홈페이지, 장소 유형
+     * ({@code contenttypeid} - {@link #fetchDetailIntro} 호출에 필요)를 담고 있다.
+     */
+    public Optional<TourApiDetailCommonDto> fetchDetailCommon(String contentId) {
+        return fetchSingleItem(DETAIL_COMMON_OPERATION_PATH, contentId, null)
+                .map(item -> toDto(item, TourApiDetailCommonDto.class, contentId));
+    }
+
+    /**
+     * 장소 소개 정보를 조회한다 ({@code detailIntro2}, {@code contentTypeId} 필수).
+     * 필드 구성이 장소 유형마다 달라(관광지 usetime, 쇼핑 opentime, 음식점 opentimefood, 숙박 checkintime 등)
+     * 텍스트 필드 전체를 키-값 맵으로 돌려준다. 해석은 {@code TourApiOperatingHoursExtractor}가 담당한다.
+     */
+    public Optional<Map<String, String>> fetchDetailIntro(String contentId, String contentTypeId) {
+        if (contentTypeId == null || contentTypeId.isBlank()) {
+            throw new IllegalArgumentException("contentTypeId는 필수입니다.");
+        }
+        return fetchSingleItem(DETAIL_INTRO_OPERATION_PATH, contentId, contentTypeId)
+                .map(item -> {
+                    Map<String, String> fields = new LinkedHashMap<>();
+                    item.fields().forEachRemaining(e -> {
+                        if (e.getValue().isValueNode()) {
+                            fields.put(e.getKey(), e.getValue().asText());
+                        }
+                    });
+                    return fields;
+                });
+    }
+
+    /**
+     * contentId 기반 상세 오퍼레이션 공통 호출. 정상 응답이지만 데이터가 없으면 {@code items}가 빈 문자열({@code ""})로
+     * 내려오므로 {@link Optional#empty()}를 반환한다(실제 관찰: detailPetTour2 숙박 contentId 2707444).
+     *
+     * @throws IllegalArgumentException contentId가 비어 있는 경우
+     * @throws PublicDataException      통신 실패 또는 게이트웨이/API 오류 응답
+     */
+    private Optional<JsonNode> fetchSingleItem(String operationPath, String contentId, String contentTypeId) {
         if (contentId == null || contentId.isBlank()) {
             throw new IllegalArgumentException("contentId는 필수입니다.");
         }
-        URI targetUri = UriComponentsBuilder.fromUriString(baseUrl + PET_TOUR_DETAIL_OPERATION_PATH)
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUrl + operationPath)
                 .queryParam("serviceKey", encodedServiceKey())
                 .queryParam("MobileOS", mobileOs)
                 .queryParam("MobileApp", mobileApp)
                 .queryParam("_type", "json")
-                .queryParam("contentId", contentId)
-                .build(true).toUri();
-        // (build(true)는 이미 인코딩된 값을 가정한다 - 서비스키는 encodedServiceKey()로 항상 인코딩해 넘긴다)
-        log.debug("Requesting TourAPI detailPetTour2: contentId={}", contentId);
+                .queryParam("contentId", contentId);
+        if (contentTypeId != null) {
+            builder.queryParam("contentTypeId", contentTypeId);
+        }
+        // build(true)는 이미 인코딩된 값을 가정한다 - 서비스키는 encodedServiceKey()로 항상 인코딩해 넘긴다
+        URI targetUri = builder.build(true).toUri();
+        log.debug("Requesting TourAPI {}: contentId={}", operationPath, contentId);
 
         String rawBody = fetchRaw(targetUri);
         JsonNode root;
@@ -144,7 +198,6 @@ public class TourApiClient {
             throw new PublicDataException("TourAPI 오류 응답: [" + resultCode + "] " + header.path("resultMsg").asText());
         }
 
-        // 정책 미등록 장소는 items가 "" (문자열)로 온다
         JsonNode items = root.path("response").path("body").path("items");
         if (!items.isObject()) {
             return Optional.empty();
@@ -153,13 +206,14 @@ public class TourApiClient {
         if (item.isArray()) {
             item = item.isEmpty() ? null : item.get(0);
         }
-        if (item == null || !item.isObject()) {
-            return Optional.empty();
-        }
+        return item != null && item.isObject() ? Optional.of(item) : Optional.empty();
+    }
+
+    private <T> T toDto(JsonNode item, Class<T> type, String contentId) {
         try {
-            return Optional.of(objectMapper.treeToValue(item, TourApiPetTourItemDto.class));
+            return objectMapper.treeToValue(item, type);
         } catch (Exception e) {
-            throw new PublicDataException("detailPetTour2 응답 item을 해석하지 못했습니다: contentId=" + contentId, e);
+            throw new PublicDataException("TourAPI 응답 item을 해석하지 못했습니다: contentId=" + contentId, e);
         }
     }
 

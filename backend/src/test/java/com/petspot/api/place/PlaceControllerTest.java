@@ -37,6 +37,9 @@ class PlaceControllerTest {
     private PlaceQueryService placeQueryService;
 
     @MockBean
+    private com.petspot.infrastructure.publicdata.service.PlaceDetailEnrichmentService placeDetailEnrichmentService;
+
+    @MockBean
     private com.petspot.global.util.JwtTokenProvider jwtTokenProvider;
 
     @MockBean

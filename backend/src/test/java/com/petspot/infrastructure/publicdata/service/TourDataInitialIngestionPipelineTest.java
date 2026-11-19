@@ -48,6 +48,18 @@ class TourDataInitialIngestionPipelineTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /**
+     * 테스트가 개발 DB를 함께 쓰므로, 실제 적재(2026-11-19)로 이미 들어 있는 fixture 장소를 테스트 트랜잭션 안에서 먼저
+     * 지운다(테스트 종료 시 롤백되어 실제 데이터는 그대로 남는다). 이렇게 해야 "신규 저장" 시나리오를 검증할 수 있다.
+     */
+    @org.junit.jupiter.api.BeforeEach
+    void removeAlreadyLoadedFixturePlaces() throws IOException {
+        for (TourApiPlaceItemDto item : readRealFixture().getResponse().getBody().getItemList()) {
+            placeRepository.findByPublicDataId(item.getContentId()).ifPresent(placeRepository::delete);
+        }
+        placeRepository.flush();
+    }
+
     @Test
     @DisplayName("실제 areaBasedList2 fixture: 역직렬화 -> DTO -> Place 매핑 -> DB 저장까지 전체 파이프라인이 성공하고, 반려동물 정책 5개 필드는 전부 null이다")
     void realFixture_EndToEndIngestion_PolicyFieldsAreNull() throws IOException {

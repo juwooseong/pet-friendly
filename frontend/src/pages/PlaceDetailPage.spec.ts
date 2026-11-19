@@ -490,4 +490,49 @@ describe('PlaceDetailPage', () => {
       expect(wrapper.text()).toContain('리뷰 등록 중 서버 오류가 발생했습니다.');
     });
   });
+
+  describe('장소 소개 / 운영 시간', () => {
+    it('소개와 운영 시간이 있으면 줄바꿈을 유지한 텍스트로 표시한다', async () => {
+      (apiClient.get as any).mockResolvedValue(
+        mockDetailResponse({
+          description: '반려견과 함께 걷기 좋은 숲길입니다.\n주차장이 넓습니다.',
+          operatingHours: '이용 시간: 09:00~18:00\n쉬는 날: 매주 월요일',
+        })
+      );
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      const description = wrapper.find('[data-testid="place-description"]');
+      expect(description.exists()).toBe(true);
+      expect(description.text()).toContain('장소 소개');
+      expect(description.find('p').text()).toBe('반려견과 함께 걷기 좋은 숲길입니다.\n주차장이 넓습니다.');
+      expect(description.find('p').classes()).toContain('whitespace-pre-line');
+
+      const hours = wrapper.find('[data-testid="place-operating-hours"]');
+      expect(hours.exists()).toBe(true);
+      expect(hours.text()).toContain('쉬는 날: 매주 월요일');
+    });
+
+    it('소개에 HTML 태그 문자열이 있어도 태그로 해석하지 않고 글자 그대로 표시한다', async () => {
+      (apiClient.get as any).mockResolvedValue(mockDetailResponse({ description: '<img src=x onerror=alert(1)>소개' }));
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      const description = wrapper.find('[data-testid="place-description"]');
+      expect(description.find('img').exists()).toBe(false);
+      expect(description.text()).toContain('<img src=x onerror=alert(1)>소개');
+    });
+
+    it('소개와 운영 시간이 없으면 해당 영역을 표시하지 않는다', async () => {
+      (apiClient.get as any).mockResolvedValue(mockDetailResponse({ description: null, operatingHours: null }));
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      expect(wrapper.find('[data-testid="place-description"]').exists()).toBe(false);
+      expect(wrapper.find('[data-testid="place-operating-hours"]').exists()).toBe(false);
+    });
+  });
 });

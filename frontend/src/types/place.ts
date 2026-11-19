@@ -17,7 +17,10 @@ export interface PlaceSearchItem {
   latitude: number;
   longitude: number;
   phone: string | null;
+  /** 운영시간 안내(여러 줄 평문). 공공데이터 장소는 상세 화면을 처음 열 때 채워진다 */
   operatingHours: string | null;
+  /** 장소 소개(평문, 줄바꿈 포함). 공공데이터 장소는 상세 화면을 처음 열 때 채워진다 */
+  description?: string | null;
   imageUrl: string | null;
   rating: number;
   reviewCount: number;
