@@ -41,6 +41,37 @@ class PlaceSearchSizeAndDistanceIntegrationTest {
     private static final double ISOLATED_LAT = 34.0067;
     private static final double ISOLATED_LON = 124.5236;
 
+    @Test
+    @DisplayName("정렬 기준이 모두 같은(동점) 장소가 많아도 페이지끼리 겹치거나 빠지지 않는다 - 평점순/거리순 모두")
+    void searchPlaces_TiedSortKeys_PagesDoNotOverlap() {
+        // given: 같은 좌표·같은 평점(리뷰 없음 0.0)·같은 리뷰 수인 장소 15곳 (2026-11-19 실제 데이터에서 발견된 상황 재현)
+        String prefix = "페이징동점테스트-" + java.util.UUID.randomUUID();
+        for (int i = 0; i < 15; i++) {
+            placeRepository.save(Place.builder()
+                    .name(prefix + "-" + i)
+                    .category("ETC")
+                    .address("테스트 주소")
+                    .location(point(ISOLATED_LAT, ISOLATED_LON))
+                    .latitude(ISOLATED_LAT)
+                    .longitude(ISOLATED_LON)
+                    .build());
+        }
+
+        PlaceSearchCondition byRating = PlaceSearchCondition.builder().keyword(prefix).build();
+        PlaceSearchCondition byDistance = PlaceSearchCondition.builder()
+                .keyword(prefix).latitude(ISOLATED_LAT).longitude(ISOLATED_LON).radiusKm(1.0).build();
+
+        for (PlaceSearchCondition condition : List.of(byRating, byDistance)) {
+            java.util.List<java.util.UUID> seen = new java.util.ArrayList<>();
+            for (int page = 0; page < 3; page++) {
+                placeRepository.searchPlaces(condition, PageRequest.of(page, 5))
+                        .getContent().forEach(dto -> seen.add(dto.getId()));
+            }
+            // then: 3페이지를 합치면 중복 없이 15곳 전부
+            assertThat(seen).hasSize(15).doesNotHaveDuplicates();
+        }
+    }
+
     private Point point(double lat, double lon) {
         return GEOMETRY_FACTORY.createPoint(new Coordinate(lon, lat));
     }

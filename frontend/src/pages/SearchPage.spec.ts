@@ -163,6 +163,34 @@ describe('SearchPage', () => {
     expect(lastSearchCall[1].params.page).toBe(1);
   });
 
+  it('페이지 번호를 누르면 새 페이지 목록으로 바뀌고 화면 맨 위로 스크롤한다', async () => {
+    const scrollSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    const placeNamed = (id: string, name: string) => ({
+      id, name, category: 'PARK', categoryName: '공원', address: '주소', latitude: 37.5, longitude: 127.0,
+      phone: null, operatingHours: null, imageUrl: null, rating: 0, reviewCount: 0,
+      maxWeightLimitKg: null, allowedSizes: null, distanceKm: null,
+    });
+    (apiClient.get as any).mockResolvedValue(
+      mockSearchResponse({ page: 0, totalPages: 2, totalElements: 13, hasNext: true, content: [placeNamed('p1', '첫 페이지 장소')] })
+    );
+
+    const wrapper = mountPage();
+    await flushPromises();
+    expect(wrapper.text()).toContain('첫 페이지 장소');
+
+    (apiClient.get as any).mockResolvedValue(
+      mockSearchResponse({ page: 1, totalPages: 2, totalElements: 13, hasNext: false, content: [placeNamed('p2', '두 번째 페이지 장소')] })
+    );
+    const page2Button = wrapper.findAll('button').find((btn) => btn.text() === '2');
+    await page2Button!.trigger('click');
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('두 번째 페이지 장소');
+    expect(wrapper.text()).not.toContain('첫 페이지 장소');
+    expect(scrollSpy).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }));
+    scrollSpy.mockRestore();
+  });
+
   describe('썸네일', () => {
     const placeWith = (imageUrl: string | null) => ({
       id: 'place-thumb',

@@ -147,9 +147,11 @@ const searchPlaces = async (page = 0) => {
   }
 };
 
-const goToPage = (page: number) => {
+const goToPage = async (page: number) => {
   if (page < 0 || page >= totalPages.value || page === currentPage.value) return;
-  searchPlaces(page);
+  await searchPlaces(page);
+  // 페이지 버튼은 목록 맨 아래에 있어서, 스크롤을 그대로 두면 새 목록이 보이지 않고 숫자만 바뀐 것처럼 보인다.
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
 onMounted(async () => {

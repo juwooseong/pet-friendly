@@ -88,7 +88,10 @@ public class PlaceRepositoryImpl implements PlaceRepositoryCustom {
                 .where(whereConditions)
                 .orderBy(
                         distanceExpression != null ? distanceExpression.asc() : place.rating.desc(),
-                        place.reviewCount.desc()
+                        place.reviewCount.desc(),
+                        // 마지막 정렬 기준은 반드시 고유해야 한다. 동점(예: 리뷰 없는 장소 9천여 곳이 모두 평점 0.0)이면
+                        // PostgreSQL이 LIMIT/OFFSET마다 순서를 임의로 정해, 페이지끼리 같은 장소가 겹치거나 빠졌다.
+                        place.id.asc()
                 );
 
         if (pageable.isPaged()) {
