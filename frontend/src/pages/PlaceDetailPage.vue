@@ -82,17 +82,22 @@ const galleryImages = computed<PlaceGalleryImage[]>(() => {
     },
   ];
 });
+/** 큰 화면에 보여줄 사진. 출처 문구의 공공누리 유형도 이 사진 기준으로 표시한다(사진마다 유형이 다를 수 있음) */
 const currentImage = computed(() => galleryImages.value[selectedImageIndex.value] ?? null);
+/** 썸네일 클릭 - 이전 사진의 로드 실패 상태를 지워야 새 사진이 다시 표시된다 */
 const selectImage = (index: number) => {
   selectedImageIndex.value = index;
   imageLoadError.value = false;
 };
 
+/** 한국관광공사(TourAPI) 데이터인 장소에만 출처를 표시한다. 사용자가 직접 등록한 장소는 publicDataId가 없다 */
 const isPublicDataPlace = computed(() => !!place.value?.publicDataId);
+/** 서버에서 http(s)만 저장하지만, 화면에서도 한 번 더 확인해 javascript: 같은 값이 링크로 걸리지 않게 한다 */
 const homepageUrl = computed(() => {
   const homepage = place.value?.detailInfo?.homepage;
   return isHttpUrl(homepage) ? homepage : null;
 });
+/** 부가 정보 중 값이 있는 항목만 표시 (상세 화면 첫 조회 때 TourAPI에서 채워짐) */
 const extraInfoItems = computed(() => {
   const info = place.value?.detailInfo;
   if (!info) return [];
@@ -103,6 +108,7 @@ const extraInfoItems = computed(() => {
     { icon: 'ri-ticket-2-line', label: '이용 요금', value: info.useFee },
   ].filter((item): item is { icon: string; label: string; value: string } => !!item.value);
 });
+/** 카카오맵 길찾기 (기존 좌표 숫자 표시를 대체, 별도 API 호출 없음) */
 const directionsUrl = computed(() =>
   place.value ? kakaoDirectionsUrl(place.value.name, place.value.latitude, place.value.longitude) : ''
 );

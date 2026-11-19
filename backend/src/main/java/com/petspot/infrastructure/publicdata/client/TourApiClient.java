@@ -164,13 +164,6 @@ public class TourApiClient {
     }
 
     /**
-     * contentId 기반 상세 오퍼레이션 공통 호출. 정상 응답이지만 데이터가 없으면 {@code items}가 빈 문자열({@code ""})로
-     * 내려오므로 {@link Optional#empty()}를 반환한다(실제 관찰: detailPetTour2 숙박 contentId 2707444).
-     *
-     * @throws IllegalArgumentException contentId가 비어 있는 경우
-     * @throws PublicDataException      통신 실패 또는 게이트웨이/API 오류 응답
-     */
-    /**
      * 장소 사진 목록을 조회한다 ({@code detailImage2}, imageYN=Y: 장소 사진 / N이면 음식 메뉴 사진).
      * 실제 응답(2026-11-19, contentId 1019041): 사진 4장, 각 항목에 originimgurl / smallimageurl / cpyrhtDivCd(Type1).
      *
@@ -184,11 +177,26 @@ public class TourApiClient {
         return images;
     }
 
+    /**
+     * 단건 상세 오퍼레이션(detailCommon2 / detailIntro2 / detailPetTour2) 호출. 첫 item만 쓴다.
+     * 데이터가 없는 장소는 정상 응답이지만 {@code items}가 빈 문자열이라 {@link Optional#empty()}를 반환한다
+     * (실제 관찰: detailPetTour2 숙박 contentId 2707444).
+     */
     private Optional<JsonNode> fetchSingleItem(String operationPath, String contentId, String contentTypeId) {
         List<JsonNode> items = fetchItems(operationPath, contentId, contentTypeId, Map.of());
         return items.isEmpty() ? Optional.empty() : Optional.of(items.get(0));
     }
 
+    /**
+     * contentId 기반 상세 오퍼레이션 공통 호출. 응답 봉투를 검사하고 item 목록을 돌려준다.
+     *
+     * <p>TourAPI는 item이 1건이면 객체, 여러 건이면 배열, 0건이면 {@code items: ""}(문자열)로 보낸다 - 세 경우를 모두
+     * 목록으로 통일한다. 게이트웨이 오류(평평한 resultCode / OpenAPI_ServiceResponse)는 {@link #gatewayError}로 변환한다.
+     *
+     * @param extraParams 오퍼레이션별 추가 쿼리 (예: detailImage2의 imageYN)
+     * @throws IllegalArgumentException contentId가 비어 있는 경우
+     * @throws PublicDataException      통신 실패 또는 게이트웨이/API 오류 응답
+     */
     private List<JsonNode> fetchItems(String operationPath, String contentId, String contentTypeId,
                                       Map<String, String> extraParams) {
         if (contentId == null || contentId.isBlank()) {
@@ -244,6 +252,7 @@ public class TourApiClient {
         return result;
     }
 
+    /** item JSON을 DTO로 변환한다. 형식이 예상과 다르면 어느 장소에서 실패했는지 남기고 PublicDataException으로 바꾼다. */
     private <T> T toDto(JsonNode item, Class<T> type, String contentId) {
         try {
             return objectMapper.treeToValue(item, type);
