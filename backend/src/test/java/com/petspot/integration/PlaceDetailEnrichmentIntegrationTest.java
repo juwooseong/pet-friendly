@@ -78,14 +78,29 @@ class PlaceDetailEnrichmentIntegrationTest {
         given(tourApiClient.fetchDetailCommon(contentId)).willReturn(Optional.of(TourApiDetailCommonDto.builder()
                 .contentId(contentId).contentTypeId("38")
                 .overview("가까운약국은 이웃처럼 편안한 상담과<br>정직한 약료 서비스를 지향합니다.")
+                .homepage("<a href=\"https://pharmacy.example.com\" target=\"_blank\">홈페이지</a>")
                 .build()));
         given(tourApiClient.fetchDetailIntro(contentId, "38"))
-                .willReturn(Optional.of(Map.of("opentime", "09:00-20:00", "restdateshopping", "")));
+                .willReturn(Optional.of(Map.of("opentime", "09:00-20:00", "restdateshopping", "",
+                        "parkingshopping", "가능", "infocentershopping", "02-123-4567")));
+        given(tourApiClient.fetchDetailImages(contentId)).willReturn(java.util.List.of(
+                com.petspot.infrastructure.publicdata.dto.TourApiImageItemDto.builder()
+                        .originalUrl("https://tong.visitkorea.or.kr/a.jpg").smallUrl("https://tong.visitkorea.or.kr/a_s.jpg")
+                        .copyrightType("Type1").build(),
+                com.petspot.infrastructure.publicdata.dto.TourApiImageItemDto.builder()
+                        .originalUrl("javascript:alert(1)").build())); // http(s)가 아닌 주소는 저장하지 않는다
 
         mockMvc.perform(get("/api/v1/places/" + placeId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.description", is("가까운약국은 이웃처럼 편안한 상담과\n정직한 약료 서비스를 지향합니다.")))
-                .andExpect(jsonPath("$.data.operatingHours", is("이용 시간: 09:00-20:00")));
+                .andExpect(jsonPath("$.data.operatingHours", is("이용 시간: 09:00-20:00")))
+                .andExpect(jsonPath("$.data.detailInfo.homepage", is("https://pharmacy.example.com")))
+                .andExpect(jsonPath("$.data.detailInfo.parking", is("가능")))
+                .andExpect(jsonPath("$.data.detailInfo.infoCenter", is("02-123-4567")))
+                .andExpect(jsonPath("$.data.galleryImages.length()", is(1)))
+                .andExpect(jsonPath("$.data.galleryImages[0].url", is("https://tong.visitkorea.or.kr/a.jpg")))
+                .andExpect(jsonPath("$.data.galleryImages[0].thumbnailUrl", is("https://tong.visitkorea.or.kr/a_s.jpg")))
+                .andExpect(jsonPath("$.data.galleryImages[0].copyrightType", is("Type1")));
 
         mockMvc.perform(get("/api/v1/places/" + placeId))
                 .andExpect(status().isOk())

@@ -133,6 +133,28 @@ public class Place {
     @Column(name = "detail_synced_at")
     private ZonedDateTime detailSyncedAt;
 
+    /** TourAPI 장소 유형 코드 (12 관광지, 14 문화시설, 15 행사, 25 여행코스, 28 레포츠, 32 숙박, 38 쇼핑, 39 음식점) */
+    @Column(name = "content_type_id", length = 10)
+    private String contentTypeId;
+
+    /** 목록용 작은 대표 이미지 (TourAPI firstimage2). 없으면 화면은 imageUrl을 쓴다 */
+    @Column(name = "thumbnail_url", columnDefinition = "TEXT")
+    private String thumbnailUrl;
+
+    /** 대표 이미지 공공누리 유형 (TourAPI cpyrhtDivCd, 예: Type1 출처표시 / Type3 출처표시+변경금지) */
+    @Column(name = "image_copyright_type", length = 10)
+    private String imageCopyrightType;
+
+    /** 상세 부가 정보 (homepage, parking, infoCenter, babyCarriage, useFee). 값이 없는 항목은 키가 없다 */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "detail_info", columnDefinition = "jsonb")
+    private Map<String, String> detailInfo;
+
+    /** 상세 사진 목록. 각 항목 키: url(원본), thumbnailUrl(작은 이미지), copyrightType(공공누리 유형) */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "gallery_images", columnDefinition = "jsonb")
+    private List<Map<String, String>> galleryImages;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private ZonedDateTime createdAt;
@@ -236,14 +258,38 @@ public class Place {
      * TourAPI 상세 정보(detailCommon2 개요, detailIntro2 운영시간)를 반영한다.
      * 값이 없는(null) 항목은 기존 값을 지우지 않는다 - 조회 시각만 기록해 다시 호출하지 않게 한다.
      */
-    public void applyTourApiDetail(String description, String operatingHours, ZonedDateTime syncedAt) {
+    public void applyTourApiDetail(String description, String operatingHours, Map<String, String> detailInfo,
+                                   List<Map<String, String>> galleryImages, ZonedDateTime syncedAt) {
         if (description != null && !description.isBlank()) {
             this.description = description;
         }
         if (operatingHours != null && !operatingHours.isBlank()) {
             this.operatingHours = operatingHours;
         }
+        if (detailInfo != null && !detailInfo.isEmpty()) {
+            this.detailInfo = detailInfo;
+        }
+        if (galleryImages != null && !galleryImages.isEmpty()) {
+            this.galleryImages = galleryImages;
+        }
         this.detailSyncedAt = syncedAt;
+    }
+
+    /**
+     * TourAPI 목록 응답(areaBasedList2)에서 오는 분류·이미지 메타 정보를 반영한다.
+     * 신규 생성(매퍼)과 재적재 시 기존 장소 갱신(수집 서비스) 양쪽에서 같은 규칙으로 쓴다.
+     */
+    public void applyTourApiListInfo(String category, String categoryName, String contentTypeId,
+                                     String thumbnailUrl, String imageCopyrightType) {
+        if (category != null && !category.isBlank()) {
+            this.category = category;
+        }
+        if (categoryName != null && !categoryName.isBlank()) {
+            this.categoryName = categoryName;
+        }
+        this.contentTypeId = contentTypeId;
+        this.thumbnailUrl = thumbnailUrl;
+        this.imageCopyrightType = imageCopyrightType;
     }
 
     /** 상세 정보를 TourAPI에서 가져와야 하는지 (공공데이터 장소이고 아직 조회 전) */

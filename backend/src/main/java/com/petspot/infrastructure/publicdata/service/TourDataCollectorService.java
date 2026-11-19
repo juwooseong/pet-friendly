@@ -141,6 +141,8 @@ public class TourDataCollectorService {
                         mappedEntity.getPhone(),
                         mappedEntity.getCategoryName()
                 );
+                // 분류(카테고리)·썸네일·이미지 저작권 유형도 재적재 때 갱신한다(V11 이전 적재분 보정 포함)
+                tourApiPlaceMapper.applyListInfo(existingPlace, dto);
                 duplicateCount++;
             } else {
                 // 신규 데이터인 경우: DB 저장

@@ -82,7 +82,12 @@ public class PlaceRepositoryImpl implements PlaceRepositoryCustom {
                         place.reviewCount,
                         place.maxWeightLimitKg,
                         place.allowedSizes,
-                        distanceExpression != null ? distanceExpression : Expressions.nullExpression(Double.class)
+                        distanceExpression != null ? distanceExpression : Expressions.nullExpression(Double.class),
+                        place.thumbnailUrl,
+                        place.imageCopyrightType,
+                        place.detailInfo,
+                        place.galleryImages,
+                        place.petPolicyDetail
                 ))
                 .from(place)
                 .where(whereConditions)
@@ -136,7 +141,12 @@ public class PlaceRepositoryImpl implements PlaceRepositoryCustom {
                         place.reviewCount,
                         place.maxWeightLimitKg,
                         place.allowedSizes,
-                        Expressions.nullExpression(Double.class)
+                        Expressions.nullExpression(Double.class),
+                        place.thumbnailUrl,
+                        place.imageCopyrightType,
+                        place.detailInfo,
+                        place.galleryImages,
+                        place.petPolicyDetail
                 ))
                 .from(place)
                 .where(place.id.eq(placeId))

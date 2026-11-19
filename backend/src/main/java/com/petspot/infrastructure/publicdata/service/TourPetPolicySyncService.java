@@ -142,6 +142,9 @@ public class TourPetPolicySyncService {
         putIfPresent(map, "requirementsText", policy.requirementsText());
         putIfPresent(map, "etcText", policy.etcText());
         putIfPresent(map, "facilities", blankToNull(detail.getFacilities()));
+        putIfPresent(map, "furnishedItems", blankToNull(detail.getFurnishedItems()));
+        putIfPresent(map, "purchasableItems", blankToNull(detail.getPurchasableItems()));
+        putIfPresent(map, "rentalItems", blankToNull(detail.getRentalItems()));
         return map.isEmpty() ? null : map;
     }
 

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.petspot.infrastructure.publicdata.dto.TourApiDetailCommonDto;
 import com.petspot.infrastructure.publicdata.dto.TourApiErrorEnvelopeDto;
+import com.petspot.infrastructure.publicdata.dto.TourApiImageItemDto;
 import com.petspot.infrastructure.publicdata.dto.TourApiPetTourItemDto;
 import com.petspot.infrastructure.publicdata.dto.TourApiResponseDto;
 import com.petspot.infrastructure.publicdata.exception.PublicDataException;
@@ -18,7 +19,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -57,6 +60,9 @@ public class TourApiClient {
 
     /** 장소 소개 정보(운영시간/쉬는 날 등) 조회 오퍼레이션 (contentId, contentTypeId 필수) */
     private static final String DETAIL_INTRO_OPERATION_PATH = "/detailIntro2";
+
+    /** 장소 사진 목록 조회 오퍼레이션 (contentId, imageYN 필요) */
+    private static final String DETAIL_IMAGE_OPERATION_PATH = "/detailImage2";
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -164,7 +170,27 @@ public class TourApiClient {
      * @throws IllegalArgumentException contentId가 비어 있는 경우
      * @throws PublicDataException      통신 실패 또는 게이트웨이/API 오류 응답
      */
+    /**
+     * 장소 사진 목록을 조회한다 ({@code detailImage2}, imageYN=Y: 장소 사진 / N이면 음식 메뉴 사진).
+     * 실제 응답(2026-11-19, contentId 1019041): 사진 4장, 각 항목에 originimgurl / smallimageurl / cpyrhtDivCd(Type1).
+     *
+     * @return 사진 목록 (없으면 빈 목록)
+     */
+    public List<TourApiImageItemDto> fetchDetailImages(String contentId) {
+        List<TourApiImageItemDto> images = new ArrayList<>();
+        for (JsonNode item : fetchItems(DETAIL_IMAGE_OPERATION_PATH, contentId, null, Map.of("imageYN", "Y"))) {
+            images.add(toDto(item, TourApiImageItemDto.class, contentId));
+        }
+        return images;
+    }
+
     private Optional<JsonNode> fetchSingleItem(String operationPath, String contentId, String contentTypeId) {
+        List<JsonNode> items = fetchItems(operationPath, contentId, contentTypeId, Map.of());
+        return items.isEmpty() ? Optional.empty() : Optional.of(items.get(0));
+    }
+
+    private List<JsonNode> fetchItems(String operationPath, String contentId, String contentTypeId,
+                                      Map<String, String> extraParams) {
         if (contentId == null || contentId.isBlank()) {
             throw new IllegalArgumentException("contentId는 필수입니다.");
         }
@@ -177,6 +203,7 @@ public class TourApiClient {
         if (contentTypeId != null) {
             builder.queryParam("contentTypeId", contentTypeId);
         }
+        extraParams.forEach(builder::queryParam);
         // build(true)는 이미 인코딩된 값을 가정한다 - 서비스키는 encodedServiceKey()로 항상 인코딩해 넘긴다
         URI targetUri = builder.build(true).toUri();
         log.debug("Requesting TourAPI {}: contentId={}", operationPath, contentId);
@@ -198,15 +225,23 @@ public class TourApiClient {
             throw new PublicDataException("TourAPI 오류 응답: [" + resultCode + "] " + header.path("resultMsg").asText());
         }
 
+        // 데이터가 없으면 items가 "" (문자열)로 온다. item은 1건이면 객체, 여러 건이면 배열로 온다.
         JsonNode items = root.path("response").path("body").path("items");
         if (!items.isObject()) {
-            return Optional.empty();
+            return List.of();
         }
         JsonNode item = items.path("item");
+        List<JsonNode> result = new ArrayList<>();
         if (item.isArray()) {
-            item = item.isEmpty() ? null : item.get(0);
+            item.forEach(node -> {
+                if (node.isObject()) {
+                    result.add(node);
+                }
+            });
+        } else if (item.isObject()) {
+            result.add(item);
         }
-        return item != null && item.isObject() ? Optional.of(item) : Optional.empty();
+        return result;
     }
 
     private <T> T toDto(JsonNode item, Class<T> type, String contentId) {

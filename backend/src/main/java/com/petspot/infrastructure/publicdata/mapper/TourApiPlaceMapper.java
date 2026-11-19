@@ -49,10 +49,10 @@ public class TourApiPlaceMapper {
         // PostGIS SRID 4326 Point 객체 생성 (x: lon, y: lat)
         Point locationPoint = geometryFactory.createPoint(new Coordinate(longitude, latitude));
 
-        String category = mapCategory(dto.getContentTypeId(), dto.getCategory3());
-        String categoryName = dto.getCategory3() != null ? dto.getCategory3() : DEFAULT_CATEGORY_NAME;
+        String category = mapCategory(dto.getContentTypeId());
+        String categoryName = mapCategoryName(dto.getContentTypeId());
 
-        return Place.builder()
+        Place place = Place.builder()
                 .publicDataId(dto.getContentId())
                 .name(dto.getTitle() != null ? dto.getTitle() : "미지정 장소")
                 .category(category)
@@ -67,19 +67,67 @@ public class TourApiPlaceMapper {
                 // 장소별 detailPetTour2 응답을 TourApiPetPolicyParser로 해석해 별도로 반영한다(ADR-009).
                 // 이 단계에서는 근거 없이 채우지 않고 null(미확인)로 둔다(ADR-007).
                 .build();
+        applyListInfo(place, dto);
+        return place;
     }
 
     /**
-     * TourAPI contentTypeId / cat3 기준 자사 카테고리 매핑
+     * 목록 응답의 분류·이미지 메타 정보를 장소에 반영한다(신규/기존 공통).
+     * 이 메서드를 통해서만 반영해야 신규 적재와 재적재 결과가 같아진다.
      */
-    private String mapCategory(String contentTypeId, String cat3) {
-        if ("39".equals(contentTypeId)) {
-            return "CAFE"; // 음식점/카페
-        } else if ("32".equals(contentTypeId)) {
-            return "HOTEL"; // 숙박
-        } else if ("12".equals(contentTypeId) || "28".equals(contentTypeId)) {
-            return "PARK"; // 관광지/레포츠/공원
+    public void applyListInfo(Place place, TourApiPlaceItemDto dto) {
+        place.applyTourApiListInfo(
+                mapCategory(dto.getContentTypeId()),
+                mapCategoryName(dto.getContentTypeId()),
+                blankToNull(dto.getContentTypeId()),
+                blankToNull(dto.getFirstImageThumbnail()),
+                blankToNull(dto.getImageCopyrightType()));
+    }
+
+    /**
+     * TourAPI 장소 유형(contentTypeId) -> PetSpot 카테고리.
+     *
+     * <p>2026-11-19 전국 적재 결과 9,630곳 중 8,663곳이 ETC였다(쇼핑 38·문화시설 14 등이 매핑되지 않음).
+     * 장소 유형 8종을 모두 매핑한다. 12 관광지·28 레포츠는 기존과 같이 PARK, 39 음식점은 CAFE로 유지한다(기존 데이터·화면 호환).
+     */
+    String mapCategory(String contentTypeId) {
+        if (contentTypeId == null) {
+            return DEFAULT_CATEGORY;
         }
-        return DEFAULT_CATEGORY;
+        return switch (contentTypeId.trim()) {
+            case "12", "28" -> "PARK";
+            case "14" -> "CULTURE";
+            case "15" -> "FESTIVAL";
+            case "25" -> "COURSE";
+            case "32" -> "HOTEL";
+            case "38" -> "SHOPPING";
+            case "39" -> "CAFE";
+            default -> DEFAULT_CATEGORY;
+        };
+    }
+
+    /**
+     * 화면에 보여줄 분류 이름. 예전에는 cat3 값을 그대로 썼는데, cat3는 "A04010600" 같은 코드이거나 비어 있어
+     * (8,662곳이 빈 문자열) 사람이 읽을 수 없었다. 장소 유형 이름을 쓴다.
+     */
+    String mapCategoryName(String contentTypeId) {
+        if (contentTypeId == null) {
+            return DEFAULT_CATEGORY_NAME;
+        }
+        return switch (contentTypeId.trim()) {
+            case "12" -> "관광지";
+            case "14" -> "문화시설";
+            case "15" -> "축제·공연·행사";
+            case "25" -> "여행코스";
+            case "28" -> "레포츠";
+            case "32" -> "숙박";
+            case "38" -> "쇼핑";
+            case "39" -> "음식점·카페";
+            default -> DEFAULT_CATEGORY_NAME;
+        };
+    }
+
+    private static String blankToNull(String s) {
+        return s == null || s.isBlank() ? null : s.trim();
     }
 }

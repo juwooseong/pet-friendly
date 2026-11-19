@@ -1,0 +1,50 @@
+{
+  "_fixtureNote": "detailImage2 실제 성공 응답 원문(2026-11-19, contentId=1019041, contentTypeId=12/관광지, imageYN=Y). 사진 4장, 모두 cpyrhtDivCd=Type1(공공누리 1유형: 출처표시). serviceKey는 포함하지 않음.",
+  "response": {
+    "header": {
+      "resultCode": "0000",
+      "resultMsg": "OK"
+    },
+    "body": {
+      "items": {
+        "item": [
+          {
+            "contentid": "1019041",
+            "originimgurl": "https://tong.visitkorea.or.kr/cms/resource/78/4152278_image2_1.jpg",
+            "imgname": "서울_종로구_와룡공원 (1).jpg",
+            "smallimageurl": "https://tong.visitkorea.or.kr/cms/resource/78/4152278_image2_1.jpg",
+            "cpyrhtDivCd": "Type1",
+            "serialnum": "4152278_1"
+          },
+          {
+            "contentid": "1019041",
+            "originimgurl": "https://tong.visitkorea.or.kr/cms/resource/79/4152279_image2_1.jpg",
+            "imgname": "서울_종로구_와룡공원 (2).jpg",
+            "smallimageurl": "https://tong.visitkorea.or.kr/cms/resource/79/4152279_image2_1.jpg",
+            "cpyrhtDivCd": "Type1",
+            "serialnum": "4152279_4"
+          },
+          {
+            "contentid": "1019041",
+            "originimgurl": "https://tong.visitkorea.or.kr/cms/resource/80/4152280_image2_1.jpg",
+            "imgname": "서울_종로구_와룡공원 (3).jpg",
+            "smallimageurl": "https://tong.visitkorea.or.kr/cms/resource/80/4152280_image2_1.jpg",
+            "cpyrhtDivCd": "Type1",
+            "serialnum": "4152280_3"
+          },
+          {
+            "contentid": "1019041",
+            "originimgurl": "https://tong.visitkorea.or.kr/cms/resource/82/4152282_image2_1.jpg",
+            "imgname": "서울_종로구_와룡공원 (5).jpg",
+            "smallimageurl": "https://tong.visitkorea.or.kr/cms/resource/82/4152282_image2_1.jpg",
+            "cpyrhtDivCd": "Type1",
+            "serialnum": "4152282_2"
+          }
+        ]
+      },
+      "numOfRows": 4,
+      "pageNo": 1,
+      "totalCount": 4
+    }
+  }
+}

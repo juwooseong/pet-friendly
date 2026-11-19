@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -52,6 +53,24 @@ public class PlaceSearchResponseDto {
     @Schema(description = "검색 중심 좌표로부터의 직선 거리(km). 좌표 미지정 검색 시 null", example = "0.8", nullable = true)
     private Double distanceKm; // 중심 사용자 위치 기준 직선 거리(km)
 
+    @Schema(description = "목록용 작은 대표 이미지 URL (TourAPI firstimage2). 없으면 imageUrl 사용", nullable = true,
+            example = "https://tong.visitkorea.or.kr/cms/resource/78/4152278_image3_1.jpg")
+    private String thumbnailUrl;
+
+    @Schema(description = "대표 이미지 공공누리 유형 (Type1 출처표시, Type3 출처표시+변경금지 등). 공공데이터 장소만", nullable = true, example = "Type1")
+    private String imageCopyrightType;
+
+    @Schema(description = "상세 부가 정보. 키: homepage, parking, infoCenter, babyCarriage, useFee (값이 없는 키는 생략). 상세 화면 첫 조회 시 채워짐", nullable = true)
+    private Map<String, String> detailInfo;
+
+    @Schema(description = "상세 사진 목록. 각 항목 키: url, thumbnailUrl, copyrightType. 상세 화면 첫 조회 시 채워짐", nullable = true)
+    private List<Map<String, String>> galleryImages;
+
+    @Schema(description = "반려동물 정책 해석 상세 (accompanyScope, leashRequired, carrierRequired, vaccinationRequired, "
+            + "muzzleRequiredForDangerousDogs, maxPetCount, allowedPetsText, requirementsText, etcText, facilities, "
+            + "furnishedItems, purchasableItems, rentalItems). 근거 없는 항목은 키가 없다(ADR-007)", nullable = true)
+    private Map<String, Object> petPolicyDetail;
+
     /** 설명(description) 없이 생성 - 기존 호출부 호환용 */
     public PlaceSearchResponseDto(UUID id, String publicDataId, String name, String category,
                                   String categoryName, String address, Double latitude,
@@ -59,7 +78,8 @@ public class PlaceSearchResponseDto {
                                   String imageUrl, BigDecimal rating, Integer reviewCount,
                                   BigDecimal maxWeightLimitKg, List<String> allowedSizes, Double distanceKm) {
         this(id, publicDataId, name, category, categoryName, address, latitude, longitude, phone, operatingHours,
-                null, imageUrl, rating, reviewCount, maxWeightLimitKg, allowedSizes, distanceKm);
+                null, imageUrl, rating, reviewCount, maxWeightLimitKg, allowedSizes, distanceKm,
+                null, null, null, null, null);
     }
 
     @QueryProjection
@@ -67,8 +87,15 @@ public class PlaceSearchResponseDto {
                                   String categoryName, String address, Double latitude,
                                   Double longitude, String phone, String operatingHours, String description,
                                   String imageUrl, BigDecimal rating, Integer reviewCount,
-                                  BigDecimal maxWeightLimitKg, List<String> allowedSizes, Double distanceKm) {
+                                  BigDecimal maxWeightLimitKg, List<String> allowedSizes, Double distanceKm,
+                                  String thumbnailUrl, String imageCopyrightType, Map<String, String> detailInfo,
+                                  List<Map<String, String>> galleryImages, Map<String, Object> petPolicyDetail) {
         this.description = description;
+        this.thumbnailUrl = thumbnailUrl;
+        this.imageCopyrightType = imageCopyrightType;
+        this.detailInfo = detailInfo;
+        this.galleryImages = galleryImages;
+        this.petPolicyDetail = petPolicyDetail;
         this.id = id;
         this.publicDataId = publicDataId;
         this.name = name;

@@ -81,6 +81,10 @@ public class TourApiPlaceItemDto {
     @JsonProperty("firstimage")
     private String firstImage;
 
+    /** 대표 이미지 공공누리 유형 (Type1 출처표시, Type3 출처표시+변경금지 등) */
+    @JsonProperty("cpyrhtDivCd")
+    private String imageCopyrightType;
+
     @JsonProperty("firstimage2")
     private String firstImageThumbnail;
 

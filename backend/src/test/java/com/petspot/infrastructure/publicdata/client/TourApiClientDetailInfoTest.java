@@ -75,6 +75,31 @@ class TourApiClientDetailInfoTest {
         mockServer.verify();
     }
 
+    @Test
+    @DisplayName("detailImage2 실제 응답: imageYN=Y로 요청하고 사진 4장의 원본/작은 이미지 URL과 공공누리 유형을 읽는다")
+    void fetchDetailImages_Real() throws IOException {
+        mockServer.expect(requestTo(startsWith(BASE_URL + "/detailImage2")))
+                .andExpect(queryParam("contentId", "1019041"))
+                .andExpect(queryParam("imageYN", "Y"))
+                .andRespond(withSuccess(fixture("success-detail-image2-real-2026-11-19.json"), MediaType.APPLICATION_JSON));
+
+        var images = client.fetchDetailImages("1019041");
+
+        mockServer.verify();
+        assertThat(images).hasSize(4);
+        assertThat(images.get(0).getOriginalUrl()).isEqualTo("https://tong.visitkorea.or.kr/cms/resource/78/4152278_image2_1.jpg");
+        assertThat(images).allMatch(img -> "Type1".equals(img.getCopyrightType()));
+    }
+
+    @Test
+    @DisplayName("사진이 없는 장소(items가 빈 문자열)는 빈 목록이다")
+    void fetchDetailImages_Empty() throws IOException {
+        mockServer.expect(requestTo(startsWith(BASE_URL + "/detailImage2")))
+                .andRespond(withSuccess(fixture("success-detail-pet-tour2-empty-real-2026-11-19.json"), MediaType.APPLICATION_JSON));
+
+        assertThat(client.fetchDetailImages("2707444")).isEmpty();
+    }
+
     private String fixture(String name) throws IOException {
         try (InputStream in = getClass().getResourceAsStream("/tourapi/" + name)) {
             return new String(in.readAllBytes(), StandardCharsets.UTF_8);
