@@ -126,7 +126,7 @@
   - 요청 토큰 기반 Race Condition 방어(느리게 도착한 과거 응답이 최신 상태를 덮어쓰지 않도록 처리)
   - **검증 결과**: 백엔드 `./gradlew test` 전체 통과, 프런트엔드 Vitest 33/33 통과(신규 12개: `SignupPage` 9 / `debounce` 3), `type-check`·`build` 통과, Playwright 실브라우저 시나리오 7/7 통과(중복 이메일/닉네임 실시간 감지 → 사용 가능 전환 → 잘못된 형식 시 API 미호출 → 정상 가입 제출 → 신규 계정 로그인 성공까지 end-to-end 확인)
 
-### Feature 3.3 Main Discovery & Search Screens [부분 진행]
+### Feature 3.3 Main Discovery & Search Screens [대부분 완료 — `TSK-FE-018` 지도 재검색, `TSK-FE-019`/`020` 탐색 품질 남음] (2026-11-19 갱신)
 - [x] `TSK-FE-005` [P0] Home View (`/`): Recommended Places, Popular Places, Recent Places, Active Pet Chip
   - Dashboard API(`GET /api/v1/dashboard`) 연동 완료.
 - [x] `TSK-FE-006` [P0] Place Search View (`/search`): Keyword Search, Category Filter, Pet Size Condition, Distance Sort (2026-08-14 완료)
@@ -140,8 +140,10 @@
   - **의도적 범위 축소(2026-08-27)**: 직전 커밋(`4a4b00c`)에서 함께 구현했던 "기존 `/places/search` 재사용 마커 표시 + 마커 클릭 시 장소 카드 + 상세 이동"은 이번 요청에 따라 되돌리고, 이번 단계는 "SDK 로딩 및 지도 렌더링 자체 검증"에만 집중하도록 축소했다. 마커/장소 연동은 다음 Task에서 별도로 재구현 예정(버그 아님, 의도된 단계적 진행).
   - 상세 내용은 하단 "2026-08-27 완료 기록: Kakao Map SDK 로딩/렌더링 기반 (0단계)" 참조.
 
-### Feature 3.4 Place Detail & Engagement Screens [스캐폴딩 수준]
+### Feature 3.4 Place Detail & Engagement Screens [대부분 완료] (2026-11-19 갱신)
 - [ ] `TSK-FE-008` [P0] Place Detail View/Modal (`/places/{id}`): Info, Photos, Pet Policy Checklist, Review Form, Favorite Toggle
+  - **공공데이터 상세 정보 연동 완료 (2026-11-19, ADR-010/012)**: 상세 화면 첫 조회 시 TourAPI에서 장소 소개(`detailCommon2` overview)·운영시간(`detailIntro2`)·주차/문의처/유모차/이용 요금/홈페이지·사진 최대 10장(`detailImage2`)을 가져와 저장(이후 DB 값 사용). 화면에 사진 갤러리(썸네일 전환), 장소 소개, 운영 시간, 반려동물 동반 조건 배지(구역·목줄·이동장·예방접종·입마개·마릿수, 근거 있는 항목만), 반려견 편의시설·품목, 부가 정보, 카카오맵 길찾기, 출처("한국관광공사 · 공공누리 n유형") 표시.
+  - **잔여 (2026-11-19 기준)**: 실내 출입 가능 여부는 파서가 해석해 `is_indoor_allowed`에 저장하지만 API 응답에 노출되지 않음(`TSK-BE-031`), 공공누리 제3유형 이미지 표시 방식 검토(`TSK-FE-021`).
   - 기본 정보 조회(`GET /places/{id}`, TSK-BE-029로 완료), **즐겨찾기 토글 연동 완료 (2026-08-18)**: 로그인 사용자 기준 즐겨찾기 상태 표시(`GET /users/me/favorites` 재사용), 추가/삭제 토글(`POST`/`DELETE /favorites/{placeId}`), 비로그인 시 로그인 화면(`redirect` 쿼리 포함) 이동, 요청 중 버튼 잠금(중복 클릭 방지), 실패 시 상태 유지 + `ErrorMessage`로 오류 표시.
   - **리뷰 목록 조회/작성 폼 연동 완료 (2026-08-18)**: 기존 `GET /places/{placeId}/reviews`/`POST /reviews` API 재사용, 리뷰 없을 시 `EmptyState` 표시, 로그인 사용자 대상 평점(1~5)/내용 입력 폼(비로그인 시 로그인 안내로 대체), 등록 성공 시 리뷰 목록과 장소 `rating`/`reviewCount` 즉시 재조회 갱신, 중복 작성(409)·검증 실패(400) 등 API 실패 시 기존 `extractErrorMessage`/`ErrorMessage` 패턴으로 오류 표시. 상세 내용은 하단 "2026-08-18 완료 기록" 참조(즐겨찾기/리뷰 각각 별도 기록).
   - **사진/반려동물 동반 수칙 보강 완료 (2026-08-27)**: 사진은 `imageUrl` 없음/로드 실패(`@error`) 시 기존 fallback 아이콘 UI로 대체. 동반 수칙은 현재 API가 실제로 제공하는 `allowedSizes`(기존 크기 배지 UI 유지)/`maxWeightLimitKg`(신규 표시, 기존에 응답에는 있었으나 화면 미표시 상태였음)만 "반려동물 동반 수칙" 섹션에 표시, 정보가 전혀 없으면 안내 문구 표시. 상세 내용은 하단 "2026-08-27 완료 기록" 참조.
@@ -150,7 +152,7 @@
   - `FavoritesPage.vue`를 기존 `GET /api/v1/users/me/favorites`(기존 API, 신규 없음) 연동으로 재작성. 장소명/주소/이미지(없음/로드 실패 fallback 아이콘)/카테고리/평점·리뷰 수를 카드로 표시, 카드 클릭 시 기존 `/place/:id`(`PlaceDetail`) 라우트로 이동. 삭제는 기존 `DELETE /api/v1/favorites/{placeId}` 재사용, 카드 클릭과 분리된 삭제 버튼(`@click.stop`), 요청 중 버튼 잠금(중복 클릭 방지), 성공 시 목록에서 즉시 제거, 실패 시 목록 유지 + `ErrorMessage`. 로딩/빈 목록/API 오류는 기존 `LoadingSpinner`/`EmptyState`/`ErrorMessage` 패턴 재사용. 비로그인 접근은 라우터 가드(`meta.requiresAuth`)로 우선 차단되지만, 컴포넌트 자체에서도 방어적으로 `authStore.isAuthenticated`를 확인해 로그인 화면(`redirect` 쿼리)으로 이동. `favoriteStore`는 이번에도 도입하지 않고 기존 프로젝트 패턴(페이지에서 `apiClient` 직접 호출)을 그대로 따름 — 기존 기술부채(`TSK-FE-015`)에 계속 해당.
   - 상세 내용은 하단 "2026-08-27 완료 기록: 즐겨찾기 목록 화면 CRUD 연동" 참조.
 
-### Feature 3.5 Pet & My Page Screens [스캐폴딩 수준]
+### Feature 3.5 Pet & My Page Screens [COMPLETED] (2026-08-27 완료, 2026-11-19 라벨 정정)
 - [x] `TSK-FE-010` [P0] My Pets Management View (`/pets`): Pet Multi-CRUD, Weight Input, Representative Pet Toggle — **완료 (2026-08-27)**
   - `PetPage.vue`를 기존 `PetController`(`GET`/`POST`/`PUT`/`DELETE /api/v1/pets`, `PATCH /api/v1/pets/{petId}/representative`, 전부 기존 API, 신규 없음) 연동으로 전면 재작성. 목록 조회, 등록/수정(`BaseModal` 공용 폼), 삭제(확인 모달), 대표 반려동물 지정 전부 구현.
   - `sizeCategory`는 서버 응답값을 그대로 표시만 하고 프론트에서 별도 계산 로직을 두지 않음(체중 변경 시 서버가 재계산한 값을 응답으로 받아 화면에 반영).
@@ -209,9 +211,11 @@
   - **배경**: 2026-08-27에 한 차례 기존 `GET /places/search` 재사용 마커 표시 + 마커 클릭 카드 + 상세 이동까지 구현했었으나(`4a4b00c`), 이후 요청에 따라 "SDK 로딩/지도 렌더링 자체 검증"에만 집중하도록 의도적으로 되돌렸다(`MapPage.vue`에서 장소 조회/마커 코드 제거). 2026-09-09에 `MapPage.vue`가 다시 장소 마커 연동을 포함한 상태로 확인되어(사전 확보 작업으로 추정), 이번 작업에서 요구사항 충족 여부를 재검증하고 완료로 기록.
   - **DoD**: 기존 `GET /places/search` 재사용(신규 API 없음)해 지도 중심 기준 장소 마커 표시, 마커 클릭 시 최소 정보 카드(장소명/카테고리/평점/리뷰수), 카드에서 `/place/:id` 이동. 뷰포트 기준 재조회(지도 이동/확대·축소 시 디바운스 재검색)는 이번 범위에서 명시적으로 제외하고 `TSK-FE-018`로 별도 기록(아래 참고).
 - [ ] `TSK-FE-018` [P3] 지도 뷰포트 이동/확대축소 시 디바운스 재검색 (`TSK-FE-017`에서 범위 제외, 2026-09-09 신규)
+  - **우선순위 상향 → P1 (2026-11-19)**: 전국 적재 결과 서울 데이터가 10곳뿐이라, 지도가 서울시청 반경 5km만 조회하고 이동 시 재검색하지 않는 현재 구조로는 지도에 장소가 거의 나오지 않는다. Sprint 3 마감 전 필수.
   - **배경**: `TSK-FE-017` 요구사항에서 지도 드래그/이동 시 재검색은 명시적으로 범위 밖으로 지정되었다. 현재 `MapPage.vue`는 최초 마운트 시 1회만 `GET /places/search`를 호출한다.
   - **DoD**: 지도 `dragend`/`zoom_changed` 이벤트에 디바운스를 걸어 새 중심 좌표 기준으로 재검색, 최소 이동 거리 임계값 적용, 마커 클러스터링도 함께 검토(마커 수가 많아질 경우 대비).
 - [ ] `TSK-BE-031` [P2] `Place` 엔티티의 실내/실외/목줄 자유구역 정책 필드가 API 응답에 노출되지 않음 (`TSK-FE-008` 반려동물 동반 수칙 보강에서 식별, 2026-08-27)
+  - **현황 (2026-11-19)**: `TourApiPetPolicyParser`가 "실내 시설 입장 불가" 등에서 실내 출입 여부를 해석해 `is_indoor_allowed`에 저장하기 시작했다. 응답 DTO에 `isIndoorAllowed`만 추가하면 된다(실외/목줄 자유구역은 근거 데이터 없음).
   - **배경**: `Place` 엔티티에는 `isIndoorAllowed`/`isOutdoorAllowed`/`hasOffLeashZone` 컬럼이 이미 존재하지만, `PlaceSearchResponseDto`(검색/상세 공용 Projection)에는 `allowedSizes`/`maxWeightLimitKg`만 포함되어 있어 프런트엔드가 이 값을 받을 수 없다. 이번 작업(장소 상세 반려동물 동반 수칙 섹션)에서는 요구사항에 따라 실제 API가 제공하는 필드만 표시했고, 임의로 DTO를 확장하지 않았다.
   - **DoD**: 실내/실외/목줄 자유구역 정보를 반려동물 동반 수칙에 노출할 필요가 있는지 제품 우선순위를 확인한 뒤, 필요 시 `PlaceSearchResponseDto`에 해당 필드 추가(QueryDSL Projection 컬럼 추가) 및 프런트엔드 표시 UI 구현.
 - [x] `TSK-BE-032` [P2] 장소 평점(`rating`) 기본값 불일치 — 리뷰 0건인데 신규 생성 시 5.0, 리뷰 전부 삭제 시 0.0 (`TSK-BE-022` 보강 중 식별, 2026-11-19) — **완료 (2026-11-19, 아래 "완료 기록" 참조)**
@@ -226,8 +230,25 @@
 - [x] `TSK-BE-035` [P3] 비즈니스 예외가 `ErrorCode`/`BusinessException`을 사용하지 않음 (Refactoring Sprint "Exception 개선" 항목의 구체화, 2026-11-19) — **완료 (2026-11-19, 아래 "완료 기록" 참조)**
   - **배경**: `ErrorCode` enum과 `BusinessException`이 정의되어 있지만 실제 예외 클래스(`PlaceNotFoundException` 등)는 모두 `RuntimeException`을 직접 상속하고, 메시지가 서비스 코드 곳곳에 하드코딩되어 있다(예: "장소를 찾을 수 없습니다." vs "장소 정보를 찾을 수 없습니다."). `GlobalExceptionHandler`도 예외 타입마다 처리기를 하나씩 두고 있다. `TSK-BE-023`에서는 Swagger 에러 명세의 기준으로 `ErrorCode`를 사용했으므로, 런타임 메시지와 문서 예시 사이에 문구 차이가 일부 있다.
   - **DoD**: 예외 클래스가 `BusinessException(ErrorCode)`를 상속하도록 통일, `GlobalExceptionHandler`를 `BusinessException` 단일 처리기로 단순화, 필요 시 응답 본문에 에러 코드 필드 추가(프런트엔드 영향 검토).
+- [x] `TSK-DATA-003-C` [P0] 전국 초기 적재 — **목록 완료 (2026-11-19)**: 9,630곳 적재(좌표 결측 0, 실패 페이지 0). 정책은 `TSK-DATA-011`로 나눠 진행 중(812곳 완료).
+- [ ] `TSK-DATA-011` [P1] 남은 반려동물 정책 조회 (약 8,800곳) 및 조회 우선순위 조정 (2026-11-19 신규)
+  - **배경**: 배치가 1회 최대 800곳씩 정책을 조회한다(일일 트래픽 한도). 최근 등록 순으로 처리하다 보니 정책 문구가 거의 없는 쇼핑(전체의 90%)을 먼저 처리했다 — 812곳 중 동반 가능 동물 문구가 있는 곳: 관광지·레포츠 28곳 중 24곳, 쇼핑 779곳 중 6곳.
+  - **DoD**: 관광지·레포츠·숙박·음식점(약 990곳)을 먼저 조회하도록 순서 변경 후 배치 실행. 이후 쇼핑은 낮은 우선순위로 이어서 진행.
+- [ ] `TSK-DATA-012` [P2] `petTourSyncList2` 기반 증분 동기화 (2026-11-19 신규) — 매번 전국 목록(약 97회 호출)을 다시 받지 않고 변경된 장소만 갱신. 운영 단계에서 배치를 다시 켤 때 선행.
+- [ ] `TSK-FE-019` [P1] 크기 필터 시 정책 미확인 장소 처리 (2026-11-19 신규)
+  - **배경**: 로그인 사용자는 대표 반려동물 크기가 크기 필터 기본값으로 적용되는데, 크기 정보가 확인된 장소가 9,630곳 중 30곳뿐이라 장소 탐색 결과가 30건만 나온다(ADR-007: 미확인은 허용으로 간주하지 않음).
+  - **DoD (권장안)**: 크기 필터 시 허용이 확인된 장소를 먼저, 정책 미확인 장소는 그 뒤에 "동반 조건 확인 필요" 배지와 함께 표시. 크기 불가가 확인된 장소만 제외. 백엔드 검색 조건/정렬 + 프런트 배지.
+- [ ] `TSK-FE-020` [P2] 쇼핑(전체의 90%) 비중 처리 (2026-11-19 신규) — 카테고리 매핑 수정 결과 8,639곳이 쇼핑. 기본 목록이 상점으로 채워지므로 기본 정렬에서 뒤로 보내거나 기본 필터에서 제외하는 방안 결정.
+- [ ] `TSK-FE-021` [P2] 공공누리 제3유형(변경금지) 이미지 표시 방식 검토 (2026-11-19 신규, ADR-012)
+  - **배경**: 대표 이미지 9,471곳 중 8,922곳이 제3유형(출처표시+변경금지), 549곳이 제1유형. 출처 표시는 적용했으나, 목록 카드·상세 화면이 이미지를 틀에 맞춰 잘라 보여준다(`object-cover`). 화면 표시용 자르기가 "변경"에 해당하는지 확인 필요.
+  - **DoD**: 이용 조건 확인 후 필요하면 제3유형 이미지는 `object-contain`(자르지 않음)으로 표시.
+- [ ] `TSK-QA-003` [P1] 테스트 전용 DB 분리 (2026-11-19 신규)
+  - **배경**: 통합 테스트가 개발 DB(`petspot_db`)를 함께 쓴다. 실제 데이터 9,630곳 적재 후 기존 통합 테스트 5개가 실제 데이터와 섞여 실패했다. 이번에는 테스트 데이터를 바다 좌표로 옮기고 fixture 장소를 테스트 트랜잭션 안에서 지우는 방식으로 격리했지만 근본 해결이 아니다.
+  - **DoD**: 테스트 프로필 전용 데이터베이스(예: `petspot_test`, PostGIS 확장 포함) 또는 Testcontainers 도입.
+- [ ] `TSK-QA-004` [P3] 프런트엔드 테스트가 소문자 드라이브 경로(`d:\`)에서 전부 실패 (2026-11-19 신규) — vitest가 `D:`/`d:` 경로를 다른 모듈로 읽어 `Cannot read properties of undefined (reading 'config')`. 대문자 경로(`D:\workspace\pet-friendly\frontend`)에서 실행하면 정상. 실행 방법 문서화 또는 설정으로 해결.
+- [ ] `TSK-SEC-002` [P1] TourAPI 서비스키 재발급 (2026-11-19 신규) — 서비스키 형식 문제로 첫 배치 실행이 실패하면서 오류 메시지에 키 원문이 노출되었다(코드는 수정됨: 키 인코딩, 오류 메시지 마스킹). 해당 로그는 삭제했으나 작업 대화 기록에 남아 있어 data.go.kr에서 재발급 권장.
 - [x] `TSK-DATA-009` [P0] TourAPI `detailPetTour2` 클라이언트·DTO·정책 텍스트 파서 구현 (2026-11-19 완료, 아래 "완료 기록" 참조, ADR-009)
-- [ ] `TSK-DATA-010` [P0] 해석한 반려동물 정책을 `Place`에 반영하는 적재 단계 설계·구현 (`TSK-DATA-009` 후속, `TSK-DATA-003-C` 선행)
+- [x] `TSK-DATA-010` [P0] 해석한 반려동물 정책을 `Place`에 반영하는 적재 단계 설계·구현 (`TSK-DATA-009` 후속) — **완료 (2026-11-19, 아래 "완료 기록" 참조)**
   - **범위**: 적재 파이프라인에서 장소별 `detailPetTour2` 호출 → `TourApiPetPolicyParser` → `Place` 정책 필드 반영. 원문 텍스트·출처·확인일 보존 컬럼(ADR-007 7번 메타데이터 설계) 추가 여부 결정, `Place`에 없는 항목(목줄/이동장/예방접종/마릿수/동반 구역) 저장 방식 결정(`policy_checklist` JSONB 활용 검토), 관리자 검증 값 보호 규칙(재동기화 시 덮어쓰기 금지), 숙박·음식점 유형 샘플 추가 확보로 채움률·표현 확인, 일일 트래픽 한도 내 호출 계획.
   - **DoD**: 소량(예: 5건) 실제 적재 시 정책 필드가 해석 결과대로 저장되고 크기 필터 검색에 노출됨을 통합 테스트로 확인.
 - [x] `TSK-DATA-002` [P0] 한국관광공사 TourAPI(반려동물 동반여행 서비스) 클라이언트 실제 검증 및 스키마 확정 (2026-09-09 완료, 아래 "완료 기록" 참조)
@@ -260,6 +281,17 @@
 - **fixture 저장**: 실제 성공 응답 원문을 `backend/src/test/resources/tourapi/success-area-based-list2-real-2026-09-09.json`에 저장(serviceKey 미포함). 기존 `success-area-based-list2-sample.json`(TSK-DATA-002 당시 가정치 샘플)은 그대로 유지 — 실물 데이터로 교체하는 것은 TSK-DATA-005 범위.
 - **TSK-DATA-005 진행 가능 여부**: **가능** — 키는 정상 작동하므로 다음 단계에서 반려동물 전용 필드가 포함되는 오퍼레이션을 찾아 실제 스키마를 검증할 수 있음. 단, 이번 작업에서는 반려동물 필드 검증을 수행하지 않았으므로 `TSK-DATA-005`는 별도로 진행 필요.
 - **테스트**: 코드 변경 없음(설정/구조 확인, fixture 추가, 총 2회 실제 API 호출만 수행) — 기존 백엔드 테스트 스위트에 영향 없음.
+
+### 2026-11-19 완료 기록: 정책 배치 반영·전국 적재·장소 상세/탐색 개선 (`TSK-DATA-010`, `TSK-DATA-003-C`, `TSK-FE-008` 외)
+- **정책 배치 반영 (`TSK-DATA-010`)**: 배치 1회 = 장소 목록(페이지마다 즉시 저장, 실패 페이지 건너뜀) + 정책 미조회 장소 최대 800곳 `detailPetTour2` 조회·해석·반영(`TourPetPolicySyncService`). 장소별 트랜잭션, 일일 한도 초과/서비스키 오류 시 즉시 중단, 연속 5회 실패 시 중단, 실패 장소는 다음 실행에서 재시도, 관리자 검증 값은 덮어쓰지 않음. Flyway V9(`pet_policy_detail`/`pet_policy_source`/`pet_policy_synced_at`). 즉시 1회 실행용 `TourDataBatchRunner`(`run-on-startup`, `exit-after-run`). 예약 실행은 계속 비활성.
+- **전국 적재 실행 결과 (`TSK-DATA-003-C`)**: 9,630곳 적재, 정책 812곳 반영(크기 해석 30곳). 실행 중 Spring DevTools가 앱을 재시작해 배치가 두 번 돌면서 호출 약 900회가 중복되었다 → 일회성 실행 명령에 `--spring.devtools.restart.enabled=false` 필수로 명시.
+- **TourAPI 클라이언트 버그 수정**: data.go.kr "Decoding" 형태 서비스키(`+`,`/`,`=` 포함)가 요청 URI 생성 단계에서 실패하던 문제(키 URL 인코딩), 통신 오류 메시지·로그에 서비스키가 노출되던 문제(마스킹, 원인 예외 미연결) 수정. `TSK-SEC-002`(키 재발급) 기록.
+- **장소 상세 지연 적재 (ADR-010)**: 공공데이터 장소의 상세 화면을 처음 열 때 `detailCommon2`(소개·홈페이지·장소 유형) → `detailIntro2`(운영시간·주차·문의처·유모차·이용 요금) → `detailImage2`(사진 최대 10장) 조회 후 저장(Flyway V10 `detail_synced_at`, V11 `detail_info`/`gallery_images`). 실패해도 상세 조회는 정상 응답하고 다음 조회 때 재시도. 호출은 컨트롤러에서 조회 트랜잭션 밖에서 수행. HTML 조각은 평문으로 정리(`TourApiText`), 홈페이지·사진은 http/https만 저장.
+- **카테고리·이미지 (ADR-011/012)**: 장소 유형(contentTypeId) 8종 전체 매핑(SHOPPING/CULTURE/FESTIVAL/COURSE 추가), 분류 이름은 cat3 코드 대신 유형 이름. 목록 적재 시 작은 썸네일(`firstimage2`)·이미지 공공누리 유형(`cpyrhtDivCd`) 저장(Flyway V11). 목록 재적재(97회 호출) 결과: ETC 8,663 → 0(쇼핑 8,639, 관광지·레포츠 830, 음식점·카페 70, 숙박 67, 문화시설 24), 이미지 유형 제3유형 8,922 / 제1유형 549 / 없음 159.
+- **장소 탐색**: 리뷰 없는 장소 9천여 곳이 평점 0.0 동점이라 페이지끼리 장소가 겹치던 문제를 정렬 마지막 기준(`place.id`) 추가로 수정(실제 DB 10페이지 기준 중복 9건 → 0건), 페이지 이동 후 맨 위로 스크롤, 목록 카드 썸네일(지연 로딩, 실패 시 기본 아이콘)·분류 이름·출처 문구.
+- **기타**: `TourApiPlaceItemDto` 추측 필드 제거, 정책 상세에 비치·구매·대여 품목 추가, 실제 데이터 적재 후 깨진 통합 테스트 격리(`TSK-QA-003`에서 근본 해결 예정).
+- **실제 응답 fixture 추가**: `success-detail-image2-real-2026-11-19.json`(사진 4장, Type1).
+- **검증**: 백엔드 275 tests(2 skip), 프런트엔드 131 tests, type-check/build 통과.
 
 ### 2026-11-19 완료 기록: TourAPI `detailPetTour2` 클라이언트·DTO·정책 파서 (`TSK-DATA-009`, ADR-009)
 - **발견**: 공공 API 추가 검토 중 KorPetTourService2 오퍼레이션 목록에 "반려동물 동반여행 조회"(`detailPetTour2`)가 있음을 확인하고 승인된 키로 실제 호출(목록 1회 + 상세 10회 + 오류 확인 3회). 10곳 모두 정책 텍스트 반환 — `TSK-DATA-002`/`005`의 판정을 정정하고 ADR-009 작성.
