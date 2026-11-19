@@ -17,8 +17,11 @@ import org.springframework.stereotype.Component;
  * 실행하고 끝내는 용도라면 웹 서버 없이 띄우고 실행 후 종료한다:
  * <pre>
  * ./gradlew bootRun --args="--spring.profiles.active=local --spring.main.web-application-type=none
+ *     --spring.devtools.restart.enabled=false
  *     --public-data.batch.run-on-startup=true --public-data.batch.exit-after-run=true"
  * </pre>
+ * <p><b>주의:</b> {@code spring.devtools.restart.enabled=false}를 빼면, 실행 도중 IDE 자동 빌드 등으로 클래스가 바뀔 때
+ * DevTools가 앱을 재시작하면서 배치가 처음부터 다시 실행된다(2026-11-19 실제 발생: 목록·정책 호출 약 900회 중복).
  */
 @Slf4j
 @Component

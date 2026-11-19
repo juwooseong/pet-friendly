@@ -73,4 +73,5 @@ public-data:
     pet-policy-call-delay-ms: 100
     # 지금 한 번 실행: --public-data.batch.run-on-startup=true (TourDataBatchRunner)
     # 실행 후 종료까지: --spring.main.web-application-type=none --public-data.batch.exit-after-run=true
+    #   + --spring.devtools.restart.enabled=false (빠뜨리면 실행 중 DevTools 재시작으로 배치가 두 번 돈다)
 
