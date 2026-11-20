@@ -1,5 +1,6 @@
 # PetSpot 전체 실행 구성 (DB + Redis + 백엔드 + 프런트엔드)
 #   실행: docker compose up -d --build
+#   프런트만 다시 배포: docker compose up -d --build --no-deps petspot-web   (--no-deps 없으면 백엔드도 재시작됨)
 #   접속: http://localtest.me   (Swagger: /swagger-ui/index.html)
 #         Kakao 지도는 콘솔에 등록된 도메인에서만 동작하고 localhost는 등록할 수 없어 localtest.me(=127.0.0.1)로 접속한다.
 #         Kakao 콘솔 Web 플랫폼 사이트 도메인: http://localtest.me (Docker), http://localtest.me:3000 (Vite 개발 서버)
