@@ -1,0 +1,11 @@
+.gradle
+build
+out
+bin
+.settings
+.classpath
+.project
+*.log
+# 로컬 비밀값은 이미지에 넣지 않는다(운영 값은 환경변수로 주입)
+src/main/resources/application-local.yml
+src/main/resources/application-secret.yml

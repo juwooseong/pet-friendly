@@ -1,0 +1,28 @@
+# Docker(운영) 프로필: SPRING_PROFILES_ACTIVE=prod
+# 비밀값은 전부 환경변수로 주입한다(루트 .env → docker-compose.yml). 이 파일에는 실제 값을 적지 않는다.
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://petspot-db:5432/petspot_db}
+    username: ${DB_USERNAME:petspot}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  data:
+    redis:
+      host: ${REDIS_HOST:petspot-redis}
+      port: ${REDIS_PORT:6379}
+
+jwt:
+  secret: ${JWT_SECRET}
+
+public-data:
+  tour-api:
+    service-key: ${TOUR_API_SERVICE_KEY:test-service-key}
+  batch:
+    enabled: false
