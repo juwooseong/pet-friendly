@@ -173,7 +173,8 @@
 - [ ] `TSK-INF-004` Elasticsearch Full-Text Search Integration
 
 ### Feature 4.2 Production Infra & Monitoring
-- [ ] `TSK-INF-005` Docker Compose Production Environment Setup
+- [x] `TSK-INF-005` Docker Compose Production Environment Setup — **완료 (2026-11-20, 아래 "완료 기록" 참조)**
+  - DB(PostgreSQL 17 + PostGIS 3.5)·Redis·백엔드(Spring Boot jar, 내장 Tomcat)·프런트(Nginx) 4개 컨테이너, `docker compose up -d --build` 한 번으로 실행, `http://localhost` 단일 주소로 서비스.
 - [ ] `TSK-INF-006` AWS Cloud Deployment & GitHub Actions CI/CD Pipeline
 - [ ] `TSK-INF-007` Prometheus & Grafana Monitoring & APM Setup
 
@@ -260,6 +261,16 @@
 - [x] `TSK-DATA-005` [P2] TourAPI 반려동물 전용 필드 실제 스키마 검증 (2026-09-14 완료, 아래 "완료 기록" 참조)
   - **정정 (2026-11-19, ADR-009)**: "TourAPI에는 반려동물 정책 필드가 없다"는 결론은 4개 오퍼레이션에만 해당한다. 반려동물 전용 오퍼레이션 `detailPetTour2`를 검증하지 않았고, 실제로는 이 오퍼레이션이 체중/크기/필요 사항 등을 제공한다(`TSK-DATA-009`).
   - **결론**: `areaBasedList2`/`detailIntro2`/`detailInfo2`/`detailCommon2` 4개 오퍼레이션을 실제 승인 키로 호출한 결과, 기존 코드의 추측 필드(`acmpyTypeCd`/`claAcmpyInfo`/`relaAcmpyInfo`/`relaPosbleFclty`/`relaRqustFclty`/`etcAcmpyInfo`/`acmpyPsblCpam`)는 **전부 미존재로 확인됨**(contentTypeId=38/쇼핑, 32/숙박 두 종류 교차 검증). 체중 제한/크기/목줄/이동장/실내외/오프리쉬 필드도 전부 미존재. 반려동물 관련 필드는 `detailIntro2`의 `chkpetshopping`(contentTypeId=38 한정, 관찰된 샘플은 빈 값) 하나만 확인됨 — Place 필드 자동 매핑에 쓸 만한 정보는 사실상 없음. 상세는 아래 완료 기록 참조.
+
+### 2026-11-20 완료 기록: Docker Compose 전체 실행 환경 (`TSK-INF-005`)
+- **구성**: `petspot-web`(Nginx 1.27, 호스트 80) → `/api/*`·`/swagger-ui`·`/v3/api-docs`를 `petspot-api`(Java 17 JRE, Spring Boot jar, `prod` 프로필, 호스트 8081)로 프록시 → `petspot-db`(postgis/postgis:17-3.5, 호스트 5433) / `petspot-redis`(Redis 7, 호스트 6379). 화면과 API가 같은 주소라 CORS 설정 변경 불필요. 전 컨테이너 `restart: unless-stopped`, 백엔드는 DB·Redis healthy 후 기동.
+- **설정**: `application-prod.yml` 신규 — DB 비밀번호·JWT 키·TourAPI 키·메일 계정을 환경변수로 주입, SQL 로그 끔, 수집 배치 비활성. 비밀값은 루트 `.env`(gitignore)에서 읽고 항목은 `.env.example`에 정리. `frontend/.env.production`의 API 주소를 `/api/v1` 상대 경로로 변경. Kakao 지도 키는 프런트 이미지 빌드 시 build arg로 주입.
+- **데이터**: Windows 개발 DB(PostgreSQL 17.10)를 `pg_dump`/`pg_restore`로 복사(장소 9,630곳, Flyway V1~V11). 이후 두 DB는 따로 움직인다.
+- **발견한 문제**:
+  - Spring Boot 플러그인 3.2.2의 `bootJar`가 Gradle 9.x에서 실패한다(`CopyProcessingSpec.getDirMode()` 제거). 작업 중 로컬 wrapper가 커밋 이력 없이 8.7 → 9.7.1로 바뀌어 있어 원래 8.7로 되돌렸다. wrapper를 9로 올릴 때는 Spring Boot도 함께 올려야 한다.
+  - `package-lock.json`이 npm 11(Node 24)로 생성되어 있어 Node 20 이미지의 `npm ci`가 실패 → 프런트 빌드 이미지를 `node:24-alpine`으로 맞춤.
+- **검증**: 홈·검색 화면(새로고침 포함) 200, 장소 검색·상세(TourAPI 지연 적재로 사진 5장 수신), 회원가입 → 로그인 → 대시보드·내 정보 조회, Swagger UI·OpenAPI 문서 확인. 백엔드 로그 오류 없음.
+- **남은 사항**: Kakao 개발자 콘솔 Web 플랫폼에 `http://localhost` 등록 필요(지도 화면 미확인), 메일 계정 미설정(비밀번호 찾기 메일 발송 불가), TourAPI 키 재발급 시 `.env`만 교체(`TSK-SEC-002`).
 
 ### 2026-09-09 완료 기록: TourAPI(반려동물 동반여행 서비스) 클라이언트 실제 검증 (`TSK-DATA-002`)
 - **실제 호출 결과 요약**: 로컬 프로필 시크릿(gitignored)으로 data.go.kr에 직접 HTTP 호출해 다음을 확인했다.

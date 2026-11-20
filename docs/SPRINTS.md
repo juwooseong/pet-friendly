@@ -6,6 +6,7 @@
 
 ## 📝 Change Log (변경 이력)
 
+- **2026-11-20**: **`TSK-INF-005` Docker Compose 전체 실행 환경 구축 (Sprint 4 항목 선행)** — DB(PostgreSQL 17 + PostGIS)·Redis·백엔드(Spring Boot jar)·프런트(Nginx) 4개 컨테이너를 `docker compose up -d --build`로 실행, `http://localhost` 단일 주소로 서비스(Nginx가 `/api` 프록시). 운영 프로필 `application-prod.yml`과 `.env.example` 추가, 개발 DB 데이터(9,630곳) 복사. Spring Boot 3.2.2 `bootJar`가 Gradle 9.x와 호환되지 않음을 확인하고 wrapper를 8.7로 유지. 상세는 `docs/TASKS.md` 참조.
 - **2026-11-19 (후반)**: **전국 공공데이터 적재 및 장소 상세/탐색 개선** — 정책 조회를 포함한 수집 배치(`TSK-DATA-010`)로 전국 9,630곳 적재·정책 812곳 반영, 서비스키 인코딩/노출 버그 수정, 장소 상세 지연 적재(소개·운영시간·부가 정보·사진 갤러리, ADR-010), 카테고리 8종 매핑(ETC 8,663 → 0, ADR-011), 공공누리 출처 표시(ADR-012), 장소 탐색 페이지 중복 수정·썸네일, 카카오맵 길찾기. Sprint 3 남은 작업: 지도 이동 시 재검색(`TSK-FE-018`, P1 상향), 크기 필터 미확인 장소 처리(`TSK-FE-019`), 쇼핑 비중(`TSK-FE-020`), 제3유형 이미지 표시(`TSK-FE-021`). 백엔드 275 / 프런트 131 tests 통과.
 - **2026-11-19**: **ADR-009 / `TSK-DATA-009` 완료** — TourAPI `detailPetTour2`(반려동물 동반여행 조회)가 실제로 존재하며 체중·크기·필요 사항 등 반려동물 정책을 제공함을 실제 호출로 확인(10/10곳). `TSK-DATA-002`/`005`의 "정책 필드 없음" 판정과 ADR-007의 전제를 정정. `detailPetTour2` 클라이언트·DTO·정책 텍스트 파서 구현, 추측 필드 정리(`TSK-DATA-007` 해결), 평평한 게이트웨이 오류 처리, 로그의 서비스키 노출 수정. 238 tests 통과(2 skip). 후속: `TSK-DATA-010`(Place 반영).
 - **2026-11-19**: Sprint 2 후속 백로그 `TSK-BE-032`~`035` 완료 — 리뷰 없는 장소 평점 0.0 통일(Flyway V8, 프런트 "평가 없음" 표시), 프로필 수정 닉네임 중복 검사(409), 회원가입/비밀번호 변경 비밀번호 규칙 통일(`PasswordPolicy`), 비즈니스 예외 `BusinessException(ErrorCode)` 통일 및 예외 처리기 12개 → 1개. 백엔드 214 tests 통과(2 skip), 프런트 113 tests 통과. 상세는 `docs/TASKS.md` 참조.
@@ -112,4 +113,4 @@
   - OpenAI API 기반 맞춤형 AI 장소 추천 파이프라인
   - Redis Caching (장소 검색 및 JWT 세션)
   - Elasticsearch 전문 검색 도입
-  - Docker Compose Production 환경, AWS 배포 및 CI/CD 파이프라인
+  - ~~Docker Compose Production 환경~~ ✅ 선행 완료 (2026-11-20, `TSK-INF-005`), AWS 배포 및 CI/CD 파이프라인
