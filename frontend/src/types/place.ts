@@ -90,6 +90,8 @@ export interface PlaceSearchParams {
   category?: PlaceCategory;
   maxWeight?: number;
   sizeCategory?: SizeCategory;
+  /** true면 sizeCategory 허용이 확인된 장소만. 기본은 확인 장소 먼저 + 크기 정보 없는 장소 뒤에 포함 */
+  sizeVerifiedOnly?: boolean;
   page?: number;
   size?: number;
 }

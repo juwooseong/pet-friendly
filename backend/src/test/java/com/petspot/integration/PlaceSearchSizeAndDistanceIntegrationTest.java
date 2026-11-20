@@ -134,12 +134,13 @@ class PlaceSearchSizeAndDistanceIntegrationTest {
 
     /**
      * TSK-DATA-008 (ADR-007): allowedSizes/isIndoorAllowed 등 정책 필드가 null(미검증)인 장소를
-     * 저장/조회해도 예외 없이 동작하고, 크기 필터 검색에서는 근거가 없으므로 매칭되지 않아야 한다
-     * (jsonb_exists(NULL, ...)는 NULL을 반환하므로 WHERE 절에서 자동으로 제외된다).
+     * 저장/조회해도 예외 없이 동작해야 한다.
+     * TSK-FE-019: 크기 필터 검색에서 null(미확인) 장소는 허용 확인 장소 뒤에 포함되고,
+     * sizeVerifiedOnly=true일 때만 제외된다.
      */
     @Test
-    @DisplayName("반려동물 정책 필드가 null인 장소도 저장/상세조회는 정상 동작하고, 크기 필터 검색에서는 제외된다")
-    void searchPlaces_PolicyFieldsNull_PersistsSafelyAndExcludedFromSizeFilter() {
+    @DisplayName("반려동물 정책 필드가 null인 장소도 저장/상세조회는 정상 동작하고, 크기 필터 검색에서는 확인 장소 뒤에 포함된다")
+    void searchPlaces_PolicyFieldsNull_PersistsSafelyAndIncludedAfterVerified() {
         // given: 정책 정보가 전혀 검증되지 않은 장소(TourAPI 기본정보만 있는 상태를 재현)
         Place savedPlace = placeRepository.save(Place.builder()
                 .name("정책 미검증 장소")
@@ -164,7 +165,19 @@ class PlaceSearchSizeAndDistanceIntegrationTest {
         assertThat(detail.get().getAllowedSizes()).isNull();
         assertThat(detail.get().getMaxWeightLimitKg()).isNull();
 
-        // when: SMALL 크기 필터로 검색 - 근거(allowedSizes) 없는 장소는 결과에 포함되지 않아야 한다
+        // given: 미검증 장소보다 기준점에서 더 먼 곳에 SMALL 허용이 확인된 장소
+        placeRepository.save(Place.builder()
+                .name("소형견 허용 확인 장소(더 멂)")
+                .category("CAFE")
+                .categoryName("카페")
+                .address("서울 마포구")
+                .location(point(34.0090, 124.5260))
+                .latitude(34.0090)
+                .longitude(124.5260)
+                .allowedSizes(List.of("SMALL"))
+                .build());
+
+        // when: SMALL 크기 필터로 검색(거리순)
         PlaceSearchCondition condition = PlaceSearchCondition.builder()
                 .sizeCategory("SMALL")
                 .latitude(ISOLATED_LAT)
@@ -173,7 +186,65 @@ class PlaceSearchSizeAndDistanceIntegrationTest {
                 .build();
         List<PlaceSearchResponseDto> results = placeRepository.searchPlaces(condition);
 
-        assertThat(results).noneMatch(dto -> dto.getName().equals("정책 미검증 장소"));
+        // then: 미검증 장소가 더 가깝더라도 허용 확인 장소가 먼저, 미검증 장소는 그 뒤에 포함된다
+        assertThat(results).extracting(PlaceSearchResponseDto::getName)
+                .containsSubsequence("소형견 허용 확인 장소(더 멂)", "정책 미검증 장소");
+
+        // when: 확인된 곳만(sizeVerifiedOnly=true)
+        condition.setSizeVerifiedOnly(true);
+        List<PlaceSearchResponseDto> verifiedOnly = placeRepository.searchPlaces(condition);
+
+        // then: 미검증 장소는 제외된다
+        assertThat(verifiedOnly).extracting(PlaceSearchResponseDto::getName)
+                .contains("소형견 허용 확인 장소(더 멂)")
+                .doesNotContain("정책 미검증 장소");
+    }
+
+    @Test
+    @DisplayName("크기 필터: 허용 확인 → 포함, 정보 없음 → 뒤에 포함, 허용 안 됨 확인 → 제외 (페이지를 넘겨도 순서 유지)")
+    void searchPlaces_SizeFilter_VerifiedFirstUnknownAfterDeniedExcluded() {
+        String prefix = "크기필터순서-" + java.util.UUID.randomUUID();
+        // 정보 없음 6곳, 대형견 허용 확인 2곳, 소형견만 허용(대형견 불가 확인) 1곳
+        for (int i = 0; i < 6; i++) {
+            savePlace(prefix + "-미확인-" + i, null);
+        }
+        savePlace(prefix + "-대형허용-0", List.of("SMALL", "MEDIUM", "LARGE"));
+        savePlace(prefix + "-대형허용-1", List.of("LARGE"));
+        savePlace(prefix + "-소형만", List.of("SMALL"));
+
+        PlaceSearchCondition condition = PlaceSearchCondition.builder()
+                .keyword(prefix)
+                .sizeCategory("LARGE")
+                .build();
+
+        // when: 평점순 정렬, 3곳씩 3페이지
+        List<String> names = new java.util.ArrayList<>();
+        long total = 0;
+        for (int page = 0; page < 3; page++) {
+            Page<PlaceSearchResponseDto> result = placeRepository.searchPlaces(condition, PageRequest.of(page, 3));
+            total = result.getTotalElements();
+            result.getContent().forEach(dto -> names.add(dto.getName()));
+        }
+
+        // then: 소형만(대형 불가 확인)은 제외, 허용 확인 2곳이 맨 앞, 미확인 6곳이 그 뒤
+        assertThat(total).isEqualTo(8);
+        assertThat(names).hasSize(8).doesNotHaveDuplicates()
+                .doesNotContain(prefix + "-소형만");
+        assertThat(names.subList(0, 2)).containsExactlyInAnyOrder(prefix + "-대형허용-0", prefix + "-대형허용-1");
+        assertThat(names.subList(2, 8)).allMatch(name -> name.contains("-미확인-"));
+    }
+
+    private void savePlace(String name, List<String> allowedSizes) {
+        placeRepository.save(Place.builder()
+                .name(name)
+                .category("CAFE")
+                .categoryName("카페")
+                .address("테스트 주소")
+                .location(point(ISOLATED_LAT, ISOLATED_LON))
+                .latitude(ISOLATED_LAT)
+                .longitude(ISOLATED_LON)
+                .allowedSizes(allowedSizes)
+                .build());
     }
 
     @Test

@@ -28,6 +28,15 @@ const DEFAULT_RADIUS_KM = 3;
 const keyword = ref('');
 const category = ref<PlaceCategory | ''>('');
 const sizeCategory = ref<SizeCategory | ''>('');
+/** 크기 필터 사용 시 허용이 확인된 장소만 볼지 여부(기본: 정보 없는 장소도 뒤에 포함) */
+const sizeVerifiedOnly = ref(false);
+
+/**
+ * 크기 필터 결과에서 이 장소의 크기 조건이 확인되지 않았는지(allowedSizes 없음).
+ * 서버가 허용 안 됨이 확인된 장소는 이미 제외하므로, 목록에 남은 장소는 "허용 확인" 또는 "정보 없음"뿐이다.
+ */
+const isSizeUnverified = (place: PlaceSearchItem) =>
+  !!sizeCategory.value && (!place.allowedSizes || place.allowedSizes.length === 0);
 const radiusKm = ref(DEFAULT_RADIUS_KM);
 const distanceSortEnabled = ref(false);
 const userCoords = ref<{ latitude: number; longitude: number } | null>(null);
@@ -124,7 +133,10 @@ const searchPlaces = async (page = 0) => {
     const params: PlaceSearchParams = { page, size: PAGE_SIZE };
     if (keyword.value) params.keyword = keyword.value;
     if (category.value) params.category = category.value;
-    if (sizeCategory.value) params.sizeCategory = sizeCategory.value;
+    if (sizeCategory.value) {
+      params.sizeCategory = sizeCategory.value;
+      if (sizeVerifiedOnly.value) params.sizeVerifiedOnly = true;
+    }
     if (distanceSortEnabled.value && userCoords.value) {
       params.latitude = userCoords.value.latitude;
       params.longitude = userCoords.value.longitude;
@@ -210,6 +222,23 @@ onMounted(async () => {
         >({{ sizeLabel(representativePet.sizeCategory) }}) 기준으로 크기 필터가 설정되었습니다. 필요하면 위에서 변경할 수 있습니다.
       </p>
 
+      <div v-if="sizeCategory" class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-stone-500" data-testid="size-filter-info">
+        <label class="inline-flex items-center gap-1.5 cursor-pointer select-none">
+          <input
+            v-model="sizeVerifiedOnly"
+            type="checkbox"
+            class="accent-amber-500"
+            data-testid="size-verified-only"
+            @change="searchPlaces(0)"
+          />
+          <span class="font-bold text-stone-600">{{ sizeLabel(sizeCategory) }} 동반이 확인된 곳만 보기</span>
+        </label>
+        <span v-if="!sizeVerifiedOnly">
+          확인된 곳을 먼저 보여 주고, 크기 정보가 없는 곳은 '크기 조건 확인 필요'로 표시합니다.
+          {{ sizeLabel(sizeCategory) }} 동반이 안 된다고 확인된 곳은 제외됩니다.
+        </span>
+      </div>
+
       <div class="flex flex-wrap items-center gap-3 pt-2 border-t border-stone-100">
         <button
           @click="toggleDistanceSort"
@@ -272,6 +301,14 @@ onMounted(async () => {
               class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-100"
             >
               {{ sizeLabel(size) }}
+            </span>
+            <span
+              v-if="isSizeUnverified(place)"
+              class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-stone-100 text-stone-500 border border-stone-200"
+              data-testid="size-unverified-badge"
+              title="공공데이터에 반려동물 크기 정보가 없어요. 방문 전 장소에 확인해 주세요."
+            >
+              크기 조건 확인 필요
             </span>
           </div>
           <div class="mt-3 flex items-center justify-between text-xs text-amber-600">

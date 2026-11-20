@@ -42,8 +42,17 @@ public class PlaceSearchCondition {
     private Double maxWeight;  // 동반 가능 최대 체중 (kg)
 
     @jakarta.validation.constraints.Pattern(regexp = "SMALL|MEDIUM|LARGE", message = "sizeCategory는 SMALL, MEDIUM, LARGE 중 하나여야 합니다.")
-    @Schema(description = "반려동물 크기 (SMALL, MEDIUM, LARGE). 장소 allowedSizes에 포함된 곳만 조회(정책 미검증=null 장소는 제외)", example = "SMALL", nullable = true)
-    private String sizeCategory; // 반려동물 크기 조건 ('SMALL', 'MEDIUM', 'LARGE') - 장소의 allowedSizes에 포함되어야 함
+    @Schema(description = "반려동물 크기 (SMALL, MEDIUM, LARGE). 허용이 확인된 장소(allowedSizes에 포함)를 먼저, "
+            + "크기 정보가 없는 장소(allowedSizes=null)를 그 뒤에 보여주고, 해당 크기가 허용되지 않는다고 확인된 장소만 제외한다. "
+            + "sizeVerifiedOnly=true면 허용이 확인된 장소만 조회", example = "SMALL", nullable = true)
+    private String sizeCategory; // 반려동물 크기 조건 ('SMALL', 'MEDIUM', 'LARGE')
+
+    @Schema(description = "true면 sizeCategory 허용이 확인된 장소만 조회(크기 정보 없는 장소 제외). 기본 false", example = "false", nullable = true)
+    private Boolean sizeVerifiedOnly; // TSK-FE-019: 크기 정보 미확인 장소 포함 여부
+
+    public boolean isSizeVerifiedOnlyEnabled() {
+        return Boolean.TRUE.equals(sizeVerifiedOnly);
+    }
 
     public Double getRadiusKmOrDefault() {
         return (radiusKm != null && radiusKm > 0) ? radiusKm : 3.0;

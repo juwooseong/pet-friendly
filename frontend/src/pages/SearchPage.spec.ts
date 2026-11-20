@@ -191,6 +191,69 @@ describe('SearchPage', () => {
     scrollSpy.mockRestore();
   });
 
+  describe('크기 필터 - 정책 미확인 장소 처리 (TSK-FE-019)', () => {
+    const verifiedPlace = {
+      id: 'verified', name: '대형견 허용 확인 장소', category: 'PARK', categoryName: '관광지', address: '주소',
+      latitude: 37.5, longitude: 127.0, phone: null, operatingHours: null, imageUrl: null, rating: 0, reviewCount: 0,
+      maxWeightLimitKg: null, allowedSizes: ['SMALL', 'MEDIUM', 'LARGE'], distanceKm: null,
+    };
+    const unknownPlace = { ...verifiedPlace, id: 'unknown', name: '크기 정보 없는 장소', allowedSizes: null };
+
+    function loginWithLargePet() {
+      const authStore = useAuthStore();
+      authStore.setAuth('token-abc', { id: 'u1', email: 'a@a.com', nickname: '닉네임', pets: [] });
+      (apiClient.get as any).mockImplementation((url: string) => {
+        if (url === '/pets') {
+          return Promise.resolve({ data: { success: true, data: [{ id: 'p1', name: '뽀삐', sizeCategory: 'LARGE', representative: true }] } });
+        }
+        return Promise.resolve(mockSearchResponse({ content: [verifiedPlace, unknownPlace], totalElements: 2 }));
+      });
+    }
+
+    const searchCalls = () => (apiClient.get as any).mock.calls.filter((c: any[]) => c[0] === '/places/search');
+
+    it('크기 필터가 걸리면 기본으로 미확인 장소도 포함해 검색하고(sizeVerifiedOnly 미전송), 미확인 장소에만 "크기 조건 확인 필요" 배지를 붙인다', async () => {
+      loginWithLargePet();
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      expect(searchCalls().at(-1)[1].params.sizeVerifiedOnly).toBeUndefined();
+      const cards = wrapper.findAll('[data-testid="place-thumbnail"]').map((t) => t.element.parentElement!);
+      expect(cards[0].textContent).toContain('대형견 허용 확인 장소');
+      expect(cards[0].textContent).not.toContain('크기 조건 확인 필요');
+      expect(cards[1].textContent).toContain('크기 정보 없는 장소');
+      expect(cards[1].textContent).toContain('크기 조건 확인 필요');
+      expect(wrapper.find('[data-testid="size-filter-info"]').text()).toContain('대형견 동반이 확인된 곳만 보기');
+    });
+
+    it('"확인된 곳만 보기"를 켜면 sizeVerifiedOnly=true로 첫 페이지부터 다시 검색한다', async () => {
+      loginWithLargePet();
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      await wrapper.find('[data-testid="size-verified-only"]').setValue(true);
+      await flushPromises();
+
+      const params = searchCalls().at(-1)[1].params;
+      expect(params.sizeCategory).toBe('LARGE');
+      expect(params.sizeVerifiedOnly).toBe(true);
+      expect(params.page).toBe(0);
+    });
+
+    it('크기 필터가 없으면 확인 필요 배지와 "확인된 곳만 보기"를 표시하지 않는다', async () => {
+      (apiClient.get as any).mockResolvedValue(mockSearchResponse({ content: [unknownPlace] }));
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      expect(wrapper.find('[data-testid="size-unverified-badge"]').exists()).toBe(false);
+      expect(wrapper.find('[data-testid="size-filter-info"]').exists()).toBe(false);
+      expect(searchCalls().at(-1)[1].params.sizeVerifiedOnly).toBeUndefined();
+    });
+  });
+
   describe('썸네일', () => {
     const placeWith = (imageUrl: string | null) => ({
       id: 'place-thumb',

@@ -4,7 +4,9 @@ import com.petspot.domain.place.dto.PlaceSearchCondition;
 import com.petspot.domain.place.dto.PlaceSearchResponseDto;
 import com.petspot.domain.place.dto.QPlaceSearchResponseDto;
 import com.petspot.domain.place.entity.QPlace;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberTemplate;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -14,6 +16,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -61,8 +64,22 @@ public class PlaceRepositoryImpl implements PlaceRepositoryCustom {
                 categoryEq(condition.getCategory()),
                 keywordContains(condition.getKeyword()),
                 maxWeightGte(condition.getMaxWeight()),
-                sizeCategoryAllowed(condition.getSizeCategory())
+                sizeCategoryAllowed(condition.getSizeCategory(), condition.isSizeVerifiedOnlyEnabled())
         };
+
+        // TSK-FE-019: 크기 조건이 있으면 허용이 확인된 장소를 먼저, 크기 정보가 없는 장소를 뒤에 둔다.
+        List<OrderSpecifier<?>> orders = new ArrayList<>();
+        if (hasText(condition.getSizeCategory()) && !condition.isSizeVerifiedOnlyEnabled()) {
+            orders.add(new CaseBuilder()
+                    .when(allowedSizesIsNull()).then(1)
+                    .otherwise(0)
+                    .asc());
+        }
+        orders.add(distanceExpression != null ? distanceExpression.asc() : place.rating.desc());
+        orders.add(place.reviewCount.desc());
+        // 마지막 정렬 기준은 반드시 고유해야 한다. 동점(예: 리뷰 없는 장소 9천여 곳이 모두 평점 0.0)이면
+        // PostgreSQL이 LIMIT/OFFSET마다 순서를 임의로 정해, 페이지끼리 같은 장소가 겹치거나 빠졌다.
+        orders.add(place.id.asc());
 
         var query = queryFactory
                 .select(new QPlaceSearchResponseDto(
@@ -91,13 +108,7 @@ public class PlaceRepositoryImpl implements PlaceRepositoryCustom {
                 ))
                 .from(place)
                 .where(whereConditions)
-                .orderBy(
-                        distanceExpression != null ? distanceExpression.asc() : place.rating.desc(),
-                        place.reviewCount.desc(),
-                        // 마지막 정렬 기준은 반드시 고유해야 한다. 동점(예: 리뷰 없는 장소 9천여 곳이 모두 평점 0.0)이면
-                        // PostgreSQL이 LIMIT/OFFSET마다 순서를 임의로 정해, 페이지끼리 같은 장소가 겹치거나 빠졌다.
-                        place.id.asc()
-                );
+                .orderBy(orders.toArray(new OrderSpecifier<?>[0]));
 
         if (pageable.isPaged()) {
             query.offset(pageable.getOffset()).limit(pageable.getPageSize());
@@ -200,16 +211,30 @@ public class PlaceRepositoryImpl implements PlaceRepositoryCustom {
     }
 
     /**
-     * 반려동물 크기 조건 (allowed_sizes JSONB 배열에 sizeCategory 문자열이 포함되어야 함)
-     * PostgreSQL jsonb_exists(jsonb, text) 함수를 사용해 배열 내 최상위 요소 존재 여부를 확인한다.
+     * 반려동물 크기 조건 (TSK-FE-019, ADR-007의 null=미검증 원칙)
+     * <ul>
+     *   <li>allowed_sizes에 sizeCategory가 포함 → 허용 확인, 포함</li>
+     *   <li>allowed_sizes가 null → 크기 정보 없음(미확인), verifiedOnly=false면 포함(정렬로 뒤에 둠)</li>
+     *   <li>allowed_sizes가 있는데 sizeCategory가 없음 → 허용되지 않음이 확인됨, 항상 제외</li>
+     * </ul>
+     * PostgreSQL jsonb_exists(jsonb, text) 함수로 배열 내 최상위 요소 존재 여부를 확인한다.
      */
-    private BooleanExpression sizeCategoryAllowed(String sizeCategory) {
-        if (sizeCategory == null || sizeCategory.isBlank()) {
+    private BooleanExpression sizeCategoryAllowed(String sizeCategory, boolean verifiedOnly) {
+        if (!hasText(sizeCategory)) {
             return null;
         }
-        return Expressions.booleanTemplate(
+        BooleanExpression allowed = Expressions.booleanTemplate(
                 "cast(jsonb_exists({0}, {1}) as boolean) = true",
                 QPlace.place.allowedSizes, sizeCategory
         );
+        return verifiedOnly ? allowed : allowedSizesIsNull().or(allowed);
+    }
+
+    private BooleanExpression allowedSizesIsNull() {
+        return Expressions.booleanTemplate("{0} is null", QPlace.place.allowedSizes);
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 }
