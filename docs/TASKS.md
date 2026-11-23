@@ -199,11 +199,12 @@
   - **구현**: 응답과 맞지 않던 `Place`/`PetPolicy`를 삭제하고 장소 타입을 `PlaceSearchItem`(검색·상세 공용) 하나로 통일. 이를 쓰던 `placeStore`도 `PlaceSearchItem`으로 변경. `MatchResult`(PASS/WARN/DENY 설계용)는 유지.
   - **배경**: `Place`/`PetPolicy`는 `DOMAIN.md`에 정의된 중첩 구조(`petPolicy: { allowedSizes, isIndoorAllowed, ... }`)를 따르지만, 실제 백엔드 `PlaceSearchResponseDto`는 평탄한(flat) 구조로 응답한다. 두 타입 모두 현재 어느 컴포넌트에서도 실사용되지 않는 아스퍼레이셔널(aspirational) 타입으로 방치되어 있었다. 이번 작업에서는 기존 타입을 건드리지 않고 실제 응답과 일치하는 `PlaceSearchItem`(`types/place.ts`)을 신규로 추가해 `SearchPage.vue`에서 사용하도록 했다.
   - **DoD**: `Place`/`PetPolicy`를 실제 API 응답 구조에 맞게 재정의하거나, 장소 상세 API(TSK-BE-029) 구현 시 함께 정리하여 중복 타입을 제거.
-- [ ] `TSK-FE-015` [P2] `usePlaceStore`/`usePetStore` Pinia 스토어가 데이터 페칭에 관여하지 않음 — **진행 중 (15-1·15-2·15-3 완료, 2026-11-23)**
+- [ ] `TSK-FE-015` [P2] `usePlaceStore`/`usePetStore` Pinia 스토어가 데이터 페칭에 관여하지 않음 — **진행 중 (15-1~15-4 완료, 2026-11-23)**
   - **세부 작업**: 15-1 반려동물 스토어 → 15-2 로그아웃 시 스토어 초기화 → 15-3 장소 검색 스토어(상세에서 돌아오면 검색 상태 유지, 메뉴로 새로 들어오면 초기화) → 15-4 즐겨찾기 스토어 → 15-5 RULES.md 1.2 갱신. 한 화면에서만 쓰는 데이터(지도, 홈, 마이페이지, 내 리뷰, 상세 본문·리뷰)와 일회성 요청(로그인·회원가입 등)은 화면에서 직접 호출 유지.
   - **15-1 (완료)**: `petStore`에 `fetchPets`/`ensurePets`/`createPet`/`updatePet`/`deletePet`/`setRepresentative` 액션과 `representativePet` getter. 반려동물 화면은 들어올 때마다 새로 조회, 장소 탐색은 이미 받은 목록 재사용(`ensurePets`). 서버 대표 반려동물과 겹치던 `activePetId`(localStorage) 제거.
   - **15-2 (완료)**: `authStore.logout()`이 `petStore`를 비우고 예전 `petspot_active_pet_id` 값도 지움. 테스트 1건 추가.
   - **15-3 (완료)**: `placeStore`가 장소 탐색의 검색 조건(검색어·카테고리·크기·확인된 곳만·거리순·반경·좌표)과 결과·페이지·로딩·오류를 보관하고 `search(page)` 액션으로 조회. 화면은 `storeToRefs`로 연결. 뒤로/앞으로 가기로 돌아오면(Vue Router 기록의 `forward`가 있으면) 그대로 보여 주고, 메뉴·링크로 새로 들어오면 `$reset()` 후 다시 검색. 라우터에 `scrollBehavior` 추가(뒤로 가기는 이전 스크롤 위치, 새 화면은 맨 위). 기능 없던 필터 필드(실내 전용·목줄 해제·선택 장소) 제거. 로그아웃 시 `placeStore`도 초기화. 테스트 1건 추가(복원·초기화).
+  - **15-4 (완료)**: 신규 `favoriteStore` — `fetchFavorites`/`ensureStatus`/`addFavorite`/`removeFavorite`, `isFavorited(placeId)` getter. 목록을 받은 뒤엔 목록이, 받기 전엔 장소별 확인 값이 기준이고 추가·해제가 둘 다 갱신한다. 즐겨찾기 화면은 들어올 때마다 새로 조회, 장소 상세는 이미 아는 값이면 `GET /favorites/{placeId}`를 생략. 로그아웃 시 초기화. 테스트 1건 추가(목록이 있으면 상태 재요청 안 함).
   - **배경**: TASKS.md Feature 3.1에 이미 기록된 기존 기술부채("각 페이지가 store action을 거치지 않고 apiClient를 직접 호출")가 이번에 재구현한 `SearchPage.vue`에도 동일하게 적용된다(기존 코드 패턴을 그대로 따름). `usePlaceStore.places`/`usePetStore.pets`는 여전히 채워지지 않는다. `PlaceDetailPage.vue`의 즐겨찾기 연동(2026-08-18)도 `favoriteStore` 없이 동일 패턴으로 구현되어 이 부채가 계속 누적되고 있음.
   - **DoD**: 스토어 리팩토링을 별도 스프린트로 계획할 때 장소 검색 페이지도 함께 포함.
 - [x] `TSK-BE-030` [P2] 장소 단건 즐겨찾기 여부 확인 전용 API 부재 — **완료 (2026-11-23)**

@@ -3,10 +3,10 @@ import { ref, onMounted } from 'vue';
 import { formatRating } from '@/utils/rating';
 import { imageFitClass } from '@/utils/publicData';
 import { useRouter } from 'vue-router';
-import apiClient, { extractErrorMessage } from '@/api/apiClient';
+import { storeToRefs } from 'pinia';
+import { extractErrorMessage } from '@/api/apiClient';
 import { useAuthStore } from '@/stores/authStore';
-import type { ApiResponse } from '@/types/api';
-import type { FavoriteItem } from '@/types/favorite';
+import { useFavoriteStore } from '@/stores/favoriteStore';
 import BaseCard from '@/components/common/BaseCard.vue';
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue';
 import ErrorMessage from '@/components/common/ErrorMessage.vue';
@@ -14,8 +14,9 @@ import EmptyState from '@/components/common/EmptyState.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const favoriteStore = useFavoriteStore();
+const { favorites } = storeToRefs(favoriteStore);
 
-const favorites = ref<FavoriteItem[]>([]);
 const loading = ref(true);
 const errorMessage = ref('');
 const removingPlaceId = ref<string | null>(null);
@@ -25,10 +26,8 @@ const fetchFavorites = async () => {
   loading.value = true;
   errorMessage.value = '';
   try {
-    const response = await apiClient.get<ApiResponse<FavoriteItem[]>>('/users/me/favorites');
-    if (response.data && response.data.success) {
-      favorites.value = Array.isArray(response.data.data) ? response.data.data : [];
-    }
+    // 즐겨찾기 화면은 들어올 때마다 최신 목록을 받는다
+    await favoriteStore.fetchFavorites();
   } catch (err) {
     errorMessage.value = extractErrorMessage(err, '즐겨찾기 목록을 불러오는 중 오류가 발생했습니다.');
   } finally {
@@ -47,8 +46,7 @@ const removeFavorite = async (placeId: string) => {
   removingPlaceId.value = placeId;
   removeErrorMessage.value = '';
   try {
-    await apiClient.delete(`/favorites/${placeId}`);
-    favorites.value = favorites.value.filter((fav) => fav.placeId !== placeId);
+    await favoriteStore.removeFavorite(placeId);
   } catch (err) {
     removeErrorMessage.value = extractErrorMessage(err, '즐겨찾기 삭제 중 오류가 발생했습니다.');
   } finally {
