@@ -47,7 +47,7 @@ const handleSubmit = async () => {
     });
 
     if (response.data && response.data.success) {
-      authStore.completePasswordChange();
+      authStore.completePasswordChange(response.data.data?.accessToken);
       newPassword.value = '';
       confirmPassword.value = '';
       alert('비밀번호가 변경되었습니다.');

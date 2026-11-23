@@ -24,6 +24,7 @@ public class CustomUserDetails implements UserDetails {
     private final UserRole role;
     private final UserStatus status;
     private final boolean passwordChangeRequired;
+    private final int tokenVersion;
     private final Collection<? extends GrantedAuthority> authorities;
 
     public CustomUserDetails(User user) {
@@ -33,6 +34,7 @@ public class CustomUserDetails implements UserDetails {
         this.role = user.getRole();
         this.status = user.getStatus();
         this.passwordChangeRequired = user.isPasswordChangeRequired();
+        this.tokenVersion = user.getTokenVersion();
         this.authorities = Collections.singletonList(
                 new SimpleGrantedAuthority("ROLE_" + (user.getRole() != null ? user.getRole().name() : "USER"))
         );

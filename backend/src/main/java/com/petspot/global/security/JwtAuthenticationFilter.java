@@ -43,6 +43,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String userId = jwtTokenProvider.extractUserId(jwt);
                 UserDetails userDetails = userDetailsService.loadUserByUsername(userId);
 
+                // 비밀번호가 바뀐 뒤에는 그 전에 발급한 토큰을 받지 않는다 (TSK-SEC-001)
+                if (userDetails instanceof CustomUserDetails custom
+                        && custom.getTokenVersion() != jwtTokenProvider.extractTokenVersion(jwt)) {
+                    log.info("[JWT AUTH REJECTED] Revoked token (password changed) for userId: {}", userId);
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

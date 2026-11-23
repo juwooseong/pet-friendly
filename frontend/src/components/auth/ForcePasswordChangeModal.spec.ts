@@ -67,9 +67,9 @@ describe('ForcePasswordChangeModal', () => {
     expect(wrapper.text()).toContain('일치하지 않습니다');
   });
 
-  it('정상 비밀번호 입력 시 PATCH /auth/password 호출 후 requiresPasswordChange=false로 바뀌고 홈으로 이동한다', async () => {
+  it('정상 비밀번호 입력 시 PATCH /auth/password 호출 후 새 토큰으로 바꾸고 requiresPasswordChange=false로 바뀌며 홈으로 이동한다', async () => {
     (apiClient.patch as any).mockResolvedValue({
-      data: { success: true, data: null, error: null },
+      data: { success: true, data: { accessToken: 'token-new', tokenType: 'Bearer', expiresIn: 3600 }, error: null },
     });
 
     const authStore = useAuthStore();
@@ -88,6 +88,9 @@ describe('ForcePasswordChangeModal', () => {
       confirmPassword: 'NewPassw0rd!',
     });
     expect(authStore.requiresPasswordChange).toBe(false);
+    // 비밀번호 변경으로 이전 토큰이 무효화되므로 새 토큰을 써야 한다 (TSK-SEC-001)
+    expect(authStore.token).toBe('token-new');
+    expect(localStorage.getItem('accessToken')).toBe('token-new');
     expect(pushMock).toHaveBeenCalledWith('/');
   });
 

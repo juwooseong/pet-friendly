@@ -40,6 +40,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -208,7 +209,7 @@ class AuthServiceTest {
 
         given(userRepository.findByEmail("active@petspot.com")).willReturn(Optional.of(activeUser));
         given(passwordEncoder.matches("password1234!", "bcrypt_pwd_hash")).willReturn(true);
-        given(jwtTokenProvider.generateToken(any(), any(), any())).willReturn("mock.jwt.access.token");
+        given(jwtTokenProvider.generateToken(any(), any(), any(), anyInt())).willReturn("mock.jwt.access.token");
         given(jwtTokenProvider.getExpirationMs()).willReturn(86400000L);
 
         // when
@@ -312,7 +313,7 @@ class AuthServiceTest {
 
         given(userRepository.findByEmail("temp@petspot.com")).willReturn(Optional.of(tempPasswordUser));
         given(passwordEncoder.matches("TempPassw0rd!", "bcrypt_temp_hash")).willReturn(true);
-        given(jwtTokenProvider.generateToken(any(), any(), any())).willReturn("mock.jwt.access.token");
+        given(jwtTokenProvider.generateToken(any(), any(), any(), anyInt())).willReturn("mock.jwt.access.token");
         given(jwtTokenProvider.getExpirationMs()).willReturn(86400000L);
 
         // when
@@ -335,7 +336,7 @@ class AuthServiceTest {
 
         given(userRepository.findByEmail("active@petspot.com")).willReturn(Optional.of(activeUser));
         given(passwordEncoder.matches("password1234!", "bcrypt_pwd_hash")).willReturn(true);
-        given(jwtTokenProvider.generateToken(any(), any(), any())).willReturn("mock.jwt.access.token");
+        given(jwtTokenProvider.generateToken(any(), any(), any(), anyInt())).willReturn("mock.jwt.access.token");
         given(jwtTokenProvider.getExpirationMs()).willReturn(86400000L);
 
         // when

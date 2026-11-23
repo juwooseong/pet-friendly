@@ -2,6 +2,7 @@ package com.petspot.api.auth;
 
 import com.petspot.api.auth.dto.AvailabilityResponseDto;
 import com.petspot.api.auth.dto.ChangePasswordRequestDto;
+import com.petspot.api.auth.dto.ChangePasswordResponseDto;
 import com.petspot.api.auth.dto.FindIdRequestDto;
 import com.petspot.api.auth.dto.FindIdResponseDto;
 import com.petspot.api.auth.dto.FindPasswordRequestDto;
@@ -154,19 +155,18 @@ public class AuthController {
 
     @Operation(
             summary = "비밀번호 변경",
-            description = "현재 로그인한 사용자의 비밀번호를 변경합니다. 임시 비밀번호로 로그인한 사용자는 다른 API 이용 전 반드시 호출해야 합니다.",
+            description = "현재 로그인한 사용자의 비밀번호를 변경합니다. 임시 비밀번호로 로그인한 사용자는 다른 API 이용 전 반드시 호출해야 합니다. "
+                    + "변경하면 이전에 발급한 토큰은 모두 무효화되므로, 이후 요청에는 응답의 새 토큰을 사용합니다.",
             security = @SecurityRequirement(name = SwaggerConfig.SECURITY_SCHEME_NAME)
     )
     @PatchMapping("/password")
     @ApiErrorCodes({ErrorCode.USER_NOT_FOUND})
-    public ResponseEntity<ApiResponse<Void>> changePassword(
+    public ResponseEntity<ApiResponse<ChangePasswordResponseDto>> changePassword(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody ChangePasswordRequestDto request) {
 
         log.info("PATCH /api/v1/auth/password called by userId: {}", userDetails.getId());
 
-        authService.changePassword(userDetails.getId(), request);
-
-        return ResponseEntity.ok(ApiResponse.success(null));
+        return ResponseEntity.ok(ApiResponse.success(authService.changePassword(userDetails.getId(), request)));
     }
 }
