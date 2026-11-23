@@ -190,7 +190,9 @@
 - [x] `TSK-BE-029` [P0] 장소 상세 조회 API 부재 (`GET /api/v1/places/{id}`) — **완료 (2026-08-18)**
   - **배경**: `PlaceController`에는 `/search`만 존재하고 단건 조회 엔드포인트가 없다. `PlaceDetailPage.vue`는 `GET /places/{id}`를 호출하고 있어 실제로는 항상 500 에러("장소 정보를 찾을 수 없습니다" 표시)가 발생한다. TASKS.md v2.0 초기 작성 시 Sprint 1에 포함된 것으로 잘못 기재되어 있었음(문서 오류였던 것으로 추정).
   - **DoD 충족 확인**: `PlaceController.getPlaceDetail`(`GET /api/v1/places/{placeId}`) 및 `PlaceQueryService.getPlaceDetail`/`PlaceRepositoryCustom·Impl.findPlaceDetail` 추가, 미존재 ID는 기존 `PlaceNotFoundException` → 404 연동, `PlaceDetailPage.vue` 정상 렌더링 확인(`PlaceDetailIntegrationTest`, `PlaceControllerTest`, `PlaceQueryServiceTest`로 검증).
-- [ ] `TSK-QA-001` [P1] Sprint 1 PostGIS 공간 쿼리 실DB 통합 테스트 커버리지 부재
+- [x] `TSK-QA-001` [P1] Sprint 1 PostGIS 공간 쿼리 실DB 통합 테스트 커버리지 부재 — **완료 (2026-11-23)**
+  - **컨벤션 수립**: `docs/RULES.md` 2.3 Testing Rules에 "QueryDSL 커스텀 쿼리(특히 `Expressions.*Template` DB 함수)·`@Query`·결과 순서를 바꾸는 정렬은 실DB `@SpringBootTest` 테스트 최소 1개 필수" 규칙과 데이터 격리 방법(바다 좌표·UUID 접두어·롤백)을 기록.
+  - **점검 결과**: 현재 커스텀 쿼리는 모두 실DB 테스트가 있다 — `PlaceRepositoryImpl.searchPlaces`(ST_DWithin/ST_Distance/jsonb_exists/CASE 정렬: `PlaceSearchSizeAndDistanceIntegrationTest`), `findPlaceDetail`(`PlaceDetailIntegrationTest`), `PlaceRepository.findPendingPetPolicySync`(`TourPetPolicyIngestionIntegrationTest`), `ReviewRepository` 평균 평점 `@Query`(`Sprint2FullFlowIntegrationTest`). 나머지 저장소 메서드는 파생 쿼리.
   - **배경**: 이번 작업 중 `PlaceRepositoryImpl`의 `ST_DWithin`/`ST_Distance` QueryDSL 템플릿이 Hibernate 6 HQL 파서에서 파싱 오류(`unrecognized cast target type: geography`) 및 타입 불일치(`SemanticException`)로 실제로는 전혀 동작하지 않았음을 발견하고 수정했다(`geography(...)` 함수 호출 + `cast(... as boolean)` 패턴으로 교체). 기존 `PlaceRepositorySearchTest`/`PlaceQueryServiceTest`/`PlaceControllerTest`가 전부 Mockito Mock 기반이라 실제 쿼리 실행 경로를 한 번도 검증하지 못했기 때문에 Sprint 1 "완료" 이후 지금까지 발견되지 않았던 것으로 보인다.
   - **DoD**: 공간/거리 관련 QueryDSL 커스텀 쿼리(및 향후 추가되는 네이티브 함수 템플릿)에 대해 최소 1개 이상의 실제 PostGIS DB 기반 통합 테스트를 필수화하는 컨벤션 수립(예: `PlaceSearchSizeAndDistanceIntegrationTest` 패턴 재사용/확장). 다른 도메인의 유사 위험(Mock만으로 커버된 실DB 의존 로직)도 함께 점검.
 - [ ] `TSK-FE-014` [P2] `types/place.ts`의 `Place`/`PetPolicy` 타입이 실제 API 응답과 불일치
@@ -202,7 +204,11 @@
 - [ ] `TSK-BE-030` [P2] 장소 단건 즐겨찾기 여부 확인 전용 API 부재
   - **배경**: 이번 장소 상세 즐겨찾기 토글 연동(2026-08-18) 작업 중 확인한 기존 백엔드 API에는 특정 장소 1건에 대한 즐겨찾기 여부만 확인하는 엔드포인트(예: `GET /favorites/{placeId}/status`)가 없다. `PlaceDetailPage.vue`는 이를 우회해 기존 `GET /users/me/favorites`(전체 목록)를 호출한 뒤 클라이언트에서 `placeId` 일치 여부를 찾는 방식으로 구현했다(요구사항에 따라 기존 API를 최대한 재사용). 즐겨찾기 수가 많아지면 상세 페이지 진입마다 불필요하게 전체 목록을 내려받는 비효율이 있다.
   - **DoD**: 즐겨찾기 수 증가에 따른 실측 성능 영향을 확인한 뒤, 필요 시 단건 상태 확인 전용 API(또는 장소 상세 응답에 `isFavorited` 필드 포함) 추가를 검토.
-- [ ] `TSK-QA-002` [P1] Playwright E2E 테스트 하네스 부재 (`TSK-FE-008` 리뷰 기능 검증에서 식별, 2026-08-18)
+- [x] `TSK-QA-002` [P1] Playwright E2E 테스트 하네스 부재 (`TSK-FE-008` 리뷰 기능 검증에서 식별, 2026-08-18) — **완료 (2026-11-23)**
+  - **구현**: `@playwright/test` 1.62.1(이미 받아 둔 Chromium 재사용), `frontend/playwright.config.ts`, `npm run e2e`. Playwright가 백엔드(`bootRun`, 포트 8090, E2E 전용 DB `petspot_e2e`, 메일 계정 비움)와 Vite(포트 3100)를 직접 띄운다. `e2e/prepare-db.mjs`가 DB가 없으면 만들고, 서버가 뜬 뒤(Flyway 완료) `e2e/global-setup.ts`가 데이터 테이블을 비우고 테스트 장소(공공데이터 아님 → TourAPI 호출 없음)를 넣는다. DB 접근은 Node 드라이버 없이 `docker exec petspot-db psql`.
+  - **시나리오** (`e2e/review-flow.e2e.ts`): API 회원가입 → 화면 로그인 → 장소 검색 → 상세 → 리뷰 작성(별점 4) → 새로고침 후 리뷰·리뷰 수 유지 → 즐겨찾기 → 즐겨찾기 목록 확인. 2회 연속 실행 통과(약 20초).
+  - **설정 변경**: E2E Vite 서버는 API를 상대 경로(`/api/v1`)로 부르고 프록시 대상을 `VITE_API_PROXY_TARGET`로 받는다. 이때만 프록시가 `Origin` 헤더를 지운다(브라우저 입장에서 같은 출처, 백엔드 CORS 설정은 그대로). 평소 개발 서버 동작은 변경 없음.
+  - **CI**: GitHub Actions 연동은 `TSK-INF-006`에서(PostgreSQL 서비스 + `TEST_DB_URL`/`E2E_DB_CONTAINER` 조정 필요).
   - **배경**: 장소 상세 리뷰 조회/작성 기능의 실브라우저 검증을 위해 로컬에 Playwright를 임시 설치하고, DB에 임시 시드 장소/계정 데이터를 스크립트로 직접 심어 수동으로 시나리오(로그인→검색→상세→리뷰 작성→새로고침→즐겨찾기 확인)를 실행했다. 저장소에는 재사용 가능한 Playwright 설정, 테스트용 DB 초기화/시드 스크립트, `npm run e2e` 같은 표준 진입점이 없어 매번 이 과정을 수작업으로 반복해야 한다.
   - **DoD**: `playwright.config.ts` 및 `frontend`(또는 루트) `e2e/` 디렉터리 신설, 테스트 전용 DB 시드/정리 스크립트 작성, CI에서 실행 가능한 `npm run e2e` 스크립트 추가. 최소한 이번에 검증한 리뷰 작성 플로우를 회귀 테스트로 고정.
 - [ ] `TSK-FE-016` [P2] `types/user.ts`의 `User`(로그인 응답 매핑) 타입이 실제 API 응답과 불일치 (`TSK-FE-011` MyPage 연동에서 식별, 2026-08-27)
@@ -262,7 +268,9 @@
   - **검증 (FE-020과 함께)**: 백엔드 279 tests(2 skip), 프런트 Vitest 151/151(신규 2), type-check·build 통과.
   - **배경**: 대표 이미지 9,471곳 중 8,922곳이 제3유형(출처표시+변경금지), 549곳이 제1유형. 출처 표시는 적용했으나, 목록 카드·상세 화면이 이미지를 틀에 맞춰 잘라 보여준다(`object-cover`). 화면 표시용 자르기가 "변경"에 해당하는지 확인 필요.
   - **DoD**: 이용 조건 확인 후 필요하면 제3유형 이미지는 `object-contain`(자르지 않음)으로 표시.
-- [ ] `TSK-QA-003` [P1] 테스트 전용 DB 분리 (2026-11-19 신규)
+- [x] `TSK-QA-003` [P1] 테스트 전용 DB 분리 (2026-11-19 신규) — **완료 (2026-11-23)**
+  - **구현**: 같은 `petspot-db` 컨테이너에 테스트 전용 DB `petspot_test`를 두고, `backend/src/test/resources/config/application.yml`이 테스트 클래스패스에서만 datasource URL을 덮어쓴다(IDE 실행에도 적용, `TEST_DB_URL`로 변경 가능). 스키마는 Flyway가 만든다. 새 볼륨은 `docker/postgres/init-postgis.sql`이 DB를 만들고, 기존 볼륨에는 직접 생성(RULES.md 2.3). Testcontainers 대신 이 방식을 고른 이유: 이미 실행 중인 Docker DB를 재사용해 빠르고, 추가 의존성이 없음.
+  - **검증**: 백엔드 279 tests(2 skip)가 `petspot_test`에서 통과(마이그레이션 11개 적용), 개발 DB(`petspot_db`) 9,630곳 그대로. 기존 격리 코드(바다 좌표, fixture 장소 삭제)는 다른 테스트가 남긴 데이터 대비 방어 코드로 유지하고 주석만 갱신.
   - **현황 (2026-11-20)**: Windows PostgreSQL이 제거되어 개발·테스트 DB를 Docker `petspot-db`(호스트 5433)로 통일했다. `application.yml` 연결 정보는 환경변수(`DB_URL`/`DB_PORT`/`DB_USERNAME`/`DB_PASSWORD`)로 받고, `build.gradle`이 `gradle test`/`bootRun` 실행 시 루트 `.env`를 환경변수로 넣는다(테스트에는 `MAIL_*` 제외 - 실제 메일 발송 방지). 테스트는 여전히 실데이터와 같은 DB를 쓰므로(바다 좌표·롤백으로 격리) 분리 과제는 유지.
   - **배경**: 통합 테스트가 개발 DB(`petspot_db`)를 함께 쓴다. 실제 데이터 9,630곳 적재 후 기존 통합 테스트 5개가 실제 데이터와 섞여 실패했다. 이번에는 테스트 데이터를 바다 좌표로 옮기고 fixture 장소를 테스트 트랜잭션 안에서 지우는 방식으로 격리했지만 근본 해결이 아니다.
   - **DoD**: 테스트 프로필 전용 데이터베이스(예: `petspot_test`, PostGIS 확장 포함) 또는 Testcontainers 도입.

@@ -35,8 +35,8 @@ class PlaceSearchSizeAndDistanceIntegrationTest {
     private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory(new PrecisionModel(), 4326);
 
     /**
-     * 테스트 장소는 실제 장소가 없는 서해 바다 위 좌표(34.00N, 124.52E 부근)에 만든다. 테스트가 개발 DB를 함께 쓰므로,
-     * 전국 실제 데이터(2026-11-19 적재, 9,630곳)가 검색 결과에 섞이지 않도록 검색 범위를 이 근처로 한정한다.
+     * 테스트 장소는 실제 장소가 없는 서해 바다 위 좌표(34.00N, 124.52E 부근)에 만들고 검색 범위를 이 근처로 한정한다.
+     * 테스트 DB(petspot_test, TSK-QA-003)는 실제 데이터와 분리되어 있지만, 다른 테스트가 남긴 장소와도 섞이지 않게 유지한다.
      */
     private static final double ISOLATED_LAT = 34.0067;
     private static final double ISOLATED_LON = 124.5236;

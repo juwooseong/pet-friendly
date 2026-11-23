@@ -49,8 +49,8 @@ class TourDataInitialIngestionPipelineTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
-     * 테스트가 개발 DB를 함께 쓰므로, 실제 적재(2026-11-19)로 이미 들어 있는 fixture 장소를 테스트 트랜잭션 안에서 먼저
-     * 지운다(테스트 종료 시 롤백되어 실제 데이터는 그대로 남는다). 이렇게 해야 "신규 저장" 시나리오를 검증할 수 있다.
+     * 테스트 DB(petspot_test, TSK-QA-003)에 다른 테스트가 커밋한 같은 fixture 장소가 남아 있어도 "신규 저장" 시나리오를
+     * 검증할 수 있도록 테스트 트랜잭션 안에서 먼저 지운다(종료 시 롤백). 개발 DB와 분리되기 전부터 있던 방어 코드다.
      */
     @org.junit.jupiter.api.BeforeEach
     void removeAlreadyLoadedFixturePlaces() throws IOException {
