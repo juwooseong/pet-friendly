@@ -109,6 +109,34 @@ describe('SearchPage', () => {
     expect(lastSearchCall[1].params.sizeCategory).toBe('LARGE');
   });
 
+  it('상세에서 뒤로 돌아오면 검색 상태를 유지하고, 메뉴로 새로 들어오면 초기화한다 (TSK-FE-015)', async () => {
+    (apiClient.get as any).mockResolvedValue(mockSearchResponse());
+    const first = mountPage();
+    await flushPromises();
+    await first.find('input[type="text"]').setValue('애견카페');
+    await first.find('button').trigger('click');
+    await flushPromises();
+    first.unmount();
+    const callsBefore = (apiClient.get as any).mock.calls.length;
+
+    // 뒤로 가기: Vue Router가 기록 항목에 다음 화면(forward)을 남겨 둔 상태
+    window.history.replaceState({ forward: '/place/place-1' }, '');
+    const back = mountPage();
+    await flushPromises();
+    expect((apiClient.get as any).mock.calls.length).toBe(callsBefore);
+    expect((back.find('input[type="text"]').element as HTMLInputElement).value).toBe('애견카페');
+    expect(back.text()).toContain('홍대 애견카페');
+    back.unmount();
+
+    // 메뉴로 새로 진입: forward 없음 → 초기 조건으로 다시 검색
+    window.history.replaceState(null, '');
+    const fresh = mountPage();
+    await flushPromises();
+    expect((fresh.find('input[type="text"]').element as HTMLInputElement).value).toBe('');
+    const lastCall = (apiClient.get as any).mock.calls.at(-1);
+    expect(lastCall[1].params.keyword).toBeUndefined();
+  });
+
   it('비로그인 사용자는 /pets를 호출하지 않고 크기 필터 없이 검색한다', async () => {
     (apiClient.get as any).mockResolvedValue(mockSearchResponse());
 
