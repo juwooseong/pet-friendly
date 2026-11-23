@@ -71,6 +71,7 @@ com.petspot
 - **Spring Data 파생 쿼리**(`findByXxx`)는 애플리케이션 시작 시 검증되므로 별도 실DB 테스트를 의무화하지 않는다.
 - **프런트 단위 테스트 실행**: `frontend`에서 `npm test`(특정 파일은 `npm test -- <경로>`). Windows에서 소문자 드라이브 경로(`d:\`)로 열린 터미널에서도 통과하도록 실제 경로로 바꿔 실행한다(TSK-QA-004). `npx vitest`를 직접 부르지 않는다.
 - **E2E (TSK-QA-002)**: `frontend`에서 `npm run e2e`. Playwright가 백엔드(8090, DB `petspot_e2e`)와 Vite(3100)를 직접 띄우고, 실행마다 E2E DB를 비운 뒤 시드를 넣는다(`frontend/e2e/global-setup.ts`). Docker의 `petspot-db`만 실행 중이면 된다. E2E 파일은 Vitest와 섞이지 않도록 `*.e2e.ts`로 만든다. 화면 흐름(로그인·검색·리뷰·즐겨찾기 등)을 바꾸면 `e2e/review-flow.e2e.ts`를 함께 갱신한다.
+- **CI (TSK-INF-006)**: push·PR마다 GitHub Actions(`.github/workflows/ci.yml`)가 백엔드 테스트, 프런트 테스트·빌드, E2E를 모두 실행한다. 로컬에서는 바꾼 부분의 테스트만 돌리고, 전체 회귀는 CI 결과로 확인한다. CI가 실패한 상태로 다음 과제를 진행하지 않는다.
 
 ---
 

@@ -175,7 +175,11 @@
 ### Feature 4.2 Production Infra & Monitoring
 - [x] `TSK-INF-005` Docker Compose Production Environment Setup — **완료 (2026-11-20, 아래 "완료 기록" 참조)**
   - DB(PostgreSQL 17 + PostGIS 3.5)·Redis·백엔드(Spring Boot jar, 내장 Tomcat)·프런트(Nginx) 4개 컨테이너, `docker compose up -d --build` 한 번으로 실행, `http://localtest.me` 단일 주소로 서비스(Kakao 도메인 제약으로 localhost 대신 사용).
-- [ ] `TSK-INF-006` AWS Cloud Deployment & GitHub Actions CI/CD Pipeline
+- [ ] `TSK-INF-006` AWS Cloud Deployment & GitHub Actions CI/CD Pipeline — **CI 완료 (2026-11-23), AWS 배포(CD)는 남음**
+  - **CI** (`.github/workflows/ci.yml`): `main`·`feature/**` push, `main` PR, 수동 실행 시 3개 작업을 병렬 실행 — 백엔드 테스트(`./gradlew test`), 프런트 단위 테스트·타입 검사·빌드(`npm test`, `npm run build`), E2E(`npm run e2e`). 실패 시 테스트 리포트/Playwright 리포트를 아티팩트로 7일 보관.
+  - **DB**: `.github/scripts/start-db.sh`가 로컬과 같은 `postgis/postgis:17-3.5`를 같은 이름(`petspot-db`)·포트(5433)로 띄워, 테스트 설정·E2E 스크립트를 CI용으로 바꾸지 않았다(TSK-QA-002에 적어 둔 `TEST_DB_URL`/`E2E_DB_CONTAINER` 조정 불필요). DB 계정은 CI 전용 일회용 값.
+  - **기타**: `backend/gradlew` 실행 권한을 git에 기록(리눅스 실행용).
+  - **검증**: 첫 실행(run 45129026299) 3개 작업 모두 성공.
 - [ ] `TSK-INF-007` Prometheus & Grafana Monitoring & APM Setup
 
 ### Feature 4.3 Security Hardening (Backlog, TSK-FE-012 리뷰에서 식별)
