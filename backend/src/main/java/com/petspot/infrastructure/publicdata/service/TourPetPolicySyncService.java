@@ -24,8 +24,8 @@ import java.util.UUID;
  * 공공데이터 장소의 반려동물 정책을 TourAPI {@code detailPetTour2}로 채운다 (TSK-DATA-010, ADR-009).
  *
  * <p>{@code detailPetTour2}는 장소마다 1회 호출해야 하므로(목록 조회 불가) 전국 9천여 곳을 한 번에 처리할 수 없다.
- * 한 번 실행에서 {@code maxCalls}건까지만 호출하고, 아직 조회하지 않은 장소({@code petPolicySyncedAt == null})부터
- * 처리하므로 여러 날에 나눠 실행해도 이어서 진행된다.
+ * 한 번 실행에서 {@code maxCalls}건까지만 호출하고, 아직 조회하지 않은 장소({@code petPolicySyncedAt == null})만
+ * 처리하므로 여러 날에 나눠 실행해도 이어서 진행된다. 쇼핑이 아닌 장소를 먼저 조회한다(TSK-DATA-011).
  *
  * <p>장소 1건마다 별도 트랜잭션으로 저장해, 중간에 멈춰도 이미 처리한 장소는 보존된다.
  * 외부 API 호출은 트랜잭션 밖에서 한다(DB 커넥션을 붙잡고 네트워크를 기다리지 않도록).
@@ -66,8 +66,8 @@ public class TourPetPolicySyncService {
             return new SyncResult(0, 0, 0, 0, null);
         }
         // 엔티티 전체가 아닌 식별자만 사용한다(트랜잭션 밖이라 준영속 상태)
-        List<Place> pending = placeRepository
-                .findByPublicDataIdIsNotNullAndPetPolicySyncedAtIsNullOrderByCreatedAtDesc(PageRequest.of(0, maxCalls));
+        // 쇼핑이 아닌 장소부터(정책 문구가 있는 비율이 훨씬 높다, TSK-DATA-011)
+        List<Place> pending = placeRepository.findPendingPetPolicySync(PageRequest.of(0, maxCalls));
         log.info("[PET POLICY SYNC] start: pending(this run)={}, maxCalls={}", pending.size(), maxCalls);
 
         int applied = 0;

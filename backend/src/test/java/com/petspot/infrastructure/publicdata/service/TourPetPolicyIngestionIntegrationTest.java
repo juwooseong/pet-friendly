@@ -16,10 +16,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -65,9 +67,10 @@ class TourPetPolicyIngestionIntegrationTest {
                 .etcInfo("내부 실내 시설 입장 불가 / 야외 좌석 착석은 가능")
                 .build()));
 
-        // when: 목록 저장 → 정책 동기화(가장 최근 등록 장소부터 1건 = 방금 저장한 장소)
+        // when: 목록 저장 → 정책 동기화 1건. 개발 DB의 다른 미조회 장소는 대상에서 빼 둔다(롤백됨)
         collectorService.saveCollectedPlaces(items);
         entityManager.flush();
+        hidePendingPlacesExcept(List.of(contentId));
         SyncResult result = policySyncService.syncPendingPolicies(1, 0);
         entityManager.flush();
         entityManager.clear();
@@ -90,9 +93,50 @@ class TourPetPolicyIngestionIntegrationTest {
         assertThat(searchByNameAndSize(place.getName(), "LARGE")).extracting(PlaceSearchResponseDto::getId).doesNotContain(place.getId());
 
         // then: 한 번 조회한 장소는 다음 실행의 대상이 아니다(이어서 처리)
-        assertThat(placeRepository.findByPublicDataIdIsNotNullAndPetPolicySyncedAtIsNullOrderByCreatedAtDesc(
-                org.springframework.data.domain.PageRequest.of(0, 100000)))
+        assertThat(placeRepository.findPendingPetPolicySync(PageRequest.of(0, 100000)))
                 .extracting(Place::getId).doesNotContain(place.getId());
+    }
+
+    @Test
+    @DisplayName("TSK-DATA-011: 정책 조회 대상은 쇼핑이 아닌 장소가 먼저다 - 쇼핑이 더 최근에 등록됐어도")
+    void pendingPolicySync_NonShoppingFirst() {
+        // given: 관광지 → 쇼핑 → 숙박 순서로 등록 (서해 바다 위 좌표, 실제 장소 없음)
+        saveItem("TSK-DATA-011-TOUR", "12");
+        saveItem("TSK-DATA-011-SHOP", "38");
+        saveItem("TSK-DATA-011-STAY", "32");
+        hidePendingPlacesExcept(List.of("TSK-DATA-011-TOUR", "TSK-DATA-011-SHOP", "TSK-DATA-011-STAY"));
+
+        // when
+        List<Place> pending = placeRepository.findPendingPetPolicySync(PageRequest.of(0, 10));
+
+        // then: 쇼핑 아닌 장소(최근 등록 순) → 쇼핑
+        assertThat(pending).extracting(Place::getPublicDataId)
+                .containsExactly("TSK-DATA-011-STAY", "TSK-DATA-011-TOUR", "TSK-DATA-011-SHOP");
+        assertThat(pending.get(2).getCategory()).isEqualTo("SHOPPING");
+    }
+
+    private void saveItem(String contentId, String contentTypeId) {
+        collectorService.saveCollectedPlaces(List.of(TourApiPlaceItemDto.builder()
+                .contentId(contentId)
+                .contentTypeId(contentTypeId)
+                .title("정책 우선순위 테스트 " + contentId)
+                .address1("테스트 주소")
+                .rawLatitude("34.0012")
+                .rawLongitude("124.5212")
+                .build()));
+        entityManager.flush(); // 등록 시각이 저장 순서대로 매겨지도록 하나씩 반영
+    }
+
+    /** 개발 DB를 함께 쓰므로(TSK-QA-003) 지정한 장소 외의 미조회 장소를 이 트랜잭션 안에서만 조회 완료로 표시한다. */
+    private void hidePendingPlacesExcept(List<String> contentIds) {
+        entityManager.createQuery("""
+                        update Place p set p.petPolicySyncedAt = :now
+                        where p.petPolicySyncedAt is null and p.publicDataId not in :ids
+                        """)
+                .setParameter("now", ZonedDateTime.now())
+                .setParameter("ids", contentIds)
+                .executeUpdate();
+        entityManager.clear();
     }
 
     private List<PlaceSearchResponseDto> searchByNameAndSize(String name, String sizeCategory) {

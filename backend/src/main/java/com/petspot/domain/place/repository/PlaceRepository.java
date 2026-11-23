@@ -35,8 +35,15 @@ public interface PlaceRepository extends JpaRepository<Place, UUID>, PlaceReposi
 
     /**
      * TourAPI 반려동물 정책(detailPetTour2)을 아직 조회하지 않은 공공데이터 장소 (TSK-DATA-010).
-     * 조회 시각이 없는 장소만 대상이라 배치를 여러 날에 나눠 실행해도 이어서 처리된다(최근 등록 순).
+     * 조회 시각이 없는 장소만 대상이라 배치를 여러 날에 나눠 실행해도 이어서 처리된다.
+     *
+     * <p>쇼핑이 아닌 장소부터 고른다 (TSK-DATA-011). 쇼핑은 전체의 약 90%지만 정책 문구가 거의 없다(조회한 779곳 중 6곳). 관광지·레포츠·숙박·음식점 등을
+     * 먼저 조회해야 하루 호출 한도 안에서 쓸모 있는 정책이 빨리 채워진다. 같은 그룹 안에서는 최근 등록 순.
      */
-    java.util.List<Place> findByPublicDataIdIsNotNullAndPetPolicySyncedAtIsNullOrderByCreatedAtDesc(
-            org.springframework.data.domain.Pageable pageable);
+    @org.springframework.data.jpa.repository.Query("""
+            select p from Place p
+            where p.publicDataId is not null and p.petPolicySyncedAt is null
+            order by case when p.category = 'SHOPPING' then 1 else 0 end, p.createdAt desc
+            """)
+    java.util.List<Place> findPendingPetPolicySync(org.springframework.data.domain.Pageable pageable);
 }

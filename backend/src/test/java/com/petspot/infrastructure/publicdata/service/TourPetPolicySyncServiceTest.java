@@ -135,11 +135,11 @@ class TourPetPolicySyncServiceTest {
     @DisplayName("maxCalls가 0 이하이면 아무것도 조회하지 않는다")
     void sync_ZeroCalls() {
         service.syncPendingPolicies(0, 0);
-        verify(placeRepository, never()).findByPublicDataIdIsNotNullAndPetPolicySyncedAtIsNullOrderByCreatedAtDesc(any());
+        verify(placeRepository, never()).findPendingPetPolicySync(any());
     }
 
     private void givenPending(Place... places) {
-        given(placeRepository.findByPublicDataIdIsNotNullAndPetPolicySyncedAtIsNullOrderByCreatedAtDesc(any(Pageable.class)))
+        given(placeRepository.findPendingPetPolicySync(any(Pageable.class)))
                 .willReturn(List.of(places));
         for (Place p : places) {
             org.mockito.Mockito.lenient().when(placeRepository.findById(p.getId())).thenReturn(Optional.of(p));
