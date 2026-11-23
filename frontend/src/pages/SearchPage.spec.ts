@@ -324,7 +324,7 @@ describe('SearchPage', () => {
 
       const thumb = wrapper.find('[data-testid="place-thumbnail"]');
       expect(thumb.find('img').exists()).toBe(false);
-      expect(thumb.find('.ri-image-line').exists()).toBe(true);
+      expect(thumb.find('[data-testid="place-image-placeholder"]').exists()).toBe(true);
     });
 
     it('이미지 로드에 실패하면 깨진 이미지 대신 기본 아이콘으로 바꾼다', async () => {
@@ -336,7 +336,7 @@ describe('SearchPage', () => {
 
       const thumb = wrapper.find('[data-testid="place-thumbnail"]');
       expect(thumb.find('img').exists()).toBe(false);
-      expect(thumb.find('.ri-image-line').exists()).toBe(true);
+      expect(thumb.find('[data-testid="place-image-placeholder"]').exists()).toBe(true);
     });
   });
 
@@ -359,6 +359,9 @@ describe('SearchPage', () => {
       await flushPromises();
 
       expect(wrapper.find('[data-testid="place-thumbnail"] img').attributes('src')).toBe('https://tong.visitkorea.or.kr/small.jpg');
+      // 작은 사진이 깨지면(관광공사 작은 사진 약 3%가 404) 원본으로 다시 시도한다 (TSK-FE-025)
+      await wrapper.find('[data-testid="place-thumbnail"] img').trigger('error');
+      expect(wrapper.find('[data-testid="place-thumbnail"] img').attributes('src')).toBe('https://tong.visitkorea.or.kr/original.jpg');
       expect(wrapper.text()).toContain('관광지');
       expect(wrapper.find('[data-testid="data-source"]').text()).toContain('한국관광공사');
     });

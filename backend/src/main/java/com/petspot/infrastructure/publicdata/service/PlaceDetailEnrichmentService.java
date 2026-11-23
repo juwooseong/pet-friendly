@@ -7,6 +7,7 @@ import com.petspot.infrastructure.publicdata.dto.TourApiDetailCommonDto;
 import com.petspot.infrastructure.publicdata.dto.TourApiImageItemDto;
 import com.petspot.infrastructure.publicdata.exception.PublicDataException;
 import com.petspot.infrastructure.publicdata.mapper.TourApiDetailInfoExtractor;
+import com.petspot.infrastructure.publicdata.mapper.TourApiImageUrls;
 import com.petspot.infrastructure.publicdata.mapper.TourApiOperatingHoursExtractor;
 import com.petspot.infrastructure.publicdata.mapper.TourApiText;
 import lombok.extern.slf4j.Slf4j;
@@ -69,9 +70,16 @@ public class PlaceDetailEnrichmentService {
      * @return TourAPI를 호출해 저장했으면 true
      */
     public boolean enrichIfNeeded(UUID placeId) {
+        return enrich(placeId).saved();
+    }
+
+    /**
+     * {@link #enrichIfNeeded}와 같지만 실패 사유를 돌려준다 - 배치가 일일 한도 초과 등으로 멈출지 판단할 때 쓴다 (TSK-DATA-013).
+     */
+    public EnrichResult enrich(UUID placeId) {
         Optional<Place> found = placeRepository.findById(placeId);
         if (found.isEmpty() || !found.get().needsTourApiDetail()) {
-            return false;
+            return EnrichResult.SKIPPED;
         }
         String contentId = found.get().getPublicDataId();
 
@@ -94,7 +102,7 @@ public class PlaceDetailEnrichmentService {
         } catch (PublicDataException | IllegalArgumentException e) {
             log.warn("[PLACE DETAIL ENRICH] TourAPI 상세 조회 실패 - 다음 조회 때 재시도: placeId={}, contentId={}, reason={}",
                     placeId, contentId, e.getMessage());
-            return false;
+            return EnrichResult.failed(e.getMessage());
         }
 
         String finalDescription = description;
@@ -107,12 +115,25 @@ public class PlaceDetailEnrichmentService {
                             finalGallery, ZonedDateTime.now())));
         } catch (RuntimeException e) {
             log.warn("[PLACE DETAIL ENRICH] 저장 실패 - 다음 조회 때 재시도: placeId={}, reason={}", placeId, e.getMessage());
-            return false;
+            return EnrichResult.failed(e.getMessage());
         }
         log.info("[PLACE DETAIL ENRICH] saved: placeId={}, description={}, operatingHours={}, detailInfo={}, images={}",
                 placeId, finalDescription != null, finalOperatingHours != null,
                 finalDetailInfo == null ? 0 : finalDetailInfo.size(), finalGallery == null ? 0 : finalGallery.size());
-        return true;
+        return new EnrichResult(true, finalGallery != null && !finalGallery.isEmpty(), null);
+    }
+
+    /**
+     * @param saved         TourAPI 상세를 받아 저장했는지
+     * @param hasImages     상세 사진이 1장 이상 있었는지
+     * @param failureReason 실패했으면 사유 (null이면 실패 아님)
+     */
+    public record EnrichResult(boolean saved, boolean hasImages, String failureReason) {
+        static final EnrichResult SKIPPED = new EnrichResult(false, false, null);
+
+        static EnrichResult failed(String reason) {
+            return new EnrichResult(false, false, reason == null ? "unknown" : reason);
+        }
     }
 
     /** 사진 목록을 저장 형태로 바꾼다. http(s) 주소만 남기고 최대 {@value #MAX_GALLERY_IMAGES}장 */
@@ -139,6 +160,6 @@ public class PlaceDetailEnrichmentService {
     }
 
     private static String httpOnly(String url) {
-        return url != null && (url.startsWith("https://") || url.startsWith("http://")) ? url.trim() : null;
+        return TourApiImageUrls.normalize(url);
     }
 }

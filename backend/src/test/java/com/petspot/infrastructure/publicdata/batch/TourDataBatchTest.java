@@ -7,6 +7,7 @@ import com.petspot.infrastructure.publicdata.dto.TourApiResponseDto;
 import com.petspot.infrastructure.publicdata.mapper.TourApiPlaceMapper;
 import com.petspot.infrastructure.publicdata.service.TourDataCollectorService;
 import com.petspot.infrastructure.publicdata.service.TourPetPolicySyncService;
+import com.petspot.infrastructure.publicdata.service.TourPlaceImageBackfillService;
 import com.petspot.infrastructure.publicdata.service.TourPlaceSyncService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -45,13 +46,16 @@ class TourDataBatchTest {
     @Mock
     private TourPetPolicySyncService tourPetPolicySyncService;
 
+    @Mock
+    private TourPlaceImageBackfillService tourPlaceImageBackfillService;
+
     private TourDataCollectorService tourDataCollectorService;
     private TourDataBatch tourDataBatch;
 
     @BeforeEach
     void setUp() {
         tourDataCollectorService = new TourDataCollectorService(tourApiClient, tourApiPlaceMapper, placeRepository);
-        tourDataBatch = new TourDataBatch(tourPlaceSyncService, tourPetPolicySyncService);
+        tourDataBatch = new TourDataBatch(tourPlaceSyncService, tourPetPolicySyncService, tourPlaceImageBackfillService);
     }
 
     @Test
@@ -105,6 +109,7 @@ class TourDataBatchTest {
 
         verify(tourPlaceSyncService).syncChanges(any(LocalDate.class), isNull());
         verify(tourPetPolicySyncService).syncPendingPolicies(800, 100L);
+        verify(tourPlaceImageBackfillService).backfill(100, 100L); // TSK-DATA-013 사진 보강
     }
 
     @Test
@@ -126,7 +131,7 @@ class TourDataBatchTest {
         TourDataBatch.BatchResult result = tourDataBatch.runOnce();
 
         assertThat(result.placeSync().quotaExceeded()).isTrue();
-        verifyNoInteractions(tourPetPolicySyncService);
+        verifyNoInteractions(tourPetPolicySyncService, tourPlaceImageBackfillService);
     }
 
     @Test

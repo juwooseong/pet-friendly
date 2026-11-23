@@ -2,7 +2,8 @@
 import { ref, computed, onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import { formatRating } from '@/utils/rating';
-import { TOUR_API_SOURCE, imageFitClass } from '@/utils/publicData';
+import { TOUR_API_SOURCE } from '@/utils/publicData';
+import PlaceImage from '@/components/common/PlaceImage.vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import { usePetStore } from '@/stores/petStore';
@@ -35,12 +36,6 @@ const {
   loading,
   errorMessage,
 } = storeToRefs(placeStore);
-
-/** 이미지 로드에 실패한 장소 ID - 깨진 이미지 대신 기본 아이콘을 보여준다 */
-const failedImageIds = ref<Set<string>>(new Set());
-const markImageFailed = (placeId: string) => {
-  failedImageIds.value = new Set(failedImageIds.value).add(placeId);
-};
 
 /**
  * 크기 필터 결과에서 이 장소의 크기 조건이 확인되지 않았는지(allowedSizes 없음).
@@ -258,17 +253,14 @@ onMounted(async () => {
             class="w-24 h-24 shrink-0 rounded-xl sm:w-auto sm:h-36 sm:-mx-5 sm:-mt-5 sm:mb-3 sm:rounded-none sm:rounded-t-2xl bg-stone-100 overflow-hidden"
             data-testid="place-thumbnail"
           >
-            <img
-              v-if="(place.thumbnailUrl || place.imageUrl) && !failedImageIds.has(place.id)"
-              :src="place.thumbnailUrl || place.imageUrl || ''"
+            <PlaceImage
+              :thumbnail-url="place.thumbnailUrl"
+              :image-url="place.imageUrl"
               :alt="place.name"
-              loading="lazy"
-              :class="['w-full h-full', imageFitClass(place.imageCopyrightType)]"
-              @error="markImageFailed(place.id)"
+              :category="place.category"
+              :copyright-type="place.imageCopyrightType"
+              icon-class="text-2xl sm:text-3xl"
             />
-            <div v-else class="w-full h-full flex items-center justify-center text-stone-300">
-              <i class="ri-image-line text-3xl"></i>
-            </div>
           </div>
           <div class="min-w-0 flex-1">
           <span v-if="place.categoryName" class="text-[11px] font-bold text-amber-700">{{ place.categoryName }}</span>

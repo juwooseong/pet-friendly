@@ -279,8 +279,22 @@ public class Place {
         }
         if (galleryImages != null && !galleryImages.isEmpty()) {
             this.galleryImages = galleryImages;
+            useFirstGalleryImageAsCoverIfMissing();
         }
         this.detailSyncedAt = syncedAt;
+    }
+
+    /**
+     * 목록 응답에 대표 사진이 없는 장소(숙박 78%, 음식점·카페 44%)는 상세 사진 첫 장을 대표 사진으로 쓴다 (TSK-DATA-013).
+     */
+    private void useFirstGalleryImageAsCoverIfMissing() {
+        if (imageUrl != null && !imageUrl.isBlank()) {
+            return;
+        }
+        Map<String, String> first = galleryImages.get(0);
+        this.imageUrl = first.get("url");
+        this.thumbnailUrl = first.get("thumbnailUrl");
+        this.imageCopyrightType = first.get("copyrightType");
     }
 
     /**
@@ -296,8 +310,13 @@ public class Place {
             this.categoryName = categoryName;
         }
         this.contentTypeId = contentTypeId;
-        this.thumbnailUrl = thumbnailUrl;
-        this.imageCopyrightType = imageCopyrightType;
+        // 목록에 사진이 없으면(null) 상세 사진에서 채운 대표 사진 정보를 지우지 않는다 (TSK-DATA-013)
+        if (thumbnailUrl != null) {
+            this.thumbnailUrl = thumbnailUrl;
+        }
+        if (imageCopyrightType != null) {
+            this.imageCopyrightType = imageCopyrightType;
+        }
     }
 
     /**

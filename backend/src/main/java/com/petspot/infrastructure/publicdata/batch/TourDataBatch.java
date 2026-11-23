@@ -1,6 +1,7 @@
 package com.petspot.infrastructure.publicdata.batch;
 
 import com.petspot.infrastructure.publicdata.service.TourPetPolicySyncService;
+import com.petspot.infrastructure.publicdata.service.TourPlaceImageBackfillService;
 import com.petspot.infrastructure.publicdata.service.TourPlaceSyncService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,8 @@ import java.time.format.DateTimeFormatter;
  *       ({@code areaBasedList2}, 약 97회)을 다시 받았고 TourAPI가 숨긴 장소도 알 수 없었다.</li>
  *   <li><b>반려동물 정책</b> ({@code detailPetTour2}, {@link TourPetPolicySyncService}): 아직 조회하지 않았거나 장소 정보가
  *       바뀐 장소부터 최대 {@code pet-policy-max-calls}건을 조회·반영한다. 일일 트래픽 한도 안에서 여러 날에 나눠 채운다.</li>
+ *   <li><b>사진 보강</b> ({@link TourPlaceImageBackfillService}, TSK-DATA-013): 대표 사진이 없는 장소의 상세를 최대
+ *       {@code image-backfill-max-places}곳 미리 받아, 상세 사진 첫 장을 대표 사진으로 쓴다.</li>
  * </ol>
  *
  * <p>실행 방법: (1) {@code public-data.batch.enabled=true}이면 {@code cron} 일정에 따라 실행, (2) 지금 한 번만 실행하려면
@@ -36,6 +39,11 @@ public class TourDataBatch {
 
     private final TourPlaceSyncService tourPlaceSyncService;
     private final TourPetPolicySyncService tourPetPolicySyncService;
+    private final TourPlaceImageBackfillService tourPlaceImageBackfillService;
+
+    /** 한 번 실행에서 상세를 미리 받아 사진을 채울 최대 장소 수 (장소당 상세 API 2~3회, TSK-DATA-013) */
+    @Value("${public-data.batch.image-backfill-max-places:100}")
+    private int imageBackfillMaxPlaces = 100;
 
     @Value("${public-data.batch.enabled:false}")
     private boolean batchEnabled = false; // 설정 누락 시에도 자동 수집이 돌지 않도록 안전한 기본값(비활성)
@@ -86,14 +94,19 @@ public class TourDataBatch {
         TourPetPolicySyncService.SyncResult policyResult = placeResult.quotaExceeded()
                 ? new TourPetPolicySyncService.SyncResult(0, 0, 0, 0, "건너뜀: 장소 동기화에서 일일 호출 한도 초과")
                 : tourPetPolicySyncService.syncPendingPolicies(petPolicyMaxCalls, petPolicyCallDelayMs);
+        // 사진 보강은 상세 API(detailCommon2/detailIntro2/detailImage2)를 써서 정책 조회(detailPetTour2) 한도와 별개다
+        TourPlaceImageBackfillService.BackfillResult imageResult = placeResult.quotaExceeded()
+                ? new TourPlaceImageBackfillService.BackfillResult(0, 0, 0, 0, "건너뜀: 장소 동기화에서 일일 호출 한도 초과")
+                : tourPlaceImageBackfillService.backfill(imageBackfillMaxPlaces, petPolicyCallDelayMs);
 
         long elapsed = System.currentTimeMillis() - startTime;
         log.info("==================================================");
         log.info("[BATCH END] place sync: {}", placeResult);
         log.info("[BATCH END] pet policy: {}", policyResult);
+        log.info("[BATCH END] image backfill: {}", imageResult);
         log.info("[BATCH END] elapsed={} ms", elapsed);
         log.info("==================================================");
-        return new BatchResult(placeResult, policyResult);
+        return new BatchResult(placeResult, policyResult, imageResult);
     }
 
     private LocalDate parseSyncSince() {
@@ -103,6 +116,7 @@ public class TourDataBatch {
         return LocalDate.parse(syncSince.trim(), DateTimeFormatter.BASIC_ISO_DATE);
     }
 
-    public record BatchResult(TourPlaceSyncService.SyncResult placeSync, TourPetPolicySyncService.SyncResult petPolicy) {
+    public record BatchResult(TourPlaceSyncService.SyncResult placeSync, TourPetPolicySyncService.SyncResult petPolicy,
+                              TourPlaceImageBackfillService.BackfillResult imageBackfill) {
     }
 }

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { formatRating } from '@/utils/rating';
-import { imageFitClass } from '@/utils/publicData';
+import PlaceImage from '@/components/common/PlaceImage.vue';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { extractErrorMessage } from '@/api/apiClient';
@@ -89,16 +89,13 @@ onMounted(async () => {
           @click="goToPlaceDetail(fav.placeId)"
         >
           <div class="h-36 -mx-5 -mt-5 mb-3 bg-stone-100 rounded-t-2xl overflow-hidden">
-            <img
-              v-if="fav.imageUrl"
-              :src="fav.imageUrl"
+            <PlaceImage
+              :image-url="fav.imageUrl"
+              :prefer-thumbnail="false"
               :alt="fav.placeName"
-              :class="['w-full h-full', imageFitClass(fav.imageCopyrightType)]"
-              @error="($event.target as HTMLImageElement).style.display = 'none'"
+              :category="fav.category"
+              :copyright-type="fav.imageCopyrightType"
             />
-            <div v-else class="w-full h-full flex items-center justify-center text-stone-300">
-              <i class="ri-image-line text-3xl"></i>
-            </div>
           </div>
 
           <span class="bg-amber-100 text-amber-700 text-xs font-bold px-2.5 py-1 rounded-lg">
