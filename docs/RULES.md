@@ -24,10 +24,15 @@
   }>();
   </script>
   ```
-- **State Management (Pinia Typed Stores)**:
-  - `useAuthStore`: `User` 세션 및 JWT 관리
-  - `usePetStore`: `Pet[]` 펫 목록 CRUD 및 `activePetId` 상태 관리
-  - `usePlaceStore`: `PlaceFilter`, `Place[]` 리스트 및 장소 캐시
+- **State Management (Pinia Typed Stores, TSK-FE-015)**:
+  - `useAuthStore`: 로그인 사용자(`User`)·JWT·강제 비밀번호 변경 상태. `logout()`은 개인 데이터가 든 스토어를 모두 `$reset()`한다 — **개인 데이터 스토어를 새로 만들면 여기에 추가**한다.
+  - `usePetStore`: 내 반려동물 목록과 조회·등록·수정·삭제·대표 지정 액션. 대표 반려동물은 서버의 `representative` 값을 따른다(`representativePet` getter).
+  - `usePlaceStore`: 장소 탐색 화면의 검색 조건·결과·페이지. 상세에서 뒤로 돌아오면 유지, 메뉴로 새로 들어오면 화면이 `$reset()`.
+  - `useFavoriteStore`: 내 즐겨찾기 목록과 장소별 즐겨찾기 여부, 추가·해제 액션.
+- **데이터 조회 위치**:
+  - **여러 화면이 함께 쓰거나 화면을 떠나도 남아야 하는 데이터**는 스토어 액션으로 조회·변경한다. 화면은 `apiClient`를 직접 부르지 않고, 상태는 `storeToRefs`로 연결한다.
+  - **한 화면에서만 쓰는 데이터**(지도 검색, 홈, 마이페이지 요약, 내 리뷰, 장소 상세 본문·리뷰)와 **결과를 저장하지 않는 일회성 요청**(로그인, 회원가입, 아이디·비밀번호 찾기, 중복 확인)은 화면에서 `apiClient`를 직접 호출해도 된다. 두 번째 화면이 같은 데이터를 쓰게 되면 그때 스토어로 옮긴다.
+  - 스토어 액션은 실패하면 예외를 그대로 던지고, 사용자에게 보일 오류 문구는 화면이 정한다(`extractErrorMessage`). 이미 받은 데이터를 재사용하는 액션은 `ensureXxx`로 이름 짓고, 최신 값이 필요한 관리 화면은 `fetchXxx`로 매번 새로 받는다.
 
 ---
 
