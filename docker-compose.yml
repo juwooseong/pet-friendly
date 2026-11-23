@@ -6,7 +6,7 @@
 #         Kakao 콘솔 Web 플랫폼 사이트 도메인: http://localtest.me (Docker), http://localtest.me:3000 (Vite 개발 서버)
 # 비밀값은 루트 .env(gitignore 대상)에서 읽는다. 항목은 .env.example 참고.
 #
-# petspot-db(호스트 5433)는 로컬 개발(bootRun)·백엔드 테스트(gradle test)도 함께 쓴다(2026-11-20 Windows PostgreSQL 제거 후 통일).
+# petspot-db(호스트 5433)는 로컬 개발(bootRun, petspot_db)과 백엔드 테스트(gradle test, petspot_test - TSK-QA-003)도 함께 쓴다.
 # 백엔드 API는 로컬 bootRun(8080)과 겹치지 않도록 호스트 8081로 노출한다.
 
 services:

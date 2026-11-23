@@ -56,7 +56,7 @@ class TourPetPolicyIngestionIntegrationTest {
         TourApiResponseDto list = readFixture("tourapi/success-area-based-list2-real-2026-09-09.json", TourApiResponseDto.class);
         List<TourApiPlaceItemDto> items = list.getResponse().getBody().getItemList();
         String contentId = items.get(0).getContentId();
-        // 개발 DB에 실제 적재된 같은 장소가 있으면 테스트 트랜잭션 안에서 지운다(롤백되어 실제 데이터는 유지)
+        // 테스트 DB에 같은 장소가 남아 있으면 테스트 트랜잭션 안에서 지운다(롤백됨)
         placeRepository.findByPublicDataId(contentId).ifPresent(placeRepository::delete);
         entityManager.flush();
         given(tourApiClient.fetchPetTourDetail(contentId)).willReturn(Optional.of(TourApiPetTourItemDto.builder()
@@ -67,7 +67,7 @@ class TourPetPolicyIngestionIntegrationTest {
                 .etcInfo("내부 실내 시설 입장 불가 / 야외 좌석 착석은 가능")
                 .build()));
 
-        // when: 목록 저장 → 정책 동기화 1건. 개발 DB의 다른 미조회 장소는 대상에서 빼 둔다(롤백됨)
+        // when: 목록 저장 → 정책 동기화 1건. 테스트 DB에 다른 미조회 장소가 있으면 대상에서 빼 둔다(롤백됨)
         collectorService.saveCollectedPlaces(items);
         entityManager.flush();
         hidePendingPlacesExcept(List.of(contentId));
@@ -127,7 +127,7 @@ class TourPetPolicyIngestionIntegrationTest {
         entityManager.flush(); // 등록 시각이 저장 순서대로 매겨지도록 하나씩 반영
     }
 
-    /** 개발 DB를 함께 쓰므로(TSK-QA-003) 지정한 장소 외의 미조회 장소를 이 트랜잭션 안에서만 조회 완료로 표시한다. */
+    /** 다른 테스트가 남긴 장소에 영향받지 않도록, 지정한 장소 외의 미조회 장소를 이 트랜잭션 안에서만 조회 완료로 표시한다. */
     private void hidePendingPlacesExcept(List<String> contentIds) {
         entityManager.createQuery("""
                         update Place p set p.petPolicySyncedAt = :now

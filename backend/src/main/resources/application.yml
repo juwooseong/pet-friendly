@@ -7,7 +7,8 @@ spring:
   application:
     name: petspot-backend
 
-  # 개발/테스트 DB = Docker의 petspot-db (호스트 포트 5433). 2026-11-20 Windows PostgreSQL 제거 후 통일.
+  # 개발 DB = Docker의 petspot-db (호스트 포트 5433)의 petspot_db. 2026-11-20 Windows PostgreSQL 제거 후 통일.
+  # 테스트는 같은 컨테이너의 petspot_test를 쓴다(src/test/resources/config/application.yml, TSK-QA-003).
   # 비밀번호는 루트 .env의 DB_PASSWORD를 쓴다(gradle test/bootRun이 .env를 환경변수로 넣어 준다 - build.gradle 참고).
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:${DB_PORT:5433}/petspot_db}

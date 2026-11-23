@@ -19,8 +19,14 @@ export default defineConfig({
     allowedHosts: ['localtest.me'],
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
-        changeOrigin: true
+        // E2E(TSK-QA-002)는 별도 포트의 백엔드로 보내기 위해 환경변수로 바꿀 수 있다.
+        target: process.env.VITE_API_PROXY_TARGET ?? 'http://localhost:8080',
+        changeOrigin: true,
+        // E2E 서버(포트 3100)는 백엔드 CORS 허용 목록에 없다. 프록시를 거치는 요청은 브라우저 입장에서 같은 출처이므로
+        // E2E일 때만 Origin 헤더를 지워 CORS 검사를 받지 않게 한다(백엔드 CORS 설정은 그대로).
+        configure: process.env.VITE_API_PROXY_TARGET
+          ? (proxy) => proxy.on('proxyReq', (proxyReq) => proxyReq.removeHeader('origin'))
+          : undefined
       }
     }
   },

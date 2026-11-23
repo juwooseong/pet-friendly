@@ -1,0 +1,8 @@
+# 테스트 전용 설정 (TSK-QA-003). 테스트 클래스패스에만 있으며, classpath:/config/ 위치라
+# main의 application.yml 위에 덮어써진다(나머지 설정은 그대로 상속).
+# IDE에서 테스트를 직접 실행해도 동일하게 적용된다.
+spring:
+  datasource:
+    # 실제 데이터가 있는 petspot_db가 아니라 같은 petspot-db 컨테이너의 petspot_test를 쓴다.
+    # 테스트 DB를 따로 두려면 TEST_DB_URL 환경변수로 지정한다(예: CI의 PostgreSQL 서비스).
+    url: ${TEST_DB_URL:jdbc:postgresql://localhost:${DB_PORT:5433}/petspot_test}

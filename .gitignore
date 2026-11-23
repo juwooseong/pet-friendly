@@ -6,6 +6,8 @@ frontend/dist/
 frontend/dist-ssr/
 frontend/*.local
 frontend/.vite/
+frontend/playwright-report/
+frontend/test-results/
 
 # Java & Gradle Build Artifacts
 backend/.gradle/
