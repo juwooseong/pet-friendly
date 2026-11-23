@@ -249,7 +249,7 @@ const handleSignup = async () => {
 
     <div class="text-center text-xs text-stone-500 pt-2 border-t border-stone-100">
       이미 계정이 있으신가요?
-      <router-link to="/login" class="text-amber-600 font-bold hover:underline">로그인하기</router-link>
+      <router-link to="/login" class="inline-block py-2 text-amber-600 font-bold hover:underline">로그인하기</router-link>
     </div>
   </div>
 </template>

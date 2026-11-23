@@ -16,7 +16,7 @@
     </div>
 
     <div class="mt-6 text-xs text-stone-400">
-      <router-link to="/" class="hover:underline">← 메인 홈으로 돌아가기</router-link>
+      <router-link to="/" class="inline-block py-2 hover:underline">← 메인 홈으로 돌아가기</router-link>
     </div>
   </div>
 </template>

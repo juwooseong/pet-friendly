@@ -65,9 +65,9 @@ const handleFindPassword = async () => {
     </form>
 
     <div class="text-center text-xs text-stone-500 pt-2 border-t border-stone-100 flex justify-center gap-4">
-      <router-link to="/login" class="text-amber-600 font-bold hover:underline">로그인으로 돌아가기</router-link>
+      <router-link to="/login" class="inline-block py-2 text-amber-600 font-bold hover:underline">로그인으로 돌아가기</router-link>
       <span class="text-stone-300">|</span>
-      <router-link to="/find-id" class="text-amber-600 font-bold hover:underline">아이디 찾기</router-link>
+      <router-link to="/find-id" class="inline-block py-2 text-amber-600 font-bold hover:underline">아이디 찾기</router-link>
     </div>
   </div>
 </template>

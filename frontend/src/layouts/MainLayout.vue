@@ -31,7 +31,8 @@ const tabs = [
     <header class="bg-white border-b border-stone-200 sticky top-0 z-40 shadow-sm">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <!-- Logo -->
-        <router-link to="/" class="flex items-center gap-2 text-amber-500 font-extrabold text-2xl">
+        <!-- 헤더 항목은 줄바꿈하지 않는다 - 좁은 화면(320px)에서 "PetSpo/t", "로그/인"처럼 끊기던 문제 (TSK-FE-024) -->
+        <router-link to="/" class="flex items-center gap-1.5 sm:gap-2 py-2 shrink-0 whitespace-nowrap text-amber-500 font-extrabold text-xl sm:text-2xl">
           <i class="ri-footprint-fill"></i>
           <span>PetSpot</span>
         </router-link>
@@ -47,7 +48,7 @@ const tabs = [
         </nav>
 
         <!-- Right User Actions -->
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 sm:gap-3 shrink-0 whitespace-nowrap">
           <template v-if="authStore.isAuthenticated">
             <span class="text-sm font-semibold text-stone-700 hidden sm:inline">
               {{ authStore.userNickname }}님
@@ -62,13 +63,13 @@ const tabs = [
           <template v-else>
             <router-link
               to="/login"
-              class="px-4 py-1.5 text-sm font-semibold text-amber-500 border border-amber-500 hover:bg-amber-50 rounded-lg transition"
+              class="px-3 sm:px-4 py-2 sm:py-1.5 text-sm font-semibold text-amber-500 border border-amber-500 hover:bg-amber-50 rounded-lg transition"
             >
               로그인
             </router-link>
             <router-link
               to="/signup"
-              class="px-4 py-1.5 text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded-lg shadow-sm transition"
+              class="px-3 sm:px-4 py-2 sm:py-1.5 text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded-lg shadow-sm transition"
             >
               회원가입
             </router-link>

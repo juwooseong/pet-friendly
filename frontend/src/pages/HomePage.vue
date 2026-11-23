@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue';
 import { formatRating } from '@/utils/rating';
 import { imageFitClass } from '@/utils/publicData';
-import apiClient from '@/api/apiClient';
+import apiClient, { extractErrorMessage } from '@/api/apiClient';
 import BaseCard from '@/components/common/BaseCard.vue';
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue';
 import ErrorMessage from '@/components/common/ErrorMessage.vue';
@@ -36,7 +36,7 @@ const fetchBackendData = async () => {
     }
   } catch (err: any) {
     console.error('Backend connection test error:', err);
-    errorMessage.value = '백엔드 서버 연동 중 오류가 발생했습니다: ' + (err.message || '연동 실패');
+    errorMessage.value = extractErrorMessage(err, '추천 장소를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
   } finally {
     loading.value = false;
   }
@@ -50,16 +50,16 @@ onMounted(() => {
 <template>
   <div class="space-y-8">
     <!-- Hero Banner -->
-    <div class="bg-gradient-to-r from-amber-500 to-amber-600 rounded-3xl p-8 text-white shadow-lg flex flex-col md:flex-row items-center justify-between gap-6">
+    <div class="bg-gradient-to-r from-amber-500 to-amber-600 rounded-3xl p-6 sm:p-8 text-white shadow-lg flex flex-col md:flex-row items-center justify-between gap-6">
       <div class="space-y-3 max-w-xl">
         <span class="inline-block bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full">
           🐾 댕냥이 전용 안심 지도
         </span>
-        <h1 class="text-3xl sm:text-4xl font-extrabold leading-tight">
-          내 반려견 체중에 딱 맞는<br />동반 장소를 탐색해보세요!
+        <h1 class="text-2xl sm:text-4xl font-extrabold leading-tight">
+          우리 아이와 함께 갈 수 있는<br />동반 장소를 찾아보세요!
         </h1>
         <p class="text-amber-100 text-sm">
-          공공데이터 기반 실시간 장소 정보와 펫 수칙 맞춤 평가(PASS/WARN/DENY)를 제공합니다.
+          한국관광공사 공공데이터로 전국의 반려동물 동반 장소와 우리 아이 크기에 맞는 동반 조건을 알려드려요.
         </p>
         <div class="pt-2">
           <router-link
@@ -76,19 +76,19 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Backend Connection Test & Place Grid -->
+    <!-- 추천 동반 장소 -->
     <div class="space-y-4">
       <div class="flex items-center justify-between">
         <h2 class="text-xl font-bold text-stone-800 flex items-center gap-2">
           <i class="ri-sparkles-line text-amber-500"></i>
-          <span>추천 동반 장소 (Spring Boot API 연동)</span>
+          <span>추천 동반 장소</span>
         </h2>
-        <button @click="fetchBackendData" class="shrink-0 whitespace-nowrap text-xs font-medium text-amber-600 hover:underline">
+        <button @click="fetchBackendData" class="shrink-0 whitespace-nowrap px-2 py-3 -my-2 text-xs font-medium text-amber-600 hover:underline">
           새로고침
         </button>
       </div>
 
-      <LoadingSpinner v-if="loading" text="백엔드 API에서 장소 데이터를 불러오는 중입니다..." />
+      <LoadingSpinner v-if="loading" text="추천 장소를 불러오는 중입니다..." />
 
       <ErrorMessage v-else-if="errorMessage" :message="errorMessage" />
 
