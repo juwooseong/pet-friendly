@@ -1,5 +1,6 @@
 package com.petspot.infrastructure.publicdata.client;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.petspot.infrastructure.publicdata.dto.TourApiDetailCommonDto;
@@ -52,6 +53,13 @@ public class TourApiClient {
     /** 장소 기본정보 목록 조회 오퍼레이션 */
     private static final String LIST_OPERATION_PATH = "/areaBasedList2";
 
+    /**
+     * 장소 동기화 목록 오퍼레이션 (TSK-DATA-012). areaBasedList2와 같은 필드 + {@code showflag}(1 노출/0 숨김).
+     * {@code modifiedtime}은 수정 시각 <b>앞자리 일치</b> 조건이다(실제 확인 2026-11-23: "202611" → 11월 수정 577건,
+     * "20261101" → 그날 수정분). 조건 없이 부르면 숨긴 장소까지 전체(10,095건 = 노출 9,632 + 숨김 463)를 준다.
+     */
+    private static final String SYNC_LIST_OPERATION_PATH = "/petTourSyncList2";
+
     /** 장소별 반려동물 동반 정책 조회 오퍼레이션 (contentId 필수, 목록 조회 불가) */
     private static final String PET_TOUR_DETAIL_OPERATION_PATH = "/detailPetTour2";
 
@@ -65,7 +73,10 @@ public class TourApiClient {
     private static final String DETAIL_IMAGE_OPERATION_PATH = "/detailImage2";
 
     private final RestClient restClient;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    // 결과가 없으면 TourAPI는 items를 객체 대신 빈 문자열("")로 보낸다 - 목록 DTO에서는 null(빈 목록)로 받는다
+    // (2026-11-23 실제 관찰: petTourSyncList2 modifiedtime=20261122, TSK-DATA-012)
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true);
 
     @Value("${public-data.tour-api.service-key:test-service-key}")
     private String serviceKey;
@@ -109,6 +120,31 @@ public class TourApiClient {
      */
     public TourApiResponseDto fetchPetPlaces(int numOfRows, int pageNo, String contentTypeId) {
         URI targetUri = buildListUri(numOfRows, pageNo, contentTypeId);
+        log.info("Requesting TourAPI via RestClient: {}", maskServiceKey(targetUri));
+
+        String rawBody = fetchRaw(targetUri);
+        TourApiResponseDto responseDto = parseSuccessBody(rawBody);
+        validateResponse(responseDto, rawBody);
+        return responseDto;
+    }
+
+    /**
+     * 수정된 장소 목록을 조회한다 ({@code petTourSyncList2}, TSK-DATA-012).
+     *
+     * @param modifiedTimePrefix 수정 시각 앞자리(yyyyMMdd 또는 yyyyMM). null이면 전체(숨긴 장소 포함)
+     */
+    public TourApiResponseDto fetchPetPlaceChanges(int numOfRows, int pageNo, String modifiedTimePrefix) {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUrl + SYNC_LIST_OPERATION_PATH)
+                .queryParam("serviceKey", encodedServiceKey())
+                .queryParam("numOfRows", numOfRows)
+                .queryParam("pageNo", pageNo)
+                .queryParam("MobileOS", mobileOs)
+                .queryParam("MobileApp", mobileApp)
+                .queryParam("_type", "json");
+        if (modifiedTimePrefix != null && !modifiedTimePrefix.isBlank()) {
+            builder.queryParam("modifiedtime", modifiedTimePrefix);
+        }
+        URI targetUri = builder.build(true).toUri();
         log.info("Requesting TourAPI via RestClient: {}", maskServiceKey(targetUri));
 
         String rawBody = fetchRaw(targetUri);

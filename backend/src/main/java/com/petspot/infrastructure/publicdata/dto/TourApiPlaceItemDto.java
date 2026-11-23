@@ -7,6 +7,12 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+
 /**
  * 한국관광공사 TourAPI(KorPetTourService2) 반려동물 동반 장소 항목 개별 DTO
  *
@@ -105,6 +111,33 @@ public class TourApiPlaceItemDto {
 
     @JsonProperty("modifiedtime")
     private String modifiedTime;
+
+    /**
+     * 노출 여부 ({@code petTourSyncList2}에만 있음, TSK-DATA-012). "1" 노출, "0" 숨김(서비스 중단·중복 정리 등).
+     * {@code areaBasedList2}는 노출 장소만 주므로 이 값이 없다.
+     */
+    @JsonProperty("showflag")
+    private String showFlag;
+
+    /** TourAPI가 숨긴 장소인지 (showflag=0) */
+    public boolean isHidden() {
+        return "0".equals(showFlag);
+    }
+
+    /** modifiedtime(yyyyMMddHHmmss, 한국 시간)을 시각으로. 형식이 다르면 null */
+    public ZonedDateTime getModifiedAt() {
+        if (modifiedTime == null || modifiedTime.isBlank()) {
+            return null;
+        }
+        try {
+            return LocalDateTime.parse(modifiedTime.trim(), MODIFIED_TIME_FORMAT).atZone(KOREA);
+        } catch (DateTimeParseException e) {
+            return null;
+        }
+    }
+
+    private static final DateTimeFormatter MODIFIED_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+    private static final ZoneId KOREA = ZoneId.of("Asia/Seoul");
 
     // 반려동물 동반 정책 필드는 이 목록 응답(areaBasedList2)에 없다. 장소별 detailPetTour2 응답으로
     // 별도 조회한다 - TourApiPetTourItemDto 참조 (TSK-DATA-007/009, ADR-009).

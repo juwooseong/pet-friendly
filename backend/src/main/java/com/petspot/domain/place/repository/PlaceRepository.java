@@ -25,19 +25,22 @@ public interface PlaceRepository extends JpaRepository<Place, UUID>, PlaceReposi
 
     /**
      * 홈 대시보드 인기 장소 (평점 → 리뷰 수 → 최근 등록 순). 쇼핑은 다른 장소 뒤로 (TSK-FE-022, 검색의 TSK-FE-020과 같은 규칙).
+     * TourAPI가 숨긴 장소는 제외 (TSK-DATA-012).
      */
     @org.springframework.data.jpa.repository.Query("""
             select p from Place p
+            where p.hiddenAt is null
             order by case when p.category = 'SHOPPING' then 1 else 0 end,
                      p.rating desc, p.reviewCount desc, p.createdAt desc, p.id
             """)
     java.util.List<Place> findPopularPlaces(org.springframework.data.domain.Pageable pageable);
 
     /**
-     * 홈 대시보드 최근 등록 장소. 쇼핑은 다른 장소 뒤로 (TSK-FE-022).
+     * 홈 대시보드 최근 등록 장소. 쇼핑은 다른 장소 뒤로 (TSK-FE-022). 숨긴 장소 제외 (TSK-DATA-012).
      */
     @org.springframework.data.jpa.repository.Query("""
             select p from Place p
+            where p.hiddenAt is null
             order by case when p.category = 'SHOPPING' then 1 else 0 end, p.createdAt desc, p.id
             """)
     java.util.List<Place> findRecentPlaces(org.springframework.data.domain.Pageable pageable);
@@ -51,7 +54,7 @@ public interface PlaceRepository extends JpaRepository<Place, UUID>, PlaceReposi
      */
     @org.springframework.data.jpa.repository.Query("""
             select p from Place p
-            where p.publicDataId is not null and p.petPolicySyncedAt is null
+            where p.publicDataId is not null and p.petPolicySyncedAt is null and p.hiddenAt is null
             order by case when p.category = 'SHOPPING' then 1 else 0 end, p.createdAt desc
             """)
     java.util.List<Place> findPendingPetPolicySync(org.springframework.data.domain.Pageable pageable);

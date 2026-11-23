@@ -155,6 +155,14 @@ public class Place {
     @Column(name = "gallery_images", columnDefinition = "jsonb")
     private List<Map<String, String>> galleryImages;
 
+    /** TourAPI가 숨긴(showflag=0) 시각. 값이 있으면 검색·지도·홈에서 제외한다 (TSK-DATA-012) */
+    @Column(name = "hidden_at")
+    private ZonedDateTime hiddenAt;
+
+    /** TourAPI 장소 정보 수정 시각(modifiedtime). 바뀐 장소만 정책·상세를 다시 조회하는 기준 (TSK-DATA-012) */
+    @Column(name = "public_data_modified_at")
+    private ZonedDateTime publicDataModifiedAt;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private ZonedDateTime createdAt;
@@ -290,6 +298,39 @@ public class Place {
         this.contentTypeId = contentTypeId;
         this.thumbnailUrl = thumbnailUrl;
         this.imageCopyrightType = imageCopyrightType;
+    }
+
+    /**
+     * TourAPI 증분 동기화에서 이 장소의 수정 시각을 받았을 때 호출한다 (TSK-DATA-012).
+     * <p>처음 보는 수정 시각이면 정책·상세를 다시 조회하도록 조회 시각을 비운다(정책 배치와 상세 화면이 다시 가져감).
+     * 관리자가 검증한 정책은 재조회해도 덮어쓰지 않는다({@link #applyTourApiPetPolicy}). 숨겨져 있었다면 다시 노출한다.
+     *
+     * <p>수정 시각을 저장한 적이 없는 장소(증분 동기화 도입 전 적재분)는 우리 DB에 등록된 시각과 비교한다 -
+     * 적재 이후에 TourAPI에서 수정됐으면 바뀐 것으로 본다.
+     *
+     * @param modifiedAt TourAPI modifiedtime
+     * @return 정보가 바뀌어 재조회 대상으로 만들었으면 true
+     */
+    public boolean applyPublicDataModified(ZonedDateTime modifiedAt) {
+        this.hiddenAt = null;
+        if (modifiedAt == null) {
+            return false;
+        }
+        ZonedDateTime known = publicDataModifiedAt != null ? publicDataModifiedAt : createdAt;
+        this.publicDataModifiedAt = modifiedAt;
+        boolean changed = known == null || modifiedAt.isAfter(known);
+        if (changed) {
+            this.petPolicySyncedAt = null;
+            this.detailSyncedAt = null;
+        }
+        return changed;
+    }
+
+    /** TourAPI가 이 장소를 숨겼음(showflag=0)을 기록한다. 이미 숨겨져 있으면 처음 시각을 유지한다 (TSK-DATA-012) */
+    public void hideFromPublicData(ZonedDateTime now) {
+        if (this.hiddenAt == null) {
+            this.hiddenAt = now;
+        }
     }
 
     /** 상세 정보를 TourAPI에서 가져와야 하는지 (공공데이터 장소이고 아직 조회 전) */

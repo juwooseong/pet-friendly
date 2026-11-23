@@ -1,0 +1,73 @@
+{
+    "response":  {
+                     "header":  {
+                                    "resultCode":  "0000",
+                                    "resultMsg":  "OK"
+                                },
+                     "body":  {
+                                  "items":  {
+                                                "item":  [
+                                                             {
+                                                                 "addr1":  "경상남도 밀양시 산내면",
+                                                                 "addr2":  "",
+                                                                 "areacode":  "",
+                                                                 "cat1":  "",
+                                                                 "cat2":  "",
+                                                                 "cat3":  "",
+                                                                 "contentid":  "126027",
+                                                                 "contenttypeid":  "12",
+                                                                 "createdtime":  "20031028090000",
+                                                                 "firstimage":  "https://tong.visitkorea.or.kr/cms/resource/38/3573038_image2_1.jpg",
+                                                                 "firstimage2":  "https://tong.visitkorea.or.kr/cms/resource/38/3573038_image3_1.jpg",
+                                                                 "cpyrhtDivCd":  "Type3",
+                                                                 "mapx":  "129.0172000000",
+                                                                 "mapy":  "35.5980000000",
+                                                                 "mlevel":  "6",
+                                                                 "modifiedtime":  "20261111152921",
+                                                                 "sigungucode":  "",
+                                                                 "tel":  "",
+                                                                 "title":  "가지산도립공원(밀양)",
+                                                                 "zipcode":  "627-830,1",
+                                                                 "showflag":  "1",
+                                                                 "lDongRegnCd":  "48",
+                                                                 "lDongSignguCd":  "270",
+                                                                 "lclsSystm1":  "NA",
+                                                                 "lclsSystm2":  "NA04",
+                                                                 "lclsSystm3":  "NA040200"
+                                                             },
+                                                             {
+                                                                 "addr1":  "경기도 가평군 가평읍 북한강변로 1044-15",
+                                                                 "addr2":  "(가평읍)",
+                                                                 "areacode":  "31",
+                                                                 "cat1":  "A03",
+                                                                 "cat2":  "A0302",
+                                                                 "cat3":  "A03022400",
+                                                                 "contentid":  "131940",
+                                                                 "contenttypeid":  "28",
+                                                                 "createdtime":  "20070420090000",
+                                                                 "firstimage":  "http://tong.visitkorea.or.kr/cms/resource/86/1900086_image2_1.jpg",
+                                                                 "firstimage2":  "http://tong.visitkorea.or.kr/cms/resource/86/1900086_image3_1.jpg",
+                                                                 "cpyrhtDivCd":  "Type3",
+                                                                 "mapx":  "127.5260031280",
+                                                                 "mapy":  "37.8060391429",
+                                                                 "mlevel":  "6",
+                                                                 "modifiedtime":  "20260127083000",
+                                                                 "sigungucode":  "1",
+                                                                 "tel":  "",
+                                                                 "title":  "가평TOP랜드 번지점프",
+                                                                 "zipcode":  "12422",
+                                                                 "showflag":  "0",
+                                                                 "lDongRegnCd":  "41",
+                                                                 "lDongSignguCd":  "820",
+                                                                 "lclsSystm1":  "LS",
+                                                                 "lclsSystm2":  "LS01",
+                                                                 "lclsSystm3":  "LS011800"
+                                                             }
+                                                         ]
+                                            },
+                                  "numOfRows":  2,
+                                  "pageNo":  1,
+                                  "totalCount":  2
+                              }
+                 }
+}
