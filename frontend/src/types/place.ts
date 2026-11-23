@@ -79,6 +79,8 @@ export interface PlaceSearchItem {
   detailInfo?: PlaceDetailInfo | null;
   galleryImages?: PlaceGalleryImage[] | null;
   petPolicyDetail?: PetPolicyDetail | null;
+  /** 실내 출입 가능 여부. true=가능 확인, false=불가 확인, null=정보 없음 */
+  isIndoorAllowed?: boolean | null;
 }
 
 /** 장소 검색 요청 쿼리 파라미터 (`PlaceSearchCondition` + Pageable) */

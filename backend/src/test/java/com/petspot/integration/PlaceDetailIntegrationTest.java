@@ -56,6 +56,7 @@ class PlaceDetailIntegrationTest {
                 .rating(BigDecimal.valueOf(4.5))
                 .reviewCount(10)
                 .allowedSizes(List.of("SMALL", "MEDIUM"))
+                .isIndoorAllowed(false)
                 .build());
 
         // when
@@ -73,6 +74,23 @@ class PlaceDetailIntegrationTest {
         assertThat(result.getAllowedSizes()).containsExactlyInAnyOrder("SMALL", "MEDIUM");
         assertThat(result.getRating()).isEqualByComparingTo(BigDecimal.valueOf(4.5));
         assertThat(result.getReviewCount()).isEqualTo(10);
+        assertThat(result.getIsIndoorAllowed()).isFalse(); // TSK-BE-031
+    }
+
+    @Test
+    @DisplayName("TSK-BE-031: 실내 출입 정보가 없는 장소는 isIndoorAllowed가 null이다(미확인, ADR-007)")
+    void getPlaceDetail_IndoorUnknown_ReturnsNull() {
+        Point point = GEOMETRY_FACTORY.createPoint(new Coordinate(124.5212, 34.0012)); // 서해 바다 위(실제 장소 없음)
+        Place saved = placeRepository.save(Place.builder()
+                .name("실내 정보 없는 장소")
+                .category("PARK")
+                .address("테스트 주소")
+                .location(point)
+                .latitude(34.0012)
+                .longitude(124.5212)
+                .build());
+
+        assertThat(placeQueryService.getPlaceDetail(saved.getId()).getIsIndoorAllowed()).isNull();
     }
 
     @Test

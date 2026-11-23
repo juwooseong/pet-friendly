@@ -143,7 +143,7 @@
 ### Feature 3.4 Place Detail & Engagement Screens [대부분 완료] (2026-11-19 갱신)
 - [ ] `TSK-FE-008` [P0] Place Detail View/Modal (`/places/{id}`): Info, Photos, Pet Policy Checklist, Review Form, Favorite Toggle
   - **공공데이터 상세 정보 연동 완료 (2026-11-19, ADR-010/012)**: 상세 화면 첫 조회 시 TourAPI에서 장소 소개(`detailCommon2` overview)·운영시간(`detailIntro2`)·주차/문의처/유모차/이용 요금/홈페이지·사진 최대 10장(`detailImage2`)을 가져와 저장(이후 DB 값 사용). 화면에 사진 갤러리(썸네일 전환), 장소 소개, 운영 시간, 반려동물 동반 조건 배지(구역·목줄·이동장·예방접종·입마개·마릿수, 근거 있는 항목만), 반려견 편의시설·품목, 부가 정보, 카카오맵 길찾기, 출처("한국관광공사 · 공공누리 n유형") 표시.
-  - **잔여 (2026-11-19 기준)**: 실내 출입 가능 여부는 파서가 해석해 `is_indoor_allowed`에 저장하지만 API 응답에 노출되지 않음(`TSK-BE-031`), 공공누리 제3유형 이미지 표시 방식 검토(`TSK-FE-021`).
+  - **잔여 (2026-11-23 기준)**: 공공누리 제3유형 이미지 표시 방식 검토(`TSK-FE-021`). 실내 출입 여부 노출(`TSK-BE-031`)은 2026-11-23 완료.
   - 기본 정보 조회(`GET /places/{id}`, TSK-BE-029로 완료), **즐겨찾기 토글 연동 완료 (2026-08-18)**: 로그인 사용자 기준 즐겨찾기 상태 표시(`GET /users/me/favorites` 재사용), 추가/삭제 토글(`POST`/`DELETE /favorites/{placeId}`), 비로그인 시 로그인 화면(`redirect` 쿼리 포함) 이동, 요청 중 버튼 잠금(중복 클릭 방지), 실패 시 상태 유지 + `ErrorMessage`로 오류 표시.
   - **리뷰 목록 조회/작성 폼 연동 완료 (2026-08-18)**: 기존 `GET /places/{placeId}/reviews`/`POST /reviews` API 재사용, 리뷰 없을 시 `EmptyState` 표시, 로그인 사용자 대상 평점(1~5)/내용 입력 폼(비로그인 시 로그인 안내로 대체), 등록 성공 시 리뷰 목록과 장소 `rating`/`reviewCount` 즉시 재조회 갱신, 중복 작성(409)·검증 실패(400) 등 API 실패 시 기존 `extractErrorMessage`/`ErrorMessage` 패턴으로 오류 표시. 상세 내용은 하단 "2026-08-18 완료 기록" 참조(즐겨찾기/리뷰 각각 별도 기록).
   - **사진/반려동물 동반 수칙 보강 완료 (2026-08-27)**: 사진은 `imageUrl` 없음/로드 실패(`@error`) 시 기존 fallback 아이콘 UI로 대체. 동반 수칙은 현재 API가 실제로 제공하는 `allowedSizes`(기존 크기 배지 UI 유지)/`maxWeightLimitKg`(신규 표시, 기존에 응답에는 있었으나 화면 미표시 상태였음)만 "반려동물 동반 수칙" 섹션에 표시, 정보가 전혀 없으면 안내 문구 표시. 상세 내용은 하단 "2026-08-27 완료 기록" 참조.
@@ -219,7 +219,10 @@
   - **우선순위 상향 → P1 (2026-11-19)**: 전국 적재 결과 서울 데이터가 10곳뿐이라, 지도가 서울시청 반경 5km만 조회하고 이동 시 재검색하지 않는 현재 구조로는 지도에 장소가 거의 나오지 않는다. Sprint 3 마감 전 필수.
   - **배경**: `TSK-FE-017` 요구사항에서 지도 드래그/이동 시 재검색은 명시적으로 범위 밖으로 지정되었다. 현재 `MapPage.vue`는 최초 마운트 시 1회만 `GET /places/search`를 호출한다.
   - **DoD**: 지도 `dragend`/`zoom_changed` 이벤트에 디바운스를 걸어 새 중심 좌표 기준으로 재검색, 최소 이동 거리 임계값 적용, 마커 클러스터링도 함께 검토(마커 수가 많아질 경우 대비).
-- [ ] `TSK-BE-031` [P2] `Place` 엔티티의 실내/실외/목줄 자유구역 정책 필드가 API 응답에 노출되지 않음 (`TSK-FE-008` 반려동물 동반 수칙 보강에서 식별, 2026-08-27)
+- [x] `TSK-BE-031` [P2] `Place` 엔티티의 실내/실외/목줄 자유구역 정책 필드가 API 응답에 노출되지 않음 (`TSK-FE-008` 반려동물 동반 수칙 보강에서 식별, 2026-08-27) — **완료 (2026-11-23, 실내 출입만)**
+  - **구현**: 검색·상세 공용 응답(`PlaceSearchResponseDto`)에 `isIndoorAllowed`(true/false/null) 추가, 장소 상세 동반 조건 배지에 "실내 동반 가능"/"실내 출입 불가" 표시(null이면 표시 안 함). 실외 동반·목줄 자유구역은 근거 데이터가 없어 제외.
+  - **실데이터 (2026-11-23)**: 실내 출입 정보가 있는 장소 28곳(정책 조회가 진행되면 늘어남).
+  - **검증**: 백엔드 278 tests(2 skip, 상세 조회 통합 테스트에 true/false·null 검증 추가), 프런트 Vitest 149/149(신규 1), type-check 통과.
   - **현황 (2026-11-19)**: `TourApiPetPolicyParser`가 "실내 시설 입장 불가" 등에서 실내 출입 여부를 해석해 `is_indoor_allowed`에 저장하기 시작했다. 응답 DTO에 `isIndoorAllowed`만 추가하면 된다(실외/목줄 자유구역은 근거 데이터 없음).
   - **배경**: `Place` 엔티티에는 `isIndoorAllowed`/`isOutdoorAllowed`/`hasOffLeashZone` 컬럼이 이미 존재하지만, `PlaceSearchResponseDto`(검색/상세 공용 Projection)에는 `allowedSizes`/`maxWeightLimitKg`만 포함되어 있어 프런트엔드가 이 값을 받을 수 없다. 이번 작업(장소 상세 반려동물 동반 수칙 섹션)에서는 요구사항에 따라 실제 API가 제공하는 필드만 표시했고, 임의로 DTO를 확장하지 않았다.
   - **DoD**: 실내/실외/목줄 자유구역 정보를 반려동물 동반 수칙에 노출할 필요가 있는지 제품 우선순위를 확인한 뒤, 필요 시 `PlaceSearchResponseDto`에 해당 필드 추가(QueryDSL Projection 컬럼 추가) 및 프런트엔드 표시 UI 구현.

@@ -640,6 +640,24 @@ describe('PlaceDetailPage', () => {
       expect(amenities).not.toContain('구매 가능');
     });
 
+    it('실내 출입 여부는 확인된 값만 배지로 표시한다 (TSK-BE-031)', async () => {
+      (apiClient.get as any).mockResolvedValue(publicPlace({ allowedSizes: null, isIndoorAllowed: false }));
+      const blocked = mountPage();
+      await flushPromises();
+      expect(blocked.find('[data-testid="pet-requirements"]').text()).toContain('실내 출입 불가');
+
+      (apiClient.get as any).mockResolvedValue(publicPlace({ allowedSizes: null, isIndoorAllowed: true }));
+      const allowed = mountPage();
+      await flushPromises();
+      expect(allowed.find('[data-testid="pet-requirements"]').text()).toContain('실내 동반 가능');
+
+      (apiClient.get as any).mockResolvedValue(publicPlace({ allowedSizes: null, isIndoorAllowed: null }));
+      const unknown = mountPage();
+      await flushPromises();
+      expect(unknown.text()).not.toContain('실내 출입 불가');
+      expect(unknown.text()).not.toContain('실내 동반 가능');
+    });
+
     it('카카오맵 길찾기 링크를 장소명과 좌표로 만든다', async () => {
       (apiClient.get as any).mockResolvedValue(publicPlace());
 

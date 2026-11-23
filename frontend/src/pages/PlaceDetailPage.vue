@@ -25,19 +25,19 @@ const errorMessage = ref('');
 const imageLoadError = ref(false);
 
 /**
- * 반려동물 동반 수칙 섹션에 표시할 정보 존재 여부.
- * 현재 API(`PlaceSearchResponseDto`)가 제공하는 필드(allowedSizes, maxWeightLimitKg)만 사용하며,
- * 엔티티에는 존재하지만 API 응답에 아직 노출되지 않은 isIndoorAllowed/isOutdoorAllowed/hasOffLeashZone은
- * 다루지 않는다(TSK-BE-031 백로그 참조).
+ * 반려동물 동반 수칙: allowedSizes, maxWeightLimitKg, isIndoorAllowed(TSK-BE-031), petPolicyDetail.
+ * 실외 동반·목줄 자유구역은 근거 데이터가 없어 API에 없다.
  */
 const policyDetail = computed(() => place.value?.petPolicyDetail ?? {});
 
-/** 반려동물 동반 조건 배지 (근거가 있는 항목만) */
+/** 반려동물 동반 조건 배지 (근거가 있는 항목만, null=정보 없음은 표시하지 않음) */
 const petRequirementBadges = computed(() => {
   const d = policyDetail.value;
   const badges: string[] = [];
   if (d.accompanyScope === 'ALL_AREAS') badges.push('전 구역 동반 가능');
   if (d.accompanyScope === 'PARTIAL_AREAS') badges.push('일부 구역만 동반 가능');
+  if (place.value?.isIndoorAllowed === true) badges.push('실내 동반 가능');
+  if (place.value?.isIndoorAllowed === false) badges.push('실내 출입 불가');
   if (d.leashRequired) badges.push('목줄 필수');
   if (d.carrierRequired) badges.push('이동장·유모차 필요');
   if (d.vaccinationRequired) badges.push('예방접종 필수');

@@ -71,6 +71,10 @@ public class PlaceSearchResponseDto {
             + "furnishedItems, purchasableItems, rentalItems). 근거 없는 항목은 키가 없다(ADR-007)", nullable = true)
     private Map<String, Object> petPolicyDetail;
 
+    @Schema(description = "반려동물 실내 출입 가능 여부. true=가능 확인, false=불가 확인, null=정보 없음(ADR-007)",
+            example = "false", nullable = true)
+    private Boolean isIndoorAllowed;
+
     /** 설명(description) 없이 생성 - 기존 호출부 호환용 */
     public PlaceSearchResponseDto(UUID id, String publicDataId, String name, String category,
                                   String categoryName, String address, Double latitude,
@@ -79,7 +83,7 @@ public class PlaceSearchResponseDto {
                                   BigDecimal maxWeightLimitKg, List<String> allowedSizes, Double distanceKm) {
         this(id, publicDataId, name, category, categoryName, address, latitude, longitude, phone, operatingHours,
                 null, imageUrl, rating, reviewCount, maxWeightLimitKg, allowedSizes, distanceKm,
-                null, null, null, null, null);
+                null, null, null, null, null, null);
     }
 
     @QueryProjection
@@ -89,7 +93,9 @@ public class PlaceSearchResponseDto {
                                   String imageUrl, BigDecimal rating, Integer reviewCount,
                                   BigDecimal maxWeightLimitKg, List<String> allowedSizes, Double distanceKm,
                                   String thumbnailUrl, String imageCopyrightType, Map<String, String> detailInfo,
-                                  List<Map<String, String>> galleryImages, Map<String, Object> petPolicyDetail) {
+                                  List<Map<String, String>> galleryImages, Map<String, Object> petPolicyDetail,
+                                  Boolean isIndoorAllowed) {
+        this.isIndoorAllowed = isIndoorAllowed;
         this.description = description;
         this.thumbnailUrl = thumbnailUrl;
         this.imageCopyrightType = imageCopyrightType;

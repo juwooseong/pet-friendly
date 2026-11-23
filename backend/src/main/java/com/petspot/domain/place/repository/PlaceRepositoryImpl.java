@@ -104,7 +104,8 @@ public class PlaceRepositoryImpl implements PlaceRepositoryCustom {
                         place.imageCopyrightType,
                         place.detailInfo,
                         place.galleryImages,
-                        place.petPolicyDetail
+                        place.petPolicyDetail,
+                        place.isIndoorAllowed
                 ))
                 .from(place)
                 .where(whereConditions)
@@ -157,7 +158,8 @@ public class PlaceRepositoryImpl implements PlaceRepositoryCustom {
                         place.imageCopyrightType,
                         place.detailInfo,
                         place.galleryImages,
-                        place.petPolicyDetail
+                        place.petPolicyDetail,
+                        place.isIndoorAllowed
                 ))
                 .from(place)
                 .where(place.id.eq(placeId))
