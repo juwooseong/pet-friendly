@@ -23,7 +23,7 @@ const DEFAULT_RADIUS_KM = 5;
 /** 조회 반경 하한/상한(km). 많이 축소해도 상한까지만 조회하고, 그 안에서 가까운 순으로 표시한다. */
 const MIN_RADIUS_KM = 1;
 const MAX_RADIUS_KM = 50;
-/** 지도 마커 표시용이므로 페이지네이션 없이 한 번에 조회할 개수(가까운 순) */
+/** 지도 마커 표시용이므로 페이지네이션 없이 한 번에 조회할 개수(가까운 순, 쇼핑은 서버가 뒤로 보냄 - TSK-FE-020) */
 const NEARBY_PAGE_SIZE = 100;
 /** 지도 이동/확대·축소가 끝난(`idle`) 뒤 재검색까지 기다리는 시간(ms) */
 const RESEARCH_DEBOUNCE_MS = 400;
@@ -258,7 +258,7 @@ onUnmounted(() => {
         <template v-else-if="places.length > 0">
           이 지역 장소 <strong class="text-stone-700">{{ places.length }}곳</strong>
           <span v-if="totalElements > places.length">
-            (전체 {{ totalElements.toLocaleString() }}곳 중 가까운 순 · 지도를 확대하면 더 자세히 볼 수 있어요)
+            (전체 {{ totalElements.toLocaleString() }}곳 중 가까운 순, 쇼핑은 뒤로 · 지도를 확대하면 더 자세히 볼 수 있어요)
           </span>
         </template>
         <template v-else-if="!placesError">지도를 움직이면 그 지역의 장소를 다시 찾아요.</template>

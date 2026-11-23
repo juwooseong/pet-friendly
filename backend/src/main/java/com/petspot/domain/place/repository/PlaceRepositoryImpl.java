@@ -33,6 +33,7 @@ public class PlaceRepositoryImpl implements PlaceRepositoryCustom {
 
     private static final int SRID_WGS84 = 4326;
     private static final double METERS_PER_KM = 1000.0;
+    private static final String SHOPPING_CATEGORY = "SHOPPING";
 
     private final JPAQueryFactory queryFactory;
 
@@ -72,6 +73,14 @@ public class PlaceRepositoryImpl implements PlaceRepositoryCustom {
         if (hasText(condition.getSizeCategory()) && !condition.isSizeVerifiedOnlyEnabled()) {
             orders.add(new CaseBuilder()
                     .when(allowedSizesIsNull()).then(1)
+                    .otherwise(0)
+                    .asc());
+        }
+        // TSK-FE-020: 카테고리를 고르지 않았으면 쇼핑(전체의 약 90%)을 다른 장소 뒤에 둔다.
+        // 결과 수는 그대로이고, 쇼핑 카테고리를 고르면 평소처럼 정렬된다.
+        if (!hasText(condition.getCategory())) {
+            orders.add(new CaseBuilder()
+                    .when(place.category.eq(SHOPPING_CATEGORY)).then(1)
                     .otherwise(0)
                     .asc());
         }

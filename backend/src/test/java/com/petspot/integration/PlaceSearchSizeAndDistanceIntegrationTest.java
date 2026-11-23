@@ -248,6 +248,49 @@ class PlaceSearchSizeAndDistanceIntegrationTest {
     }
 
     @Test
+    @DisplayName("TSK-FE-020: 카테고리를 고르지 않으면 쇼핑은 더 가까워도 다른 장소 뒤에, 쇼핑 카테고리를 고르면 거리순 그대로")
+    void searchPlaces_NoCategory_ShoppingLast() {
+        String prefix = "쇼핑후순위-" + java.util.UUID.randomUUID();
+        saveAt(prefix + "-쇼핑-가까움", "SHOPPING", 0.001);
+        saveAt(prefix + "-공원-중간", "PARK", 0.005);
+        saveAt(prefix + "-쇼핑-멂", "SHOPPING", 0.008);
+        saveAt(prefix + "-카페-가장멂", "CAFE", 0.01);
+
+        PlaceSearchCondition all = PlaceSearchCondition.builder()
+                .keyword(prefix).latitude(ISOLATED_LAT).longitude(ISOLATED_LON).radiusKm(5.0).build();
+        Page<PlaceSearchResponseDto> result = placeRepository.searchPlaces(all, PageRequest.of(0, 10));
+
+        // then: 결과 수는 그대로(4), 쇼핑 아닌 장소(거리순) → 쇼핑(거리순)
+        assertThat(result.getTotalElements()).isEqualTo(4);
+        assertThat(result.getContent()).extracting(PlaceSearchResponseDto::getName).containsExactly(
+                prefix + "-공원-중간", prefix + "-카페-가장멂", prefix + "-쇼핑-가까움", prefix + "-쇼핑-멂");
+
+        // 평점순(좌표 없음)도 같은 규칙
+        PlaceSearchCondition byRating = PlaceSearchCondition.builder().keyword(prefix).build();
+        List<String> categories = placeRepository.searchPlaces(byRating).stream()
+                .map(PlaceSearchResponseDto::getCategory).toList();
+        assertThat(categories.subList(0, 2)).containsExactlyInAnyOrder("PARK", "CAFE"); // 평점 동점이라 둘의 순서는 id순
+        assertThat(categories.subList(2, 4)).containsOnly("SHOPPING");
+
+        // 쇼핑 카테고리 선택 시 거리순
+        PlaceSearchCondition shopping = PlaceSearchCondition.builder()
+                .keyword(prefix).category("SHOPPING").latitude(ISOLATED_LAT).longitude(ISOLATED_LON).radiusKm(5.0).build();
+        assertThat(placeRepository.searchPlaces(shopping)).extracting(PlaceSearchResponseDto::getName)
+                .containsExactly(prefix + "-쇼핑-가까움", prefix + "-쇼핑-멂");
+    }
+
+    private void saveAt(String name, String category, double offset) {
+        placeRepository.save(Place.builder()
+                .name(name)
+                .category(category)
+                .address("테스트 주소")
+                .location(point(ISOLATED_LAT + offset, ISOLATED_LON + offset))
+                .latitude(ISOLATED_LAT + offset)
+                .longitude(ISOLATED_LON + offset)
+                .build());
+    }
+
+    @Test
     @DisplayName("위도/경도 조건 검색 시 DB에서 계산된 거리(distanceKm) 오름차순으로 정렬되고 Pageable과 함께 동작한다")
     void searchPlaces_DistanceSort_WithPagination() {
         // given: 기준 좌표(34.0067, 124.5236)로부터 거리가 서로 다른 3개 장소
