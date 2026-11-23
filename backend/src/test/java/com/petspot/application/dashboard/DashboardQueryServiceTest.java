@@ -65,8 +65,8 @@ class DashboardQueryServiceTest {
         given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
         given(petRepository.findRepresentativePet(userId)).willReturn(Optional.of(mockRepPet));
         given(favoriteRepository.countByUserId(userId)).willReturn(7L);
-        given(placeRepository.findTop10ByOrderByRatingDescReviewCountDesc()).willReturn(List.of(mockPlace1));
-        given(placeRepository.findTop10ByOrderByCreatedAtDesc()).willReturn(List.of(mockPlace2));
+        given(placeRepository.findPopularPlaces(org.mockito.ArgumentMatchers.any())).willReturn(List.of(mockPlace1));
+        given(placeRepository.findRecentPlaces(org.mockito.ArgumentMatchers.any())).willReturn(List.of(mockPlace2));
 
         // when
         DashboardResponseDto response = dashboardQueryService.getDashboardSummary(userId);
@@ -86,8 +86,8 @@ class DashboardQueryServiceTest {
         verify(userRepository).findById(userId);
         verify(petRepository).findRepresentativePet(userId);
         verify(favoriteRepository).countByUserId(userId);
-        verify(placeRepository).findTop10ByOrderByRatingDescReviewCountDesc();
-        verify(placeRepository).findTop10ByOrderByCreatedAtDesc();
+        verify(placeRepository).findPopularPlaces(org.mockito.ArgumentMatchers.any());
+        verify(placeRepository).findRecentPlaces(org.mockito.ArgumentMatchers.any());
     }
 
     @Test
@@ -98,8 +98,8 @@ class DashboardQueryServiceTest {
         given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
         given(petRepository.findRepresentativePet(userId)).willReturn(Optional.empty());
         given(favoriteRepository.countByUserId(userId)).willReturn(0L);
-        given(placeRepository.findTop10ByOrderByRatingDescReviewCountDesc()).willReturn(Collections.emptyList());
-        given(placeRepository.findTop10ByOrderByCreatedAtDesc()).willReturn(Collections.emptyList());
+        given(placeRepository.findPopularPlaces(org.mockito.ArgumentMatchers.any())).willReturn(Collections.emptyList());
+        given(placeRepository.findRecentPlaces(org.mockito.ArgumentMatchers.any())).willReturn(Collections.emptyList());
 
         // when
         DashboardResponseDto response = dashboardQueryService.getDashboardSummary(userId);
@@ -120,8 +120,8 @@ class DashboardQueryServiceTest {
         given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
         given(petRepository.findRepresentativePet(userId)).willReturn(Optional.empty());
         given(favoriteRepository.countByUserId(userId)).willReturn(3L);
-        given(placeRepository.findTop10ByOrderByRatingDescReviewCountDesc()).willReturn(List.of(mockPlace1));
-        given(placeRepository.findTop10ByOrderByCreatedAtDesc()).willReturn(List.of(mockPlace2));
+        given(placeRepository.findPopularPlaces(org.mockito.ArgumentMatchers.any())).willReturn(List.of(mockPlace1));
+        given(placeRepository.findRecentPlaces(org.mockito.ArgumentMatchers.any())).willReturn(List.of(mockPlace2));
 
         // when
         DashboardResponseDto response = dashboardQueryService.getDashboardSummary(userId);
