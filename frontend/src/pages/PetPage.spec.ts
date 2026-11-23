@@ -27,7 +27,7 @@ function mountPage() {
 
 function loginAuthStore() {
   const authStore = useAuthStore();
-  authStore.setAuth('token-abc', { id: 'u1', email: 'a@a.com', nickname: '닉네임', pets: [] });
+  authStore.setAuth('token-abc', { id: 'u1', email: 'a@a.com', nickname: '닉네임', role: 'USER' });
   return authStore;
 }
 

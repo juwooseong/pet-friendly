@@ -7,7 +7,7 @@ import apiClient, { extractErrorMessage } from '@/api/apiClient';
 import { useAuthStore } from '@/stores/authStore';
 import type { ApiResponse } from '@/types/api';
 import type { PlaceGalleryImage, PlaceSearchItem } from '@/types/place';
-import type { FavoriteItem } from '@/types/favorite';
+import type { FavoriteStatus } from '@/types/favorite';
 import type { Review } from '@/types/review';
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue';
 import ErrorMessage from '@/components/common/ErrorMessage.vue';
@@ -146,14 +146,13 @@ const fetchPlaceDetail = async () => {
   }
 };
 
-/** 기존 즐겨찾기 목록 조회 API(GET /users/me/favorites)를 재사용해 현재 장소의 즐겨찾기 여부를 확인한다. */
+/** 현재 장소의 즐겨찾기 여부만 조회한다 (TSK-BE-030: 전체 목록을 받지 않음). */
 const fetchFavoriteStatus = async () => {
   if (!authStore.isAuthenticated) return;
   try {
-    const response = await apiClient.get<ApiResponse<FavoriteItem[]>>('/users/me/favorites');
-    if (response.data && response.data.success) {
-      const favorites = response.data.data || [];
-      isFavorited.value = favorites.some((fav) => fav.placeId === placeId);
+    const response = await apiClient.get<ApiResponse<FavoriteStatus>>(`/favorites/${placeId}`);
+    if (response.data && response.data.success && response.data.data) {
+      isFavorited.value = response.data.data.favorited;
     }
   } catch (err) {
     console.error('Failed to fetch favorite status:', err);

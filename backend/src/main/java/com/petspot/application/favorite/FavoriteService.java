@@ -84,6 +84,14 @@ public class FavoriteService {
     }
 
     /**
+     * 특정 장소의 즐겨찾기 여부 (TSK-BE-030). 없는 장소도 예외 없이 false.
+     */
+    @Transactional(readOnly = true)
+    public boolean isFavorited(UUID userId, UUID placeId) {
+        return favoriteRepository.existsByUserIdAndPlaceId(userId, placeId);
+    }
+
+    /**
      * 현재 로그인한 사용자의 모든 즐겨찾기 목록 조회
      */
     @Transactional(readOnly = true)
