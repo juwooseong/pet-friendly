@@ -29,4 +29,6 @@ public-data:
   tour-api:
     service-key: ${TOUR_API_SERVICE_KEY:test-service-key}
   batch:
-    enabled: false
+    # 매일 03:00(KST) 장소 증분 동기화 + 반려동물 정책 조회 800곳 (TSK-DATA-012, 2026-11-23 켬).
+    # 끄려면 .env에 PUBLIC_DATA_BATCH_ENABLED=false
+    enabled: ${PUBLIC_DATA_BATCH_ENABLED:true}
