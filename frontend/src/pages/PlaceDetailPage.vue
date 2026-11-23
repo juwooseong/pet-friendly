@@ -416,7 +416,7 @@ onMounted(async () => {
           :href="homepageUrl"
           target="_blank"
           rel="noopener noreferrer"
-          class="inline-flex items-center gap-1.5 text-amber-600 font-bold hover:underline"
+          class="inline-flex items-center gap-1.5 py-2 text-amber-600 font-bold hover:underline"
         >
           <i class="ri-global-line"></i>
           <span>홈페이지</span>
@@ -432,7 +432,7 @@ onMounted(async () => {
           :href="directionsUrl"
           target="_blank"
           rel="noopener noreferrer"
-          class="flex items-center gap-2 text-amber-600 font-bold hover:underline"
+          class="flex items-center gap-2 py-2 text-amber-600 font-bold hover:underline"
           data-testid="kakao-directions"
         >
           <i class="ri-route-line"></i>

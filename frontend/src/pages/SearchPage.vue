@@ -250,9 +250,14 @@ onMounted(async () => {
     <template v-else-if="places.length > 0">
       <p class="text-xs text-stone-500">총 {{ totalElements }}개의 장소가 검색되었습니다.</p>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- 휴대폰: 작은 사진을 왼쪽에 둔 목록형(스크롤 길이 절반 이하), 넓은 화면: 큰 사진 카드 (TSK-FE-024) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
         <BaseCard v-for="place in places" :key="place.id" hoverable @click="router.push(`/place/${place.id}`)">
-          <div class="h-36 -mx-5 -mt-5 mb-3 bg-stone-100 rounded-t-2xl overflow-hidden" data-testid="place-thumbnail">
+          <div class="flex gap-3 sm:block">
+          <div
+            class="w-24 h-24 shrink-0 rounded-xl sm:w-auto sm:h-36 sm:-mx-5 sm:-mt-5 sm:mb-3 sm:rounded-none sm:rounded-t-2xl bg-stone-100 overflow-hidden"
+            data-testid="place-thumbnail"
+          >
             <img
               v-if="(place.thumbnailUrl || place.imageUrl) && !failedImageIds.has(place.id)"
               :src="place.thumbnailUrl || place.imageUrl || ''"
@@ -265,6 +270,7 @@ onMounted(async () => {
               <i class="ri-image-line text-3xl"></i>
             </div>
           </div>
+          <div class="min-w-0 flex-1">
           <span v-if="place.categoryName" class="text-[11px] font-bold text-amber-700">{{ place.categoryName }}</span>
           <h3 class="font-bold text-stone-800 text-base truncate">{{ place.name }}</h3>
           <p class="text-xs text-stone-500 truncate mt-1">{{ place.address }}</p>
@@ -285,19 +291,23 @@ onMounted(async () => {
               크기 조건 확인 필요
             </span>
           </div>
-          <div class="mt-3 flex items-center justify-between text-xs text-amber-600">
+          <div class="mt-2 sm:mt-3 flex items-center justify-between gap-2 text-xs text-amber-600">
             <span>★ {{ formatRating(place.rating, place.reviewCount) }}</span>
             <span v-if="place.distanceKm !== null" class="text-stone-500">{{ place.distanceKm }}km</span>
-            <span>상세보기 →</span>
+            <!-- 휴대폰에서는 카드 전체를 누르므로 안내 문구 생략 -->
+            <span class="hidden sm:inline">상세보기 →</span>
+          </div>
+          </div>
           </div>
         </BaseCard>
       </div>
 
+      <!-- 휴대폰은 터치 영역 40px, 현재 페이지 앞뒤 1개씩만 표시해 한 줄에 들어가게 한다 (TSK-FE-024) -->
       <div v-if="totalPages > 1" class="flex items-center justify-center gap-1.5 pt-2">
         <button
           :disabled="currentPage === 0"
           @click="goToPage(currentPage - 1)"
-          class="px-3 py-1.5 text-sm rounded-lg border border-stone-200 text-stone-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-stone-50"
+          class="px-3 h-10 sm:h-8 text-sm rounded-lg border border-stone-200 text-stone-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-stone-50"
         >
           이전
         </button>
@@ -305,19 +315,20 @@ onMounted(async () => {
           v-for="page in pageNumbers"
           :key="page"
           @click="goToPage(page)"
-          class="w-8 h-8 text-sm rounded-lg transition"
-          :class="
+          class="w-10 h-10 sm:w-8 sm:h-8 text-sm rounded-lg transition items-center justify-center"
+          :class="[
             page === currentPage
               ? 'bg-amber-500 text-white font-bold'
-              : 'text-stone-600 border border-stone-200 hover:bg-stone-50'
-          "
+              : 'text-stone-600 border border-stone-200 hover:bg-stone-50',
+            Math.abs(page - currentPage) > 1 ? 'hidden sm:inline-flex' : 'inline-flex',
+          ]"
         >
           {{ page + 1 }}
         </button>
         <button
           :disabled="!hasNext"
           @click="goToPage(currentPage + 1)"
-          class="px-3 py-1.5 text-sm rounded-lg border border-stone-200 text-stone-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-stone-50"
+          class="px-3 h-10 sm:h-8 text-sm rounded-lg border border-stone-200 text-stone-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-stone-50"
         >
           다음
         </button>
