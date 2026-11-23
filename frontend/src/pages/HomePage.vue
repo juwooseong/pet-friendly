@@ -83,7 +83,7 @@ onMounted(() => {
           <i class="ri-sparkles-line text-amber-500"></i>
           <span>추천 동반 장소 (Spring Boot API 연동)</span>
         </h2>
-        <button @click="fetchBackendData" class="text-xs font-medium text-amber-600 hover:underline">
+        <button @click="fetchBackendData" class="shrink-0 whitespace-nowrap text-xs font-medium text-amber-600 hover:underline">
           새로고침
         </button>
       </div>

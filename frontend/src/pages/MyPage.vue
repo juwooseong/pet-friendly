@@ -133,10 +133,10 @@ onMounted(async () => {
           <BaseButton variant="outline" size="sm" @click="openEditProfile">내 정보 수정</BaseButton>
         </div>
 
-        <div class="grid grid-cols-3 gap-4 pt-4 border-t border-stone-100 text-center">
+        <div class="grid grid-cols-3 gap-2 sm:gap-4 pt-4 border-t border-stone-100 text-center">
           <button
             type="button"
-            class="bg-stone-50 hover:bg-stone-100 p-3 rounded-xl transition"
+            class="bg-stone-50 hover:bg-stone-100 px-1 py-3 sm:p-3 rounded-xl transition"
             @click="goToPets"
           >
             <div class="text-xs text-stone-500">반려동물</div>
@@ -144,7 +144,7 @@ onMounted(async () => {
           </button>
           <button
             type="button"
-            class="bg-stone-50 hover:bg-stone-100 p-3 rounded-xl transition"
+            class="bg-stone-50 hover:bg-stone-100 px-1 py-3 sm:p-3 rounded-xl transition"
             @click="goToFavorites"
           >
             <div class="text-xs text-stone-500">즐겨찾기</div>
@@ -152,7 +152,7 @@ onMounted(async () => {
           </button>
           <button
             type="button"
-            class="bg-stone-50 hover:bg-stone-100 p-3 rounded-xl transition"
+            class="bg-stone-50 hover:bg-stone-100 px-1 py-3 sm:p-3 rounded-xl transition"
             @click="goToMyReviews"
           >
             <div class="text-xs text-stone-500">작성 리뷰</div>
