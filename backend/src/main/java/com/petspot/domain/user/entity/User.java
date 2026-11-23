@@ -141,8 +141,9 @@ public class User {
     }
 
     /**
-     * 비밀번호 찾기를 통한 임시 비밀번호 발급.
-     * 발급 즉시 강제 비밀번호 변경 상태로 전환하고, 이전에 발급한 토큰을 무효화한다.
+     * 임시 비밀번호 발급 (강제 비밀번호 변경 상태로 전환, 이전 토큰 무효화).
+     * <p>비밀번호 찾기는 재설정 링크 방식으로 바뀌어(TSK-SEC-003) 지금은 호출하는 곳이 없다.
+     * 관리자 강제 초기화 같은 용도를 위해 강제 변경 흐름(PasswordChangeRequiredInterceptor)과 함께 남겨 둔다.
      */
     public void issueTemporaryPassword(String temporaryPasswordHash) {
         this.passwordHash = temporaryPasswordHash;

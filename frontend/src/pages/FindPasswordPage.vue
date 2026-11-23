@@ -41,14 +41,14 @@ const handleFindPassword = async () => {
   <div class="space-y-6">
     <div class="text-center">
       <h2 class="text-2xl font-bold text-stone-800">비밀번호 찾기 🔑</h2>
-      <p class="text-xs text-stone-500 mt-1">가입하신 이메일로 임시 비밀번호를 보내드려요.</p>
+      <p class="text-xs text-stone-500 mt-1">가입하신 이메일로 비밀번호 재설정 링크를 보내드려요.</p>
     </div>
 
     <ErrorMessage v-if="errorMessage" :message="errorMessage" />
 
     <div v-if="submitted" class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center text-sm text-stone-700 space-y-1">
-      <p>입력하신 이메일로 임시 비밀번호 안내를 처리했습니다.</p>
-      <p class="text-xs text-stone-500">메일함을 확인한 뒤 임시 비밀번호로 로그인해주세요.</p>
+      <p>가입된 이메일이라면 비밀번호 재설정 링크를 보냈습니다.</p>
+      <p class="text-xs text-stone-500">메일의 링크는 30분 동안 한 번만 사용할 수 있어요. 메일이 오지 않으면 스팸함도 확인해주세요.</p>
     </div>
 
     <form v-else @submit.prevent="handleFindPassword" class="space-y-4">
@@ -60,7 +60,7 @@ const handleFindPassword = async () => {
       />
 
       <BaseButton type="submit" variant="primary" size="lg" :loading="loading" class="w-full mt-2">
-        임시 비밀번호 받기
+        재설정 링크 받기
       </BaseButton>
     </form>
 

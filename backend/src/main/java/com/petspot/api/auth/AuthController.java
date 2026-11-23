@@ -6,11 +6,13 @@ import com.petspot.api.auth.dto.ChangePasswordResponseDto;
 import com.petspot.api.auth.dto.FindIdRequestDto;
 import com.petspot.api.auth.dto.FindIdResponseDto;
 import com.petspot.api.auth.dto.FindPasswordRequestDto;
+import com.petspot.api.auth.dto.ResetPasswordRequestDto;
 import com.petspot.api.auth.dto.UserLoginRequestDto;
 import com.petspot.api.auth.dto.UserLoginResponseDto;
 import com.petspot.api.auth.dto.UserRegisterRequestDto;
 import com.petspot.api.auth.dto.UserRegisterResponseDto;
 import com.petspot.application.auth.AuthService;
+import com.petspot.application.auth.PasswordResetService;
 import com.petspot.global.dto.ApiResponse;
 import com.petspot.global.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
@@ -50,6 +52,7 @@ import com.petspot.global.swagger.ApiErrorCodes;
 public class AuthController {
 
     private final AuthService authService;
+    private final PasswordResetService passwordResetService;
 
     @Operation(
             summary = "신규 회원가입",
@@ -139,8 +142,10 @@ public class AuthController {
     }
 
     @Operation(
-            summary = "비밀번호 찾기 (임시 비밀번호 발급)",
-            description = "이메일로 임시 비밀번호를 생성하여 발송합니다. 계정 존재 여부와 무관하게 항상 동일한 성공 응답을 반환합니다."
+            summary = "비밀번호 찾기 (재설정 링크 발송)",
+            description = "가입된 이메일이면 30분 동안 한 번 쓸 수 있는 비밀번호 재설정 링크를 메일로 보냅니다. "
+                    + "요청만으로는 비밀번호가 바뀌지 않습니다. 계정 존재 여부와 무관하게 항상 동일한 성공 응답을 반환하며, "
+                    + "같은 계정은 15분에 3회까지만 발송합니다(초과해도 같은 응답)."
     )
     @PostMapping("/find-password")
     public ResponseEntity<ApiResponse<Void>> findPassword(
@@ -148,7 +153,24 @@ public class AuthController {
 
         log.info("POST /api/v1/auth/find-password called");
 
-        authService.findPassword(request);
+        passwordResetService.requestReset(request.getEmail());
+
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @Operation(
+            summary = "비밀번호 재설정",
+            description = "비밀번호 찾기 메일 링크의 토큰으로 새 비밀번호를 설정합니다. 링크는 1회용이며, "
+                    + "성공하면 이 계정의 기존 로그인(토큰)이 모두 무효화됩니다."
+    )
+    @PostMapping("/reset-password")
+    @ApiErrorCodes({ErrorCode.INVALID_PASSWORD_RESET_TOKEN})
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
+            @Valid @RequestBody ResetPasswordRequestDto request) {
+
+        log.info("POST /api/v1/auth/reset-password called");
+
+        passwordResetService.resetPassword(request);
 
         return ResponseEntity.ok(ApiResponse.success(null));
     }

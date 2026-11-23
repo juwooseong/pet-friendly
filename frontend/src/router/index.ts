@@ -33,6 +33,13 @@ const routes: Array<RouteRecordRaw> = [
     meta: { layout: 'auth' },
   },
   {
+    // 비밀번호 찾기 메일의 재설정 링크 (TSK-SEC-003)
+    path: '/reset-password',
+    name: 'ResetPassword',
+    component: () => import('@/pages/ResetPasswordPage.vue'),
+    meta: { layout: 'auth' },
+  },
+  {
     path: '/search',
     name: 'Search',
     component: () => import('@/pages/SearchPage.vue'),
@@ -90,7 +97,8 @@ const router = createRouter({
 });
 
 /** 강제 비밀번호 변경 상태에서도 접근을 허용하는 라우트 이름 목록 (로그인/로그아웃은 라우트 이동 없이도 항상 가능) */
-const ALLOWED_ROUTE_NAMES_WHILE_PASSWORD_CHANGE_REQUIRED = ['Login'];
+// 재설정 링크는 메일에서 바로 열리므로 이 브라우저의 강제 변경 상태와 관계없이 열 수 있어야 한다 (TSK-SEC-003)
+const ALLOWED_ROUTE_NAMES_WHILE_PASSWORD_CHANGE_REQUIRED = ['Login', 'ResetPassword'];
 
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore();

@@ -18,6 +18,10 @@ spring:
       host: ${REDIS_HOST:petspot-redis}
       port: ${REDIS_PORT:6379}
 
+app:
+  # 비밀번호 재설정 메일 링크에 넣을 사이트 주소 (TSK-SEC-003)
+  frontend-base-url: ${FRONTEND_BASE_URL:http://localtest.me}
+
 jwt:
   secret: ${JWT_SECRET}
 

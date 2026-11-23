@@ -50,6 +50,10 @@ spring:
           timeout: 5000
           writetimeout: 5000
 
+app:
+  # 비밀번호 재설정 메일 링크에 넣을 사이트 주소 (TSK-SEC-003). 로컬 개발은 Vite 개발 서버.
+  frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
+
 jwt:
   secret: petspot_super_secret_jwt_key_that_is_at_least_32_bytes_long_for_security
   expiration-ms: 86400000 # 24 Hours

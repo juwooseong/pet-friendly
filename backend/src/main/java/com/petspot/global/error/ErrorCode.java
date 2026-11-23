@@ -20,6 +20,8 @@ public enum ErrorCode {
     UNAUTHENTICATED("AUTH_003", HttpStatus.UNAUTHORIZED, "인증이 필요한 요청입니다."),
     // 임시 비밀번호로 로그인한 사용자가 비밀번호 변경 전 다른 인증 API를 호출한 경우 (PasswordChangeRequiredInterceptor)
     PASSWORD_CHANGE_REQUIRED("AUTH_004", HttpStatus.FORBIDDEN, "비밀번호 변경이 필요합니다. 먼저 비밀번호를 변경해주세요."),
+    // 비밀번호 재설정 링크가 없거나 만료·사용됨 (TSK-SEC-003)
+    INVALID_PASSWORD_RESET_TOKEN("AUTH_005", HttpStatus.BAD_REQUEST, "비밀번호 재설정 링크가 만료되었거나 이미 사용되었습니다. 비밀번호 찾기를 다시 요청해주세요."),
 
     // ===== 회원 (USER) =====
     USER_NOT_FOUND("USER_001", HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),

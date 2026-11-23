@@ -55,6 +55,9 @@ class AuthControllerTest {
     private AuthService authService;
 
     @MockBean
+    private com.petspot.application.auth.PasswordResetService passwordResetService;
+
+    @MockBean
     private com.petspot.global.util.JwtTokenProvider jwtTokenProvider;
 
     @MockBean
@@ -455,7 +458,7 @@ class AuthControllerTest {
                 .email("none@petspot.com")
                 .build();
 
-        // authService.findPassword()는 존재 여부와 무관하게 정상 반환(void)되도록 구현되어 있으므로
+        // passwordResetService.requestReset()은 존재 여부와 무관하게 정상 반환(void)되도록 구현되어 있으므로
         // 별도 stubbing 없이도 mock은 아무 예외를 던지지 않는다.
 
         // when & then
