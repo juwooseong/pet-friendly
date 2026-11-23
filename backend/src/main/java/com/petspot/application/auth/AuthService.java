@@ -5,7 +5,6 @@ import com.petspot.api.auth.dto.ChangePasswordRequestDto;
 import com.petspot.api.auth.dto.ChangePasswordResponseDto;
 import com.petspot.api.auth.dto.FindIdRequestDto;
 import com.petspot.api.auth.dto.FindIdResponseDto;
-import com.petspot.api.auth.dto.FindPasswordRequestDto;
 import com.petspot.api.auth.dto.UserLoginRequestDto;
 import com.petspot.api.auth.dto.UserLoginResponseDto;
 import com.petspot.api.auth.dto.UserRegisterRequestDto;
@@ -19,8 +18,6 @@ import com.petspot.global.error.exception.InvalidCredentialsException;
 import com.petspot.global.error.exception.UserNotFoundException;
 import com.petspot.global.util.EmailMasker;
 import com.petspot.global.util.JwtTokenProvider;
-import com.petspot.global.util.TemporaryPasswordGenerator;
-import com.petspot.infrastructure.email.EmailSender;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -40,8 +37,6 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
-    private final TemporaryPasswordGenerator temporaryPasswordGenerator;
-    private final EmailSender emailSender;
 
     /**
      * 회원가입 비즈니스 로직 수행
@@ -173,34 +168,11 @@ public class AuthService {
     }
 
     /**
-     * 이메일로 임시 비밀번호를 발급하고 메일로 발송한다 (비밀번호 찾기).
-     * 계정 존재 여부 노출을 방지하기 위해 이메일이 존재하지 않아도 예외를 발생시키지 않고 조용히 종료한다.
-     *
-     * @param request 비밀번호 찾기 요청 DTO (email)
-     */
-    @Transactional
-    public void findPassword(FindPasswordRequestDto request) {
-        log.info("[AUTH FIND PASSWORD] Find-password attempt for email");
-
-        userRepository.findActiveByEmail(request.getEmail()).ifPresentOrElse(user -> {
-            String temporaryPassword = temporaryPasswordGenerator.generate();
-            String temporaryPasswordHash = passwordEncoder.encode(temporaryPassword);
-
-            user.issueTemporaryPassword(temporaryPasswordHash);
-
-            emailSender.sendTemporaryPassword(user.getEmail(), temporaryPassword);
-
-            log.info("[AUTH FIND PASSWORD SUCCESS] Temporary password issued for userId: {}", user.getId());
-        }, () -> log.info("[AUTH FIND PASSWORD] No active account matched for given email"));
-    }
-
-    /**
      * 로그인한 사용자의 비밀번호를 변경한다.
-     * 임시 비밀번호로 로그인한 사용자는 이 메서드 호출을 통해 강제 변경 상태를 해제해야 한다.
-     *
-     * @param userId  현재 로그인한 사용자 ID
+     * 강제 변경 상태(passwordChangeRequired)인 사용자는 이 메서드로 상태를 해제한다.
      * 변경하면 이전에 발급한 토큰이 모두 무효화되고(TSK-SEC-001), 요청한 기기에는 새 토큰을 돌려준다.
      *
+     * @param userId  현재 로그인한 사용자 ID
      * @param request 비밀번호 변경 요청 DTO (newPassword, confirmPassword)
      * @return 새 Access Token
      */

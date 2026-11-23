@@ -64,6 +64,8 @@ services:
       MAIL_PORT: ${MAIL_PORT:-587}
       MAIL_USERNAME: ${MAIL_USERNAME:-}
       MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      # 비밀번호 재설정 메일 링크의 사이트 주소 (TSK-SEC-003)
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localtest.me}
       JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--Xms256m -Xmx512m}
     ports:
       - "${API_PORT:-8081}:8080"

@@ -1,14 +1,9 @@
 package com.petspot.application.auth;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import com.petspot.api.auth.dto.AvailabilityResponseDto;
 import com.petspot.api.auth.dto.ChangePasswordRequestDto;
 import com.petspot.api.auth.dto.FindIdRequestDto;
 import com.petspot.api.auth.dto.FindIdResponseDto;
-import com.petspot.api.auth.dto.FindPasswordRequestDto;
 import com.petspot.api.auth.dto.UserLoginRequestDto;
 import com.petspot.api.auth.dto.UserLoginResponseDto;
 import com.petspot.api.auth.dto.UserRegisterRequestDto;
@@ -21,19 +16,14 @@ import com.petspot.global.error.exception.DuplicateEmailException;
 import com.petspot.global.error.exception.InvalidCredentialsException;
 import com.petspot.global.error.exception.UserNotFoundException;
 import com.petspot.global.util.JwtTokenProvider;
-import com.petspot.global.util.TemporaryPasswordGenerator;
-import com.petspot.infrastructure.email.EmailSender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -41,7 +31,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -56,12 +45,6 @@ class AuthServiceTest {
 
     @Mock
     private JwtTokenProvider jwtTokenProvider;
-
-    @Mock
-    private TemporaryPasswordGenerator temporaryPasswordGenerator;
-
-    @Mock
-    private EmailSender emailSender;
 
     @InjectMocks
     private AuthService authService;
@@ -380,85 +363,6 @@ class AuthServiceTest {
         // when & then
         assertThatThrownBy(() -> authService.findId(request))
                 .isInstanceOf(UserNotFoundException.class);
-    }
-
-    @Test
-    @DisplayName("가입된 이메일로 비밀번호 찾기 요청 시 임시 비밀번호를 BCrypt 암호화하여 저장하고 메일을 발송한다")
-    void findPassword_ExistingEmail_IssuesTemporaryPasswordAndSendsEmail() {
-        // given
-        FindPasswordRequestDto request = FindPasswordRequestDto.builder()
-                .email("active@petspot.com")
-                .build();
-
-        User user = User.register("active@petspot.com", "old_bcrypt_hash", "활성유저");
-
-        given(userRepository.findActiveByEmail("active@petspot.com")).willReturn(Optional.of(user));
-        given(temporaryPasswordGenerator.generate()).willReturn("Temp1234!@#$");
-        given(passwordEncoder.encode("Temp1234!@#$")).willReturn("new_bcrypt_temp_hash");
-
-        // when
-        authService.findPassword(request);
-
-        // then: DB에는 BCrypt 해시만 저장되고 강제 변경 상태로 전환된다
-        assertThat(user.getPasswordHash()).isEqualTo("new_bcrypt_temp_hash");
-        assertThat(user.isPasswordChangeRequired()).isTrue();
-
-        // 메일에는 평문 임시 비밀번호가 전달된다 (해시가 아님)
-        ArgumentCaptor<String> passwordCaptor = ArgumentCaptor.forClass(String.class);
-        verify(emailSender).sendTemporaryPassword(org.mockito.ArgumentMatchers.eq("active@petspot.com"), passwordCaptor.capture());
-        assertThat(passwordCaptor.getValue()).isEqualTo("Temp1234!@#$");
-    }
-
-    @Test
-    @DisplayName("존재하지 않는 이메일로 비밀번호 찾기 요청 시 예외 없이 조용히 종료하고 메일을 발송하지 않는다")
-    void findPassword_NonExistentEmail_NoSideEffects() {
-        // given
-        FindPasswordRequestDto request = FindPasswordRequestDto.builder()
-                .email("none@petspot.com")
-                .build();
-
-        given(userRepository.findActiveByEmail("none@petspot.com")).willReturn(Optional.empty());
-
-        // when & then: 예외가 발생하지 않아야 한다 (계정 존재 여부 노출 방지)
-        authService.findPassword(request);
-
-        verify(emailSender, never()).sendTemporaryPassword(anyString(), anyString());
-        verify(temporaryPasswordGenerator, never()).generate();
-    }
-
-    @Test
-    @DisplayName("비밀번호 찾기 처리 중 평문 임시 비밀번호는 로그에 출력되지 않는다")
-    void findPassword_TemporaryPasswordNeverAppearsInLogs() throws Exception {
-        // given
-        FindPasswordRequestDto request = FindPasswordRequestDto.builder()
-                .email("active@petspot.com")
-                .build();
-
-        User user = User.register("active@petspot.com", "old_bcrypt_hash", "활성유저");
-        String plainTemporaryPassword = "SuperSecret1!";
-
-        given(userRepository.findActiveByEmail("active@petspot.com")).willReturn(Optional.of(user));
-        given(temporaryPasswordGenerator.generate()).willReturn(plainTemporaryPassword);
-        given(passwordEncoder.encode(plainTemporaryPassword)).willReturn("hashed_value");
-
-        Logger authServiceLogger = (Logger) LoggerFactory.getLogger(AuthService.class);
-        ListAppender<ILoggingEvent> appender = new ListAppender<>();
-        appender.start();
-        authServiceLogger.addAppender(appender);
-        authServiceLogger.setLevel(Level.ALL);
-
-        try {
-            // when
-            authService.findPassword(request);
-
-            // then
-            List<String> logMessages = appender.list.stream()
-                    .map(ILoggingEvent::getFormattedMessage)
-                    .toList();
-            assertThat(logMessages).noneMatch(message -> message.contains(plainTemporaryPassword));
-        } finally {
-            authServiceLogger.detachAppender(appender);
-        }
     }
 
     @Test
