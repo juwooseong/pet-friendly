@@ -67,8 +67,7 @@ public-data:
     mobile-os: ETC
     mobile-app: PetSpot
   batch:
-    # 자동 수집 비활성화: 전국 장소 9,630곳은 2026-11-19 수동 실행으로 적재 완료. 예약(cron) 실행은 하지 않는다.
-    # 다시 켜려면 -Dpublic-data.batch.enabled=true 또는 프로필 설정으로만 명시적으로 켠다.
+    # 로컬 개발·테스트에서는 자동 수집을 하지 않는다. Docker(prod 프로필)에서는 켜져 있다(application-prod.yml, 2026-11-23).
     # (수동 1회 실행은 enabled와 무관하게 아래 run-on-startup 옵션으로만 동작한다)
     enabled: false
     cron: "0 0 3 * * *"

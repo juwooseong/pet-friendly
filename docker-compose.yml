@@ -66,6 +66,8 @@ services:
       MAIL_PASSWORD: ${MAIL_PASSWORD:-}
       # 비밀번호 재설정 메일 링크의 사이트 주소 (TSK-SEC-003)
       FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localtest.me}
+      # 공공데이터 수집 배치 (매일 03:00 KST, TSK-DATA-012). 끄려면 .env에 false
+      PUBLIC_DATA_BATCH_ENABLED: ${PUBLIC_DATA_BATCH_ENABLED:-true}
       JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--Xms256m -Xmx512m}
     ports:
       - "${API_PORT:-8081}:8080"
