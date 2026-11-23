@@ -288,7 +288,10 @@
   - **현황 (2026-11-20)**: Windows PostgreSQL이 제거되어 개발·테스트 DB를 Docker `petspot-db`(호스트 5433)로 통일했다. `application.yml` 연결 정보는 환경변수(`DB_URL`/`DB_PORT`/`DB_USERNAME`/`DB_PASSWORD`)로 받고, `build.gradle`이 `gradle test`/`bootRun` 실행 시 루트 `.env`를 환경변수로 넣는다(테스트에는 `MAIL_*` 제외 - 실제 메일 발송 방지). 테스트는 여전히 실데이터와 같은 DB를 쓰므로(바다 좌표·롤백으로 격리) 분리 과제는 유지.
   - **배경**: 통합 테스트가 개발 DB(`petspot_db`)를 함께 쓴다. 실제 데이터 9,630곳 적재 후 기존 통합 테스트 5개가 실제 데이터와 섞여 실패했다. 이번에는 테스트 데이터를 바다 좌표로 옮기고 fixture 장소를 테스트 트랜잭션 안에서 지우는 방식으로 격리했지만 근본 해결이 아니다.
   - **DoD**: 테스트 프로필 전용 데이터베이스(예: `petspot_test`, PostGIS 확장 포함) 또는 Testcontainers 도입.
-- [ ] `TSK-QA-004` [P3] 프런트엔드 테스트가 소문자 드라이브 경로(`d:\`)에서 전부 실패 (2026-11-19 신규) — vitest가 `D:`/`d:` 경로를 다른 모듈로 읽어 `Cannot read properties of undefined (reading 'config')`. 대문자 경로(`D:\workspace\pet-friendly\frontend`)에서 실행하면 정상. 실행 방법 문서화 또는 설정으로 해결.
+- [x] `TSK-QA-004` [P3] 프런트엔드 테스트가 소문자 드라이브 경로(`d:\`)에서 전부 실패 (2026-11-19 신규) — vitest가 `D:`/`d:` 경로를 다른 모듈로 읽어 `Cannot read properties of undefined (reading 'config')`. 대문자 경로(`D:\workspace\pet-friendly\frontend`)에서 실행하면 정상. 실행 방법 문서화 또는 설정으로 해결. — **완료 (2026-11-23)**
+  - **구현**: `npm test`가 `frontend/scripts/run-vitest.mjs`를 거쳐 실행된다. 현재 폴더를 OS가 기록한 실제 표기(`fs.realpathSync.native`, `D:\...`)로 바꾼 뒤 Vitest를 띄운다(추가 인자 전달 가능: `npm test -- src/pages/SearchPage.spec.ts`). 다른 OS에서는 동작 차이 없음.
+  - **검증**: `cmd`로 소문자 경로(`d:\workspace\pet-friendly\frontend`)에서 실행 — 기존 `npx vitest run`은 재현(`reading 'config'` 오류), `npm test`는 18파일 154건 전부 통과.
+  - **주의**: `npx vitest`를 직접 부르면 여전히 경로 문제가 생길 수 있으니 `npm test`를 쓴다.
 - [ ] `TSK-SEC-002` [P1] TourAPI 서비스키 재발급 (2026-11-19 신규) — 서비스키 형식 문제로 첫 배치 실행이 실패하면서 오류 메시지에 키 원문이 노출되었다(코드는 수정됨: 키 인코딩, 오류 메시지 마스킹). 해당 로그는 삭제했으나 작업 대화 기록에 남아 있어 data.go.kr에서 재발급 권장.
 - [x] `TSK-DATA-009` [P0] TourAPI `detailPetTour2` 클라이언트·DTO·정책 텍스트 파서 구현 (2026-11-19 완료, 아래 "완료 기록" 참조, ADR-009)
 - [x] `TSK-DATA-010` [P0] 해석한 반려동물 정책을 `Place`에 반영하는 적재 단계 설계·구현 (`TSK-DATA-009` 후속) — **완료 (2026-11-19, 아래 "완료 기록" 참조)**
