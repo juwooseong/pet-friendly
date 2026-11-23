@@ -37,6 +37,9 @@ class JwtTokenProviderTest {
         assertThat(jwtTokenProvider.getEmailFromToken(token)).isEqualTo(email);
         assertThat(jwtTokenProvider.getRoleFromToken(token)).isEqualTo(role);
         assertThat(jwtTokenProvider.getExpirationMs()).isEqualTo(expirationMs);
+        // 버전을 지정하지 않은 토큰은 0, 지정하면 그 값 (TSK-SEC-001)
+        assertThat(jwtTokenProvider.extractTokenVersion(token)).isZero();
+        assertThat(jwtTokenProvider.extractTokenVersion(jwtTokenProvider.generateToken(userId, email, role, 3))).isEqualTo(3);
     }
 
     @Test

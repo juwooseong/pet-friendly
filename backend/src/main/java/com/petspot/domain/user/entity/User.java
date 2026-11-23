@@ -54,6 +54,13 @@ public class User {
     @Column(name = "password_change_required", nullable = false)
     private boolean passwordChangeRequired;
 
+    /**
+     * JWT 버전 (TSK-SEC-001). 토큰에 발급 당시 값을 넣고, 인증할 때 현재 값과 다르면 거부한다.
+     * 비밀번호가 바뀌면 올려서 이전에 발급한 토큰을 모두 무효화한다.
+     */
+    @Column(name = "token_version", nullable = false)
+    private int tokenVersion;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private ZonedDateTime createdAt;
@@ -129,25 +136,28 @@ public class User {
     public void changePassword(String newPasswordHash) {
         if (newPasswordHash != null && !newPasswordHash.isBlank()) {
             this.passwordHash = newPasswordHash;
+            this.tokenVersion++;
         }
     }
 
     /**
      * 비밀번호 찾기를 통한 임시 비밀번호 발급.
-     * 발급 즉시 강제 비밀번호 변경 상태로 전환한다.
+     * 발급 즉시 강제 비밀번호 변경 상태로 전환하고, 이전에 발급한 토큰을 무효화한다.
      */
     public void issueTemporaryPassword(String temporaryPasswordHash) {
         this.passwordHash = temporaryPasswordHash;
         this.passwordChangeRequired = true;
+        this.tokenVersion++;
     }
 
     /**
      * 사용자 본인의 비밀번호 변경 완료 처리.
-     * 강제 비밀번호 변경 상태를 해제한다.
+     * 강제 비밀번호 변경 상태를 해제하고, 이전에 발급한 토큰을 무효화한다.
      */
     public void completePasswordChange(String newPasswordHash) {
         this.passwordHash = newPasswordHash;
         this.passwordChangeRequired = false;
+        this.tokenVersion++;
     }
 
     /**

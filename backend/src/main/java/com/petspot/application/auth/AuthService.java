@@ -2,6 +2,7 @@ package com.petspot.application.auth;
 
 import com.petspot.api.auth.dto.AvailabilityResponseDto;
 import com.petspot.api.auth.dto.ChangePasswordRequestDto;
+import com.petspot.api.auth.dto.ChangePasswordResponseDto;
 import com.petspot.api.auth.dto.FindIdRequestDto;
 import com.petspot.api.auth.dto.FindIdResponseDto;
 import com.petspot.api.auth.dto.FindPasswordRequestDto;
@@ -134,11 +135,7 @@ public class AuthService {
         }
 
         // 4. JWT Access Token 발급
-        String accessToken = jwtTokenProvider.generateToken(
-                user.getId().toString(),
-                user.getEmail(),
-                user.getRole().name()
-        );
+        String accessToken = issueAccessToken(user);
 
         log.info("[AUTH LOGIN SUCCESS] JWT Token generated for userId: {}", user.getId());
 
@@ -202,10 +199,13 @@ public class AuthService {
      * 임시 비밀번호로 로그인한 사용자는 이 메서드 호출을 통해 강제 변경 상태를 해제해야 한다.
      *
      * @param userId  현재 로그인한 사용자 ID
+     * 변경하면 이전에 발급한 토큰이 모두 무효화되고(TSK-SEC-001), 요청한 기기에는 새 토큰을 돌려준다.
+     *
      * @param request 비밀번호 변경 요청 DTO (newPassword, confirmPassword)
+     * @return 새 Access Token
      */
     @Transactional
-    public void changePassword(UUID userId, ChangePasswordRequestDto request) {
+    public ChangePasswordResponseDto changePassword(UUID userId, ChangePasswordRequestDto request) {
         log.info("[AUTH CHANGE PASSWORD] Change password attempt for userId: {}", userId);
 
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
@@ -220,5 +220,16 @@ public class AuthService {
         user.completePasswordChange(newPasswordHash);
 
         log.info("[AUTH CHANGE PASSWORD SUCCESS] Password changed for userId: {}", userId);
+
+        return new ChangePasswordResponseDto(issueAccessToken(user), "Bearer", jwtTokenProvider.getExpirationMs() / 1000);
+    }
+
+    private String issueAccessToken(User user) {
+        return jwtTokenProvider.generateToken(
+                user.getId().toString(),
+                user.getEmail(),
+                user.getRole().name(),
+                user.getTokenVersion()
+        );
     }
 }

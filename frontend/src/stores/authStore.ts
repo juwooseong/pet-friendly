@@ -54,8 +54,15 @@ export const useAuthStore = defineStore('auth', {
       this.requiresPasswordChange = true;
       localStorage.setItem('requiresPasswordChange', 'true');
     },
-    /** 비밀번호 변경 성공 시 강제 변경 상태를 해제한다. */
-    completePasswordChange() {
+    /**
+     * 비밀번호 변경 성공 시 강제 변경 상태를 해제한다.
+     * 서버는 비밀번호가 바뀌면 이전 토큰을 무효화하므로 응답의 새 토큰으로 바꾼다 (TSK-SEC-001).
+     */
+    completePasswordChange(newToken?: string) {
+      if (newToken) {
+        this.token = newToken;
+        localStorage.setItem('accessToken', newToken);
+      }
       this.requiresPasswordChange = false;
       localStorage.setItem('requiresPasswordChange', 'false');
     },

@@ -148,12 +148,24 @@ class PasswordResetFlowIntegrationTest {
                 .confirmPassword(newPassword)
                 .build();
 
-        mockMvc.perform(patch("/api/v1/auth/password")
+        MvcResult changeResult = mockMvc.perform(patch("/api/v1/auth/password")
                         .header("Authorization", tempAuthHeader)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(changePasswordDto)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success", is(true)));
+                .andExpect(jsonPath("$.success", is(true)))
+                .andReturn();
+
+        // ==========================================
+        // 5-1. 비밀번호 변경 전에 발급된 토큰은 무효화되고(401), 변경 응답의 새 토큰은 바로 쓸 수 있다 (TSK-SEC-001)
+        // ==========================================
+        mockMvc.perform(get("/api/v1/users/me")
+                        .header("Authorization", tempAuthHeader))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/api/v1/users/me")
+                        .header("Authorization", "Bearer " + extractAccessToken(changeResult)))
+                .andExpect(status().isOk());
 
         // ==========================================
         // 6. 기존 임시 비밀번호로는 더 이상 로그인할 수 없다 (401)
