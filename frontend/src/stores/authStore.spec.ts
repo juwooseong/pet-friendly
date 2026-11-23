@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { useAuthStore } from './authStore';
+import { usePetStore } from './petStore';
 
 describe('authStore - requiresPasswordChange', () => {
   beforeEach(() => {
@@ -64,6 +65,17 @@ describe('authStore - requiresPasswordChange', () => {
     expect(store.requiresPasswordChange).toBe(false);
     expect(localStorage.getItem('requiresPasswordChange')).toBeNull();
     expect(store.isAuthenticated).toBe(false);
+  });
+
+  it('logout() 호출 시 반려동물 스토어도 비워진다 (다음 로그인 계정에 이전 데이터 노출 방지)', () => {
+    const store = useAuthStore();
+    const petStore = usePetStore();
+    petStore.$patch({ pets: [{ id: 'p1' } as any], loaded: true });
+
+    store.logout();
+
+    expect(petStore.pets).toEqual([]);
+    expect(petStore.loaded).toBe(false);
   });
 
   it('비밀번호 값 자체를 담는 상태 필드가 존재하지 않는다 (id/email/nickname/token/requiresPasswordChange만 보유)', () => {

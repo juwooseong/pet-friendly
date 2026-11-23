@@ -5,6 +5,7 @@ import { TOUR_API_SOURCE, imageFitClass } from '@/utils/publicData';
 import { useRouter } from 'vue-router';
 import apiClient from '@/api/apiClient';
 import { useAuthStore } from '@/stores/authStore';
+import { usePetStore } from '@/stores/petStore';
 import type { ApiResponse, PageResponse } from '@/types/api';
 import type { PlaceCategory, PlaceSearchItem, PlaceSearchParams } from '@/types/place';
 import type { Pet, SizeCategory } from '@/types/user';
@@ -15,6 +16,7 @@ import EmptyState from '@/components/common/EmptyState.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const petStore = usePetStore();
 
 const PAGE_SIZE = 12;
 
@@ -72,14 +74,12 @@ const sizeLabel = (size: string): string => {
 const fetchRepresentativePet = async () => {
   if (!authStore.isAuthenticated) return;
   try {
-    const response = await apiClient.get<ApiResponse<Pet[]>>('/pets');
-    if (response.data?.success) {
-      const pets = response.data.data || [];
-      const representative = pets.find((p) => p.representative) || pets[0] || null;
-      if (representative) {
-        representativePet.value = representative;
-        sizeCategory.value = representative.sizeCategory;
-      }
+    // 반려동물 화면 등에서 이미 받은 목록이 있으면 다시 조회하지 않는다 (TSK-FE-015)
+    await petStore.ensurePets();
+    const representative = petStore.representativePet;
+    if (representative) {
+      representativePet.value = representative;
+      sizeCategory.value = representative.sizeCategory;
     }
   } catch (err) {
     console.error('Failed to fetch representative pet:', err);

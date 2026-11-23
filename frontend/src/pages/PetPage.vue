@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import apiClient, { extractErrorMessage } from '@/api/apiClient';
+import { storeToRefs } from 'pinia';
+import { extractErrorMessage } from '@/api/apiClient';
 import { useAuthStore } from '@/stores/authStore';
-import type { ApiResponse } from '@/types/api';
+import { usePetStore } from '@/stores/petStore';
 import type { Pet, PetCreateRequest, PetGender } from '@/types/user';
 import BaseCard from '@/components/common/BaseCard.vue';
 import BaseButton from '@/components/common/BaseButton.vue';
@@ -15,8 +16,9 @@ import EmptyState from '@/components/common/EmptyState.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const petStore = usePetStore();
+const { pets } = storeToRefs(petStore);
 
-const pets = ref<Pet[]>([]);
 const loading = ref(true);
 const errorMessage = ref('');
 
@@ -36,10 +38,8 @@ const fetchPets = async () => {
   loading.value = true;
   errorMessage.value = '';
   try {
-    const response = await apiClient.get<ApiResponse<Pet[]>>('/pets');
-    if (response.data && response.data.success) {
-      pets.value = Array.isArray(response.data.data) ? response.data.data : [];
-    }
+    // 관리 화면은 들어올 때마다 최신 목록을 받는다
+    await petStore.fetchPets();
   } catch (err) {
     errorMessage.value = extractErrorMessage(err, '반려동물 목록을 불러오는 중 오류가 발생했습니다.');
   } finally {
@@ -125,13 +125,12 @@ const submitForm = async () => {
   formSubmitLoading.value = true;
   try {
     if (formMode.value === 'edit' && editingPetId.value) {
-      await apiClient.put(`/pets/${editingPetId.value}`, payload);
+      await petStore.updatePet(editingPetId.value, payload);
     } else {
-      await apiClient.post('/pets', payload);
+      await petStore.createPet(payload);
     }
     formMode.value = null;
     editingPetId.value = null;
-    await fetchPets();
   } catch (err) {
     formSubmitErrorMessage.value = extractErrorMessage(
       err,
@@ -163,9 +162,8 @@ const confirmDelete = async () => {
   deleteLoading.value = true;
   deleteErrorMessage.value = '';
   try {
-    await apiClient.delete(`/pets/${deletingPet.value.id}`);
+    await petStore.deletePet(deletingPet.value.id);
     deletingPet.value = null;
-    await fetchPets();
   } catch (err) {
     deleteErrorMessage.value = extractErrorMessage(err, '반려동물 삭제 중 오류가 발생했습니다.');
   } finally {
@@ -183,8 +181,7 @@ const setRepresentative = async (pet: Pet) => {
   representativeChangingId.value = pet.id;
   representativeErrorMessage.value = '';
   try {
-    await apiClient.patch(`/pets/${pet.id}/representative`);
-    await fetchPets();
+    await petStore.setRepresentative(pet.id);
   } catch (err) {
     representativeErrorMessage.value = extractErrorMessage(err, '대표 반려동물 변경 중 오류가 발생했습니다.');
   } finally {
