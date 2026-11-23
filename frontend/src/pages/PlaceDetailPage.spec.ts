@@ -3,6 +3,7 @@ import { mount, flushPromises } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import PlaceDetailPage from './PlaceDetailPage.vue';
 import { useAuthStore } from '@/stores/authStore';
+import { useFavoriteStore } from '@/stores/favoriteStore';
 
 const pushMock = vi.fn();
 
@@ -246,6 +247,18 @@ describe('PlaceDetailPage', () => {
 
       expect(apiClient.get).toHaveBeenCalledWith('/favorites/place-123');
       expect(apiClient.get).not.toHaveBeenCalledWith('/users/me/favorites');
+      expect(wrapper.text()).toContain('즐겨찾기됨');
+    });
+
+    it('즐겨찾기 화면에서 받은 목록이 있으면 상태를 다시 요청하지 않고 그대로 쓴다 (TSK-FE-015)', async () => {
+      loginAuthStore();
+      useFavoriteStore().$patch({ favorites: [{ placeId: 'place-123' } as any], loaded: true });
+      mockGetByUrl();
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      expect(apiClient.get).not.toHaveBeenCalledWith('/favorites/place-123');
       expect(wrapper.text()).toContain('즐겨찾기됨');
     });
 

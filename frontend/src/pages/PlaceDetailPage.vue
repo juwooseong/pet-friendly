@@ -7,7 +7,7 @@ import apiClient, { extractErrorMessage } from '@/api/apiClient';
 import { useAuthStore } from '@/stores/authStore';
 import type { ApiResponse } from '@/types/api';
 import type { PlaceGalleryImage, PlaceSearchItem } from '@/types/place';
-import type { FavoriteStatus } from '@/types/favorite';
+import { useFavoriteStore } from '@/stores/favoriteStore';
 import type { Review } from '@/types/review';
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue';
 import ErrorMessage from '@/components/common/ErrorMessage.vue';
@@ -113,7 +113,8 @@ const directionsUrl = computed(() =>
   place.value ? kakaoDirectionsUrl(place.value.name, place.value.latitude, place.value.longitude) : ''
 );
 
-const isFavorited = ref(false);
+const favoriteStore = useFavoriteStore();
+const isFavorited = computed(() => authStore.isAuthenticated && favoriteStore.isFavorited(placeId));
 const favoriteActionLoading = ref(false);
 const favoriteErrorMessage = ref('');
 
@@ -146,14 +147,14 @@ const fetchPlaceDetail = async () => {
   }
 };
 
-/** 현재 장소의 즐겨찾기 여부만 조회한다 (TSK-BE-030: 전체 목록을 받지 않음). */
+/**
+ * 현재 장소의 즐겨찾기 여부 (TSK-BE-030: 전체 목록을 받지 않음).
+ * 즐겨찾기 화면에서 이미 목록을 받았으면 요청하지 않는다 (TSK-FE-015).
+ */
 const fetchFavoriteStatus = async () => {
   if (!authStore.isAuthenticated) return;
   try {
-    const response = await apiClient.get<ApiResponse<FavoriteStatus>>(`/favorites/${placeId}`);
-    if (response.data && response.data.success && response.data.data) {
-      isFavorited.value = response.data.data.favorited;
-    }
+    await favoriteStore.ensureStatus(placeId);
   } catch (err) {
     console.error('Failed to fetch favorite status:', err);
   }
@@ -171,11 +172,9 @@ const toggleFavorite = async () => {
   const wasFavorited = isFavorited.value;
   try {
     if (wasFavorited) {
-      await apiClient.delete(`/favorites/${placeId}`);
-      isFavorited.value = false;
+      await favoriteStore.removeFavorite(placeId);
     } else {
-      await apiClient.post(`/favorites/${placeId}`);
-      isFavorited.value = true;
+      await favoriteStore.addFavorite(placeId);
     }
   } catch (err) {
     // 요청 실패 시 화면 상태는 요청 이전 값을 그대로 유지한다 (낙관적 갱신을 하지 않으므로 별도 롤백 불필요).
