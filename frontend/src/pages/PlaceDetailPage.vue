@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { formatRating } from '@/utils/rating';
-import { TOUR_API_SOURCE, isHttpUrl, kakaoDirectionsUrl, koglLicenseLabel } from '@/utils/publicData';
+import { TOUR_API_SOURCE, imageFitClass, isHttpUrl, kakaoDirectionsUrl, koglLicenseLabel } from '@/utils/publicData';
 import { useRoute, useRouter } from 'vue-router';
 import apiClient, { extractErrorMessage } from '@/api/apiClient';
 import { useAuthStore } from '@/stores/authStore';
@@ -278,7 +278,8 @@ onMounted(async () => {
             v-if="currentImage && !imageLoadError"
             :src="currentImage.url"
             :alt="place.name"
-            class="w-full h-full object-cover"
+            :class="['w-full h-full', imageFitClass(currentImage.copyrightType)]"
+            data-testid="gallery-main-image"
             @error="imageLoadError = true"
           />
           <div v-else class="w-full h-full flex items-center justify-center text-stone-300">
@@ -295,7 +296,7 @@ onMounted(async () => {
             :class="index === selectedImageIndex ? 'border-amber-500' : 'border-transparent opacity-70 hover:opacity-100'"
             @click="selectImage(index)"
           >
-            <img :src="image.thumbnailUrl" :alt="`${place.name} 사진 ${index + 1}`" loading="lazy" class="w-full h-full object-cover" />
+            <img :src="image.thumbnailUrl" :alt="`${place.name} 사진 ${index + 1}`" loading="lazy" :class="['w-full h-full', imageFitClass(image.copyrightType)]" />
           </button>
         </div>
         <p v-if="isPublicDataPlace" class="text-[11px] text-stone-400" data-testid="image-source">

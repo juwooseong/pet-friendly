@@ -60,6 +60,8 @@ public class DashboardResponseDto {
         private String categoryName;
         @Schema(description = "대표 이미지 URL (없으면 null)", example = "https://cdn.petspot.example/images/place-001.jpg", nullable = true)
         private String imageUrl;
+        @Schema(description = "대표 이미지 공공누리 유형 (Type1 출처표시, Type3 출처표시+변경금지 등). 공공데이터 장소만", nullable = true, example = "Type3")
+        private String imageCopyrightType;
         @Schema(description = "평균 평점", example = "4.5")
         private BigDecimal rating;
         @Schema(description = "리뷰 수", example = "12")
@@ -77,6 +79,7 @@ public class DashboardResponseDto {
                     .category(place.getCategory())
                     .categoryName(place.getCategoryName())
                     .imageUrl(place.getImageUrl())
+                    .imageCopyrightType(place.getImageCopyrightType())
                     .rating(place.getRating())
                     .reviewCount(place.getReviewCount())
                     .build();

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { formatRating } from '@/utils/rating';
+import { imageFitClass } from '@/utils/publicData';
 import apiClient from '@/api/apiClient';
 import BaseCard from '@/components/common/BaseCard.vue';
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue';
@@ -13,6 +14,8 @@ interface PlaceItem {
   categoryName: string;
   address: string;
   imageUrl?: string;
+  /** 대표 이미지 공공누리 유형 (Type3/Type4는 변경금지라 자르지 않고 표시) */
+  imageCopyrightType?: string | null;
   rating?: number;
   reviewCount?: number;
 }
@@ -96,7 +99,7 @@ onMounted(() => {
               v-if="place.imageUrl"
               :src="place.imageUrl"
               :alt="place.name"
-              class="w-full h-full object-cover"
+              :class="['w-full h-full', imageFitClass(place.imageCopyrightType)]"
             />
             <div v-else class="w-full h-full flex items-center justify-center text-stone-300">
               <i class="ri-image-line text-3xl"></i>

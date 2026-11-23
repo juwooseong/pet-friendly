@@ -24,6 +24,19 @@ export function koglLicenseLabel(type: string | null | undefined): string {
   }
 }
 
+/** 변경금지 조건이 붙은 공공누리 유형(제3·4유형)인지 확인한다 */
+export function isNoDerivativeLicense(type: string | null | undefined): boolean {
+  return type === 'Type3' || type === 'Type4';
+}
+
+/**
+ * 이미지를 틀에 맞출 때 쓸 Tailwind 클래스 (TSK-FE-021, ADR-012).
+ * 변경금지 유형은 잘라내지 않고 원본 비율 그대로(여백 허용) 보여 주고, 그 외에는 틀을 채우도록 자른다.
+ */
+export function imageFitClass(type: string | null | undefined): string {
+  return isNoDerivativeLicense(type) ? 'object-contain' : 'object-cover';
+}
+
 /** http/https 주소인지 확인한다 (javascript: 등 링크로 걸면 안 되는 값 차단) */
 export function isHttpUrl(value: string | null | undefined): value is string {
   return !!value && /^https?:\/\//i.test(value.trim());

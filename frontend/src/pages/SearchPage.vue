@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { formatRating } from '@/utils/rating';
-import { TOUR_API_SOURCE } from '@/utils/publicData';
+import { TOUR_API_SOURCE, imageFitClass } from '@/utils/publicData';
 import { useRouter } from 'vue-router';
 import apiClient from '@/api/apiClient';
 import { useAuthStore } from '@/stores/authStore';
@@ -284,7 +284,7 @@ onMounted(async () => {
               :src="place.thumbnailUrl || place.imageUrl || ''"
               :alt="place.name"
               loading="lazy"
-              class="w-full h-full object-cover"
+              :class="['w-full h-full', imageFitClass(place.imageCopyrightType)]"
               @error="markImageFailed(place.id)"
             />
             <div v-else class="w-full h-full flex items-center justify-center text-stone-300">

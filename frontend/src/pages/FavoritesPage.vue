@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { formatRating } from '@/utils/rating';
+import { imageFitClass } from '@/utils/publicData';
 import { useRouter } from 'vue-router';
 import apiClient, { extractErrorMessage } from '@/api/apiClient';
 import { useAuthStore } from '@/stores/authStore';
@@ -94,7 +95,7 @@ onMounted(async () => {
               v-if="fav.imageUrl"
               :src="fav.imageUrl"
               :alt="fav.placeName"
-              class="w-full h-full object-cover"
+              :class="['w-full h-full', imageFitClass(fav.imageCopyrightType)]"
               @error="($event.target as HTMLImageElement).style.display = 'none'"
             />
             <div v-else class="w-full h-full flex items-center justify-center text-stone-300">

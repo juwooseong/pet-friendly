@@ -7,6 +7,8 @@ export interface FavoriteItem {
   categoryName: string;
   address: string;
   imageUrl: string | null;
+  /** 대표 이미지 공공누리 유형 (Type3/Type4는 변경금지라 자르지 않고 표시) */
+  imageCopyrightType?: string | null;
   rating: number;
   reviewCount: number;
   createdAt: string;

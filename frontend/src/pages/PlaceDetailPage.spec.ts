@@ -640,6 +640,21 @@ describe('PlaceDetailPage', () => {
       expect(amenities).not.toContain('구매 가능');
     });
 
+    it('제3유형 사진은 자르지 않고(object-contain), 제1유형 사진은 틀에 맞게 자른다 (TSK-FE-021)', async () => {
+      (apiClient.get as any).mockResolvedValue(publicPlace()); // 1번 Type1, 2번 Type3
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      const main = () => wrapper.find('[data-testid="gallery-main-image"]');
+      expect(main().classes()).toContain('object-cover');
+
+      await wrapper.find('button[aria-label="사진 2"]').trigger('click');
+      expect(main().classes()).toContain('object-contain');
+      expect(main().classes()).not.toContain('object-cover');
+      expect(wrapper.find('button[aria-label="사진 2"] img').classes()).toContain('object-contain');
+    });
+
     it('실내 출입 여부는 확인된 값만 배지로 표시한다 (TSK-BE-031)', async () => {
       (apiClient.get as any).mockResolvedValue(publicPlace({ allowedSizes: null, isIndoorAllowed: false }));
       const blocked = mountPage();

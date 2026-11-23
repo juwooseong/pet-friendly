@@ -126,7 +126,7 @@
   - 요청 토큰 기반 Race Condition 방어(느리게 도착한 과거 응답이 최신 상태를 덮어쓰지 않도록 처리)
   - **검증 결과**: 백엔드 `./gradlew test` 전체 통과, 프런트엔드 Vitest 33/33 통과(신규 12개: `SignupPage` 9 / `debounce` 3), `type-check`·`build` 통과, Playwright 실브라우저 시나리오 7/7 통과(중복 이메일/닉네임 실시간 감지 → 사용 가능 전환 → 잘못된 형식 시 API 미호출 → 정상 가입 제출 → 신규 계정 로그인 성공까지 end-to-end 확인)
 
-### Feature 3.3 Main Discovery & Search Screens [대부분 완료 — `TSK-FE-020` 쇼핑 비중 남음] (2026-11-20 갱신: `TSK-FE-018` 지도 재검색, `TSK-FE-019` 크기 필터 미확인 장소 처리 완료)
+### Feature 3.3 Main Discovery & Search Screens [COMPLETED] (2026-11-23 갱신: `TSK-FE-018` 지도 재검색, `TSK-FE-019` 크기 필터 미확인 장소 처리, `TSK-FE-020` 쇼핑 후순위 완료)
 - [x] `TSK-FE-005` [P0] Home View (`/`): Recommended Places, Popular Places, Recent Places, Active Pet Chip
   - Dashboard API(`GET /api/v1/dashboard`) 연동 완료.
 - [x] `TSK-FE-006` [P0] Place Search View (`/search`): Keyword Search, Category Filter, Pet Size Condition, Distance Sort (2026-08-14 완료)
@@ -140,14 +140,14 @@
   - **의도적 범위 축소(2026-08-27)**: 직전 커밋(`4a4b00c`)에서 함께 구현했던 "기존 `/places/search` 재사용 마커 표시 + 마커 클릭 시 장소 카드 + 상세 이동"은 이번 요청에 따라 되돌리고, 이번 단계는 "SDK 로딩 및 지도 렌더링 자체 검증"에만 집중하도록 축소했다. 마커/장소 연동은 다음 Task에서 별도로 재구현 예정(버그 아님, 의도된 단계적 진행).
   - 상세 내용은 하단 "2026-08-27 완료 기록: Kakao Map SDK 로딩/렌더링 기반 (0단계)" 참조.
 
-### Feature 3.4 Place Detail & Engagement Screens [대부분 완료] (2026-11-19 갱신)
-- [ ] `TSK-FE-008` [P0] Place Detail View/Modal (`/places/{id}`): Info, Photos, Pet Policy Checklist, Review Form, Favorite Toggle
+### Feature 3.4 Place Detail & Engagement Screens [COMPLETED] (2026-11-23 갱신)
+- [x] `TSK-FE-008` [P0] Place Detail View/Modal (`/places/{id}`): Info, Photos, Pet Policy Checklist, Review Form, Favorite Toggle — **완료 (2026-11-23)**
   - **공공데이터 상세 정보 연동 완료 (2026-11-19, ADR-010/012)**: 상세 화면 첫 조회 시 TourAPI에서 장소 소개(`detailCommon2` overview)·운영시간(`detailIntro2`)·주차/문의처/유모차/이용 요금/홈페이지·사진 최대 10장(`detailImage2`)을 가져와 저장(이후 DB 값 사용). 화면에 사진 갤러리(썸네일 전환), 장소 소개, 운영 시간, 반려동물 동반 조건 배지(구역·목줄·이동장·예방접종·입마개·마릿수, 근거 있는 항목만), 반려견 편의시설·품목, 부가 정보, 카카오맵 길찾기, 출처("한국관광공사 · 공공누리 n유형") 표시.
-  - **잔여 (2026-11-23 기준)**: 공공누리 제3유형 이미지 표시 방식 검토(`TSK-FE-021`). 실내 출입 여부 노출(`TSK-BE-031`)은 2026-11-23 완료.
+  - **잔여 해소 (2026-11-23)**: 실내 출입 여부 노출(`TSK-BE-031`), 제3유형 이미지 자르지 않고 표시(`TSK-FE-021`) 완료.
   - 기본 정보 조회(`GET /places/{id}`, TSK-BE-029로 완료), **즐겨찾기 토글 연동 완료 (2026-08-18)**: 로그인 사용자 기준 즐겨찾기 상태 표시(`GET /users/me/favorites` 재사용), 추가/삭제 토글(`POST`/`DELETE /favorites/{placeId}`), 비로그인 시 로그인 화면(`redirect` 쿼리 포함) 이동, 요청 중 버튼 잠금(중복 클릭 방지), 실패 시 상태 유지 + `ErrorMessage`로 오류 표시.
   - **리뷰 목록 조회/작성 폼 연동 완료 (2026-08-18)**: 기존 `GET /places/{placeId}/reviews`/`POST /reviews` API 재사용, 리뷰 없을 시 `EmptyState` 표시, 로그인 사용자 대상 평점(1~5)/내용 입력 폼(비로그인 시 로그인 안내로 대체), 등록 성공 시 리뷰 목록과 장소 `rating`/`reviewCount` 즉시 재조회 갱신, 중복 작성(409)·검증 실패(400) 등 API 실패 시 기존 `extractErrorMessage`/`ErrorMessage` 패턴으로 오류 표시. 상세 내용은 하단 "2026-08-18 완료 기록" 참조(즐겨찾기/리뷰 각각 별도 기록).
   - **사진/반려동물 동반 수칙 보강 완료 (2026-08-27)**: 사진은 `imageUrl` 없음/로드 실패(`@error`) 시 기존 fallback 아이콘 UI로 대체. 동반 수칙은 현재 API가 실제로 제공하는 `allowedSizes`(기존 크기 배지 UI 유지)/`maxWeightLimitKg`(신규 표시, 기존에 응답에는 있었으나 화면 미표시 상태였음)만 "반려동물 동반 수칙" 섹션에 표시, 정보가 전혀 없으면 안내 문구 표시. 상세 내용은 하단 "2026-08-27 완료 기록" 참조.
-  - **잔여**: 장소 사진은 여전히 `imageUrl` 단일 필드 기반(다중 사진 갤러리 아님) — 한국관광공사 이미지 데이터 연동은 Sprint 4 스코프. 실내/실외 동반 가능 여부·목줄 자유구역 등 `Place` 엔티티에는 있지만 API로 노출되지 않는 정책 필드는 `TSK-BE-031` 백로그 참조.
+  - **잔여 (2026-08-27 당시, 이후 해소)**: 다중 사진 갤러리는 2026-11-19(ADR-010), 실내 출입 여부는 2026-11-23(`TSK-BE-031`)에 반영. 실외 동반·목줄 자유구역은 근거 데이터가 없어 표시하지 않음.
 - [x] `TSK-FE-009` [P0] Favorites View (`/favorites`): Saved Place Grid & Quick Delete — **완료 (2026-08-27)**
   - `FavoritesPage.vue`를 기존 `GET /api/v1/users/me/favorites`(기존 API, 신규 없음) 연동으로 재작성. 장소명/주소/이미지(없음/로드 실패 fallback 아이콘)/카테고리/평점·리뷰 수를 카드로 표시, 카드 클릭 시 기존 `/place/:id`(`PlaceDetail`) 라우트로 이동. 삭제는 기존 `DELETE /api/v1/favorites/{placeId}` 재사용, 카드 클릭과 분리된 삭제 버튼(`@click.stop`), 요청 중 버튼 잠금(중복 클릭 방지), 성공 시 목록에서 즉시 제거, 실패 시 목록 유지 + `ErrorMessage`. 로딩/빈 목록/API 오류는 기존 `LoadingSpinner`/`EmptyState`/`ErrorMessage` 패턴 재사용. 비로그인 접근은 라우터 가드(`meta.requiresAuth`)로 우선 차단되지만, 컴포넌트 자체에서도 방어적으로 `authStore.isAuthenticated`를 확인해 로그인 화면(`redirect` 쿼리)으로 이동. `favoriteStore`는 이번에도 도입하지 않고 기존 프로젝트 패턴(페이지에서 `apiClient` 직접 호출)을 그대로 따름 — 기존 기술부채(`TSK-FE-015`)에 계속 해당.
   - 상세 내용은 하단 "2026-08-27 완료 기록: 즐겨찾기 목록 화면 CRUD 연동" 참조.
@@ -253,8 +253,13 @@
   - **검증**: 백엔드 전체 테스트 통과(크기 필터 통합 테스트 갱신·추가: 확인→미확인 순서, 불가 확인 제외, 페이지 경계 유지, verifiedOnly), 프런트 Vitest 148/148(신규 3), type-check·build 통과.
   - **배경**: 로그인 사용자는 대표 반려동물 크기가 크기 필터 기본값으로 적용되는데, 크기 정보가 확인된 장소가 9,630곳 중 30곳뿐이라 장소 탐색 결과가 30건만 나온다(ADR-007: 미확인은 허용으로 간주하지 않음).
   - **DoD (권장안)**: 크기 필터 시 허용이 확인된 장소를 먼저, 정책 미확인 장소는 그 뒤에 "동반 조건 확인 필요" 배지와 함께 표시. 크기 불가가 확인된 장소만 제외. 백엔드 검색 조건/정렬 + 프런트 배지.
-- [ ] `TSK-FE-020` [P2] 쇼핑(전체의 90%) 비중 처리 (2026-11-19 신규) — 카테고리 매핑 수정 결과 8,639곳이 쇼핑. 기본 목록이 상점으로 채워지므로 기본 정렬에서 뒤로 보내거나 기본 필터에서 제외하는 방안 결정.
-- [ ] `TSK-FE-021` [P2] 공공누리 제3유형(변경금지) 이미지 표시 방식 검토 (2026-11-19 신규, ADR-012)
+- [x] `TSK-FE-020` [P2] 쇼핑(전체의 90%) 비중 처리 (2026-11-19 신규) — 카테고리 매핑 수정 결과 8,639곳이 쇼핑. 기본 목록이 상점으로 채워지므로 기본 정렬에서 뒤로 보내거나 기본 필터에서 제외하는 방안 결정. — **완료 (2026-11-23, 정렬에서 뒤로)**
+  - **결정**: 제외하지 않고 정렬에서 뒤로 보낸다(결과 수 유지, 쇼핑을 찾는 사용자는 카테고리로 선택).
+  - **구현 (백엔드 검색 정렬)**: 카테고리 조건이 없으면 쇼핑을 다른 장소 뒤에 둔다. 정렬 순서: 크기 허용 확인 먼저(크기 조건 시) → 쇼핑 후순위 → 거리 또는 평점 → 리뷰 수 → id. 장소 탐색·지도 모두 같은 검색 API라 함께 적용(지도는 보이는 영역 안에서 쇼핑 아닌 장소부터 최대 100곳, 상태 문구에 "쇼핑은 뒤로" 추가). 홈 대시보드(인기·최근 장소)는 별도 쿼리라 이번 범위 밖.
+  - **검증**: 실DB 통합 테스트 추가(더 가까운 쇼핑도 뒤, 평점순도 같은 규칙, 쇼핑 카테고리 선택 시 거리순 그대로).
+- [x] `TSK-FE-021` [P2] 공공누리 제3유형(변경금지) 이미지 표시 방식 검토 (2026-11-19 신규, ADR-012) — **완료 (2026-11-23)**
+  - **결정·구현**: 변경금지 유형(제3·4유형)은 자르지 않고 원본 비율로 표시(`object-contain`), 그 외는 기존처럼 자르기(`utils/publicData.ts`의 `imageFitClass`). 적용 화면: 장소 탐색 카드, 장소 상세 큰 사진·썸네일(사진별 유형), 홈, 즐겨찾기. 홈(`DashboardPlaceDto`)·즐겨찾기(`FavoriteResponseDto`) 응답에 `imageCopyrightType` 추가. ADR-012 보완 기록.
+  - **검증 (FE-020과 함께)**: 백엔드 279 tests(2 skip), 프런트 Vitest 151/151(신규 2), type-check·build 통과.
   - **배경**: 대표 이미지 9,471곳 중 8,922곳이 제3유형(출처표시+변경금지), 549곳이 제1유형. 출처 표시는 적용했으나, 목록 카드·상세 화면이 이미지를 틀에 맞춰 잘라 보여준다(`object-cover`). 화면 표시용 자르기가 "변경"에 해당하는지 확인 필요.
   - **DoD**: 이용 조건 확인 후 필요하면 제3유형 이미지는 `object-contain`(자르지 않음)으로 표시.
 - [ ] `TSK-QA-003` [P1] 테스트 전용 DB 분리 (2026-11-19 신규)

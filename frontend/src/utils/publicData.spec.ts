@@ -1,11 +1,19 @@
 import { describe, it, expect } from 'vitest';
-import { isHttpUrl, kakaoDirectionsUrl, koglLicenseLabel } from './publicData';
+import { imageFitClass, isHttpUrl, kakaoDirectionsUrl, koglLicenseLabel } from './publicData';
 
 describe('publicData utils', () => {
   it('공공누리 유형 코드를 읽을 수 있는 문구로 바꾸고, 모르는 값은 "공공누리"로 표시한다', () => {
     expect(koglLicenseLabel('Type1')).toBe('공공누리 제1유형(출처표시)');
     expect(koglLicenseLabel('Type3')).toBe('공공누리 제3유형(출처표시·변경금지)');
     expect(koglLicenseLabel(null)).toBe('공공누리');
+  });
+
+  it('변경금지 유형(제3·4유형) 이미지는 자르지 않고, 그 외에는 틀에 맞게 자른다 (TSK-FE-021)', () => {
+    expect(imageFitClass('Type3')).toBe('object-contain');
+    expect(imageFitClass('Type4')).toBe('object-contain');
+    expect(imageFitClass('Type1')).toBe('object-cover');
+    expect(imageFitClass('Type2')).toBe('object-cover');
+    expect(imageFitClass(null)).toBe('object-cover');
   });
 
   it('http/https 주소만 링크로 허용한다', () => {
