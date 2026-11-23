@@ -36,6 +36,15 @@
   --font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/*
+ * 한글은 단어(어절) 단위로 줄바꿈한다 (TSK-FE-023). 기본값은 글자 단위라 좁은 화면에서 "반려동/물"처럼 끊겼다.
+ * 한 줄에 다 들어가지 않는 긴 문자열(이메일·URL 등)만 예외적으로 글자 단위로 끊어 화면 밖으로 넘치지 않게 한다.
+ */
+body {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
 [data-theme="dark"] {
   --bg-main: #0c0a09;
   --bg-surface: #1c1917;

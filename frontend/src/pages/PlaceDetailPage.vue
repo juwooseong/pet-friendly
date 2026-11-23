@@ -302,20 +302,21 @@ onMounted(async () => {
         </p>
       </div>
 
-      <div class="flex justify-between items-start">
-        <div>
+      <!-- 휴대폰에서는 이름 아래에 즐겨찾기·평점을 한 줄로, 넓은 화면에서는 오른쪽 열로 (TSK-FE-023) -->
+      <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start">
+        <div class="min-w-0">
           <span class="bg-amber-100 text-amber-700 text-xs font-bold px-2.5 py-1 rounded-lg">
             {{ place.categoryName || place.category }}
           </span>
-          <h1 class="text-3xl font-extrabold text-stone-800 mt-2">{{ place.name }}</h1>
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-stone-800 mt-2">{{ place.name }}</h1>
           <p class="text-stone-500 text-sm mt-1">{{ place.address }}</p>
         </div>
-        <div class="flex flex-col items-end gap-2">
+        <div class="flex flex-row-reverse items-center justify-between gap-2 shrink-0 sm:flex-col sm:items-end sm:justify-start">
           <button
             type="button"
             @click="toggleFavorite"
             :disabled="favoriteActionLoading"
-            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold border transition disabled:opacity-50 disabled:cursor-not-allowed"
+            class="flex items-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-xl text-sm font-bold border whitespace-nowrap transition disabled:opacity-50 disabled:cursor-not-allowed"
             :class="
               isFavorited
                 ? 'bg-rose-50 border-rose-200 text-rose-500 hover:bg-rose-100'
@@ -325,9 +326,9 @@ onMounted(async () => {
             <i :class="isFavorited ? 'ri-heart-fill' : 'ri-heart-line'"></i>
             <span>{{ isFavorited ? '즐겨찾기됨' : '즐겨찾기' }}</span>
           </button>
-          <div class="text-amber-500 font-extrabold text-2xl text-right">
-            <div>★ {{ formatRating(place.rating, place.reviewCount) }}</div>
-            <div class="text-stone-400 text-xs font-normal mt-0.5">리뷰 {{ place.reviewCount }}개</div>
+          <div class="text-amber-500 font-extrabold text-xl sm:text-2xl sm:text-right flex items-baseline gap-2 sm:block">
+            <div class="whitespace-nowrap">★ {{ formatRating(place.rating, place.reviewCount) }}</div>
+            <div class="text-stone-400 text-xs font-normal sm:mt-0.5 whitespace-nowrap">리뷰 {{ place.reviewCount }}개</div>
           </div>
         </div>
       </div>
