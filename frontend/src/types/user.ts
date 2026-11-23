@@ -35,16 +35,19 @@ export interface PetCreateRequest {
 /** 반려동물 수정 요청 (`PUT /api/v1/pets/{petId}`, 백엔드 `PetUpdateRequestDto`와 1:1 매핑) */
 export type PetUpdateRequest = PetCreateRequest;
 
+export type UserRole = 'USER' | 'ADMIN';
+
+/**
+ * 로그인한 사용자 요약 (`POST /api/v1/auth/login` 응답의 `user`, 백엔드 `UserLoginResponseDto.UserSummaryDto`와 1:1 매핑).
+ * 반려동물 목록은 여기에 없으며 `GET /api/v1/pets`로 따로 조회한다 (TSK-FE-016).
+ */
 export interface User {
   id: string;
   email: string;
   nickname: string;
-  avatarUrl?: string;
-  pets: Pet[];
-  activePetId?: string;
+  avatarUrl?: string | null;
+  role: UserRole;
 }
-
-export type UserRole = 'USER' | 'ADMIN';
 
 /** 마이페이지 대표 반려동물 요약 (백엔드 `MyPageResponseDto.RepresentativePetDto`와 1:1 매핑, `Pet`보다 필드가 적은 별도 응답 구조) */
 export interface MyPageRepresentativePet {

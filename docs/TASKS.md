@@ -195,13 +195,16 @@
   - **점검 결과**: 현재 커스텀 쿼리는 모두 실DB 테스트가 있다 — `PlaceRepositoryImpl.searchPlaces`(ST_DWithin/ST_Distance/jsonb_exists/CASE 정렬: `PlaceSearchSizeAndDistanceIntegrationTest`), `findPlaceDetail`(`PlaceDetailIntegrationTest`), `PlaceRepository.findPendingPetPolicySync`(`TourPetPolicyIngestionIntegrationTest`), `ReviewRepository` 평균 평점 `@Query`(`Sprint2FullFlowIntegrationTest`). 나머지 저장소 메서드는 파생 쿼리.
   - **배경**: 이번 작업 중 `PlaceRepositoryImpl`의 `ST_DWithin`/`ST_Distance` QueryDSL 템플릿이 Hibernate 6 HQL 파서에서 파싱 오류(`unrecognized cast target type: geography`) 및 타입 불일치(`SemanticException`)로 실제로는 전혀 동작하지 않았음을 발견하고 수정했다(`geography(...)` 함수 호출 + `cast(... as boolean)` 패턴으로 교체). 기존 `PlaceRepositorySearchTest`/`PlaceQueryServiceTest`/`PlaceControllerTest`가 전부 Mockito Mock 기반이라 실제 쿼리 실행 경로를 한 번도 검증하지 못했기 때문에 Sprint 1 "완료" 이후 지금까지 발견되지 않았던 것으로 보인다.
   - **DoD**: 공간/거리 관련 QueryDSL 커스텀 쿼리(및 향후 추가되는 네이티브 함수 템플릿)에 대해 최소 1개 이상의 실제 PostGIS DB 기반 통합 테스트를 필수화하는 컨벤션 수립(예: `PlaceSearchSizeAndDistanceIntegrationTest` 패턴 재사용/확장). 다른 도메인의 유사 위험(Mock만으로 커버된 실DB 의존 로직)도 함께 점검.
-- [ ] `TSK-FE-014` [P2] `types/place.ts`의 `Place`/`PetPolicy` 타입이 실제 API 응답과 불일치
+- [x] `TSK-FE-014` [P2] `types/place.ts`의 `Place`/`PetPolicy` 타입이 실제 API 응답과 불일치 — **완료 (2026-11-23)**
+  - **구현**: 응답과 맞지 않던 `Place`/`PetPolicy`를 삭제하고 장소 타입을 `PlaceSearchItem`(검색·상세 공용) 하나로 통일. 이를 쓰던 `placeStore`도 `PlaceSearchItem`으로 변경. `MatchResult`(PASS/WARN/DENY 설계용)는 유지.
   - **배경**: `Place`/`PetPolicy`는 `DOMAIN.md`에 정의된 중첩 구조(`petPolicy: { allowedSizes, isIndoorAllowed, ... }`)를 따르지만, 실제 백엔드 `PlaceSearchResponseDto`는 평탄한(flat) 구조로 응답한다. 두 타입 모두 현재 어느 컴포넌트에서도 실사용되지 않는 아스퍼레이셔널(aspirational) 타입으로 방치되어 있었다. 이번 작업에서는 기존 타입을 건드리지 않고 실제 응답과 일치하는 `PlaceSearchItem`(`types/place.ts`)을 신규로 추가해 `SearchPage.vue`에서 사용하도록 했다.
   - **DoD**: `Place`/`PetPolicy`를 실제 API 응답 구조에 맞게 재정의하거나, 장소 상세 API(TSK-BE-029) 구현 시 함께 정리하여 중복 타입을 제거.
 - [ ] `TSK-FE-015` [P2] `usePlaceStore`/`usePetStore` Pinia 스토어가 데이터 페칭에 관여하지 않음
   - **배경**: TASKS.md Feature 3.1에 이미 기록된 기존 기술부채("각 페이지가 store action을 거치지 않고 apiClient를 직접 호출")가 이번에 재구현한 `SearchPage.vue`에도 동일하게 적용된다(기존 코드 패턴을 그대로 따름). `usePlaceStore.places`/`usePetStore.pets`는 여전히 채워지지 않는다. `PlaceDetailPage.vue`의 즐겨찾기 연동(2026-08-18)도 `favoriteStore` 없이 동일 패턴으로 구현되어 이 부채가 계속 누적되고 있음.
   - **DoD**: 스토어 리팩토링을 별도 스프린트로 계획할 때 장소 검색 페이지도 함께 포함.
-- [ ] `TSK-BE-030` [P2] 장소 단건 즐겨찾기 여부 확인 전용 API 부재
+- [x] `TSK-BE-030` [P2] 장소 단건 즐겨찾기 여부 확인 전용 API 부재 — **완료 (2026-11-23)**
+  - **구현**: `GET /api/v1/favorites/{placeId}` → `{ placeId, favorited }`(로그인 필요, 없는 장소도 false). 장소 상세 화면은 전체 목록 대신 이 API를 호출.
+  - **결정**: 장소 상세 응답에 `isFavorited`를 넣는 안은 채택하지 않음 — 상세 API는 비로그인 공개 API이고 검색과 같은 응답 DTO를 쓰므로, 사용자별 값을 섞으면 검색 결과에선 항상 비어 있는 필드가 생기고 향후 상세 캐시(`TSK-INF-003`)도 어려워진다.
   - **배경**: 이번 장소 상세 즐겨찾기 토글 연동(2026-08-18) 작업 중 확인한 기존 백엔드 API에는 특정 장소 1건에 대한 즐겨찾기 여부만 확인하는 엔드포인트(예: `GET /favorites/{placeId}/status`)가 없다. `PlaceDetailPage.vue`는 이를 우회해 기존 `GET /users/me/favorites`(전체 목록)를 호출한 뒤 클라이언트에서 `placeId` 일치 여부를 찾는 방식으로 구현했다(요구사항에 따라 기존 API를 최대한 재사용). 즐겨찾기 수가 많아지면 상세 페이지 진입마다 불필요하게 전체 목록을 내려받는 비효율이 있다.
   - **DoD**: 즐겨찾기 수 증가에 따른 실측 성능 영향을 확인한 뒤, 필요 시 단건 상태 확인 전용 API(또는 장소 상세 응답에 `isFavorited` 필드 포함) 추가를 검토.
 - [x] `TSK-QA-002` [P1] Playwright E2E 테스트 하네스 부재 (`TSK-FE-008` 리뷰 기능 검증에서 식별, 2026-08-18) — **완료 (2026-11-23)**
@@ -211,7 +214,8 @@
   - **CI**: GitHub Actions 연동은 `TSK-INF-006`에서(PostgreSQL 서비스 + `TEST_DB_URL`/`E2E_DB_CONTAINER` 조정 필요).
   - **배경**: 장소 상세 리뷰 조회/작성 기능의 실브라우저 검증을 위해 로컬에 Playwright를 임시 설치하고, DB에 임시 시드 장소/계정 데이터를 스크립트로 직접 심어 수동으로 시나리오(로그인→검색→상세→리뷰 작성→새로고침→즐겨찾기 확인)를 실행했다. 저장소에는 재사용 가능한 Playwright 설정, 테스트용 DB 초기화/시드 스크립트, `npm run e2e` 같은 표준 진입점이 없어 매번 이 과정을 수작업으로 반복해야 한다.
   - **DoD**: `playwright.config.ts` 및 `frontend`(또는 루트) `e2e/` 디렉터리 신설, 테스트 전용 DB 시드/정리 스크립트 작성, CI에서 실행 가능한 `npm run e2e` 스크립트 추가. 최소한 이번에 검증한 리뷰 작성 플로우를 회귀 테스트로 고정.
-- [ ] `TSK-FE-016` [P2] `types/user.ts`의 `User`(로그인 응답 매핑) 타입이 실제 API 응답과 불일치 (`TSK-FE-011` MyPage 연동에서 식별, 2026-08-27)
+- [x] `TSK-FE-016` [P2] `types/user.ts`의 `User`(로그인 응답 매핑) 타입이 실제 API 응답과 불일치 (`TSK-FE-011` MyPage 연동에서 식별, 2026-08-27) — **완료 (2026-11-23)**
+  - **구현**: `User`를 로그인 응답(`UserSummaryDto`)과 같게 정리 — `pets`/`activePetId` 제거, `role` 추가, `avatarUrl`은 null 허용. 테스트 6개 파일의 로그인 가짜 데이터도 맞춤. 반려동물은 계속 `GET /pets`로 조회.
   - **배경**: `User` 인터페이스에 `pets: Pet[]`/`activePetId?: string` 필드가 있지만, 실제 로그인 응답(`UserLoginResponseDto.UserSummaryDto`)은 `id`/`email`/`nickname`/`avatarUrl`/`role`만 내려주며 `pets`/`activePetId`는 응답에 존재한 적이 없다(항상 빈 배열/undefined로만 취급되어 왔음, `PetPage`/`SearchPage`가 각자 `GET /pets`를 직접 호출하는 것도 이 때문으로 추정). `Pet`(`TSK-FE-010`) 때와 달리 이번에는 `authStore`/여러 페이지의 로그인 mock 데이터가 이 타입에 의존하고 있어 영향 범위가 넓아, 이번 작업 범위에서는 임의로 정리하지 않고 백로그로만 기록.
   - **DoD**: `User` 타입에서 실제로 내려오지 않는 `pets`/`activePetId`를 제거하거나, 실제로 필요하다면 `role`을 타입에 추가하고 `pets` 관련 필드는 별도 API 응답으로 명확히 분리. 변경 시 `authStore`, 관련 스펙(`PlaceDetailPage.spec.ts` 등)의 로그인 mock 데이터도 함께 정리.
 - [x] `TSK-FE-017` [P1] 지도에 장소 마커 연동 (`TSK-FE-007` 0단계 이후 다음 단계, 2026-09-09 완료)

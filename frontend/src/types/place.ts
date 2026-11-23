@@ -47,9 +47,9 @@ export interface PetPolicyDetail {
 }
 
 /**
- * 장소 검색 API(`GET /places/search`)의 실제 응답 Projection 구조.
- * 백엔드 `PlaceSearchResponseDto`(QueryDSL Projection)와 1:1로 매핑되며,
- * 아래 `Place`/`PetPolicy`(중첩 정책 구조)와는 별개의 평탄한(flat) 응답 형태이다.
+ * 장소 응답 구조. 검색(`GET /places/search`)·상세(`GET /places/{id}`) 공용이며
+ * 백엔드 `PlaceSearchResponseDto`(QueryDSL Projection)와 1:1로 매핑되는 평탄한(flat) 구조다.
+ * 프런트의 장소 타입은 이것 하나로 통일한다 (TSK-FE-014: 응답과 맞지 않던 중첩 구조 `Place`/`PetPolicy` 제거).
  */
 export interface PlaceSearchItem {
   id: string;
@@ -96,34 +96,6 @@ export interface PlaceSearchParams {
   sizeVerifiedOnly?: boolean;
   page?: number;
   size?: number;
-}
-
-export interface PetPolicy {
-  maxWeightLimitKg: number | null;
-  allowedSizes: SizeCategory[];
-  isIndoorAllowed: boolean;
-  isOutdoorAllowed: boolean;
-  hasOffLeashZone: boolean;
-  policyChecklist: string[];
-}
-
-export interface Place {
-  id: string;
-  publicDataId?: string;
-  name: string;
-  category: PlaceCategory;
-  categoryName: string;
-  address: string;
-  latitude: number;
-  longitude: number;
-  phone: string;
-  operatingHours: string;
-  imageUrl: string;
-  description: string;
-  rating: number;
-  reviewCount: number;
-  facilities: string[];
-  petPolicy: PetPolicy;
 }
 
 export type MatchStatus = 'PASS' | 'WARN' | 'DENY' | 'INFO';

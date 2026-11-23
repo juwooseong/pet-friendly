@@ -13,3 +13,9 @@ export interface FavoriteItem {
   reviewCount: number;
   createdAt: string;
 }
+
+/** 장소 1곳의 즐겨찾기 여부 (`GET /api/v1/favorites/{placeId}`, 백엔드 FavoriteStatusResponseDto) */
+export interface FavoriteStatus {
+  placeId: string;
+  favorited: boolean;
+}

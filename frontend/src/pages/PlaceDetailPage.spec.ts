@@ -54,22 +54,11 @@ function mockDetailResponse(overrides: Partial<Record<string, unknown>> = {}) {
   };
 }
 
-function mockFavoritesResponse(items: Array<{ placeId: string }> = []) {
+function mockFavoriteStatusResponse(favorited: boolean) {
   return {
     data: {
       success: true,
-      data: items.map((item, idx) => ({
-        favoriteId: `fav-${idx}`,
-        placeId: item.placeId,
-        placeName: '홍대 애견카페',
-        category: 'CAFE',
-        categoryName: '카페',
-        address: '서울특별시 마포구',
-        imageUrl: null,
-        rating: 4.5,
-        reviewCount: 10,
-        createdAt: '2026-08-14T00:00:00',
-      })),
+      data: { placeId: 'place-123', favorited },
       error: null,
       timestamp: '2026-08-14T00:00:00',
     },
@@ -78,7 +67,7 @@ function mockFavoritesResponse(items: Array<{ placeId: string }> = []) {
 
 function loginAuthStore() {
   const authStore = useAuthStore();
-  authStore.setAuth('token-abc', { id: 'u1', email: 'a@a.com', nickname: '닉네임', pets: [] });
+  authStore.setAuth('token-abc', { id: 'u1', email: 'a@a.com', nickname: '닉네임', role: 'USER' });
   return authStore;
 }
 
@@ -112,8 +101,8 @@ function makeReview(overrides: Partial<Record<string, unknown>> = {}) {
 /** apiClient.get을 경로별로 분기 처리하는 기본 mock (장소 상세 + 즐겨찾기 목록 + 리뷰 목록) */
 function mockGetByUrl(favoritePlaceIds: string[] = [], reviews: Array<Partial<Record<string, unknown>>> = []) {
   (apiClient.get as any).mockImplementation((url: string) => {
-    if (url === '/users/me/favorites') {
-      return Promise.resolve(mockFavoritesResponse(favoritePlaceIds.map((placeId) => ({ placeId }))));
+    if (url === '/favorites/place-123') {
+      return Promise.resolve(mockFavoriteStatusResponse(favoritePlaceIds.includes('place-123')));
     }
     if (url === '/places/place-123/reviews') {
       return Promise.resolve(mockReviewsResponse(reviews));
@@ -248,14 +237,15 @@ describe('PlaceDetailPage', () => {
   });
 
   describe('즐겨찾기', () => {
-    it('로그인 사용자는 GET /users/me/favorites로 현재 장소의 즐겨찾기 상태를 조회해 표시한다', async () => {
+    it('로그인 사용자는 GET /favorites/{placeId}로 현재 장소의 즐겨찾기 상태를 조회해 표시한다', async () => {
       loginAuthStore();
       mockGetByUrl(['place-123']);
 
       const wrapper = mountPage();
       await flushPromises();
 
-      expect(apiClient.get).toHaveBeenCalledWith('/users/me/favorites');
+      expect(apiClient.get).toHaveBeenCalledWith('/favorites/place-123');
+      expect(apiClient.get).not.toHaveBeenCalledWith('/users/me/favorites');
       expect(wrapper.text()).toContain('즐겨찾기됨');
     });
 
@@ -307,7 +297,7 @@ describe('PlaceDetailPage', () => {
       const wrapper = mountPage();
       await flushPromises();
 
-      expect(apiClient.get).not.toHaveBeenCalledWith('/users/me/favorites');
+      expect(apiClient.get).not.toHaveBeenCalledWith('/favorites/place-123');
 
       await wrapper.find('button').trigger('click');
       await flushPromises();
@@ -412,8 +402,8 @@ describe('PlaceDetailPage', () => {
       loginAuthStore();
       let reviewsCallCount = 0;
       (apiClient.get as any).mockImplementation((url: string) => {
-        if (url === '/users/me/favorites') {
-          return Promise.resolve(mockFavoritesResponse([]));
+        if (url === '/favorites/place-123') {
+          return Promise.resolve(mockFavoriteStatusResponse(false));
         }
         if (url === '/places/place-123/reviews') {
           reviewsCallCount += 1;

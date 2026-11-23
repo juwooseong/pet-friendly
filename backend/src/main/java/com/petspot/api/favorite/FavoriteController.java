@@ -1,6 +1,7 @@
 package com.petspot.api.favorite;
 
 import com.petspot.api.favorite.dto.FavoriteResponseDto;
+import com.petspot.api.favorite.dto.FavoriteStatusResponseDto;
 import com.petspot.application.favorite.FavoriteService;
 import com.petspot.global.dto.ApiResponse;
 import com.petspot.global.security.CustomUserDetails;
@@ -67,6 +68,21 @@ public class FavoriteController {
         favoriteService.removeFavorite(userDetails.getId(), placeId);
 
         return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @Operation(
+            summary = "장소 즐겨찾기 여부 조회",
+            description = "현재 로그인한 사용자가 특정 장소를 즐겨찾기했는지 확인합니다. 장소 상세 화면에서 전체 목록 대신 사용합니다.",
+            security = @SecurityRequirement(name = SwaggerConfig.SECURITY_SCHEME_NAME)
+    )
+    @GetMapping("/api/v1/favorites/{placeId}")
+    public ResponseEntity<ApiResponse<FavoriteStatusResponseDto>> getFavoriteStatus(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable UUID placeId) {
+
+        boolean favorited = favoriteService.isFavorited(userDetails.getId(), placeId);
+
+        return ResponseEntity.ok(ApiResponse.success(new FavoriteStatusResponseDto(placeId, favorited)));
     }
 
     @Operation(

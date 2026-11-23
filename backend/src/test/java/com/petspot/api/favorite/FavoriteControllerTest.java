@@ -114,6 +114,19 @@ class FavoriteControllerTest {
     }
 
     @Test
+    @DisplayName("GET /api/v1/favorites/{placeId} 즐겨찾기 여부 반환")
+    void getFavoriteStatus_Success() throws Exception {
+        UUID placeId = UUID.randomUUID();
+        given(favoriteService.isFavorited(mockUser.getId(), placeId)).willReturn(true);
+
+        mockMvc.perform(get("/api/v1/favorites/" + placeId)
+                        .with(authentication(mockAuth)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.placeId", is(placeId.toString())))
+                .andExpect(jsonPath("$.data.favorited", is(true)));
+    }
+
+    @Test
     @DisplayName("GET /api/v1/users/me/favorites 내 즐겨찾기 목록 조회 200 OK 반환")
     void getMyFavorites_Success() throws Exception {
         // given

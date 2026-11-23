@@ -85,7 +85,7 @@ describe('SearchPage', () => {
 
   it('로그인 사용자는 대표 반려동물의 sizeCategory를 크기 필터 기본값으로 사용한다', async () => {
     const authStore = useAuthStore();
-    authStore.setAuth('token-abc', { id: 'u1', email: 'a@a.com', nickname: '닉네임', pets: [] });
+    authStore.setAuth('token-abc', { id: 'u1', email: 'a@a.com', nickname: '닉네임', role: 'USER' });
 
     (apiClient.get as any).mockImplementation((url: string) => {
       if (url === '/pets') {
@@ -201,7 +201,7 @@ describe('SearchPage', () => {
 
     function loginWithLargePet() {
       const authStore = useAuthStore();
-      authStore.setAuth('token-abc', { id: 'u1', email: 'a@a.com', nickname: '닉네임', pets: [] });
+      authStore.setAuth('token-abc', { id: 'u1', email: 'a@a.com', nickname: '닉네임', role: 'USER' });
       (apiClient.get as any).mockImplementation((url: string) => {
         if (url === '/pets') {
           return Promise.resolve({ data: { success: true, data: [{ id: 'p1', name: '뽀삐', sizeCategory: 'LARGE', representative: true }] } });
