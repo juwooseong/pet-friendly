@@ -61,6 +61,7 @@ public class PlaceRepositoryImpl implements PlaceRepositoryCustom {
         }
 
         BooleanExpression[] whereConditions = new BooleanExpression[]{
+                place.hiddenAt.isNull(), // TourAPI가 숨긴 장소 제외 (TSK-DATA-012). 상세 조회는 리뷰·즐겨찾기 링크를 위해 유지
                 stDWithin(condition.getLatitude(), condition.getLongitude(), condition.getRadiusKmOrDefault()),
                 categoryEq(condition.getCategory()),
                 keywordContains(condition.getKeyword()),

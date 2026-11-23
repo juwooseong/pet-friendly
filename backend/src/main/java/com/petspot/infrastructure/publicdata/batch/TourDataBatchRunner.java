@@ -20,6 +20,8 @@ import org.springframework.stereotype.Component;
  *     --spring.devtools.restart.enabled=false
  *     --public-data.batch.run-on-startup=true --public-data.batch.exit-after-run=true"
  * </pre>
+ * <p>장소 동기화 진행 날짜가 DB에 없는 첫 실행이라면 {@code --public-data.batch.sync-since=yyyyMMdd}(최초 적재일)를 붙인다.
+ * 정책 조회 없이 장소 동기화만 하려면 {@code --public-data.batch.pet-policy-max-calls=0}.
  * <p><b>주의:</b> {@code spring.devtools.restart.enabled=false}를 빼면, 실행 도중 IDE 자동 빌드 등으로 클래스가 바뀔 때
  * DevTools가 앱을 재시작하면서 배치가 처음부터 다시 실행된다(2026-11-19 실제 발생: 목록·정책 호출 약 900회 중복).
  */

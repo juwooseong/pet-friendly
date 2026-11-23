@@ -1,5 +1,6 @@
 package com.petspot.infrastructure.publicdata.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
@@ -85,7 +86,9 @@ public class TourApiResponseDto {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Items {
 
+        /** TourAPI는 결과가 1건이면 배열이 아닌 객체로 보낸다 - 1건짜리 목록으로 받는다 (TSK-DATA-012) */
         @JsonProperty("item")
+        @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
         private List<TourApiPlaceItemDto> item;
     }
 }

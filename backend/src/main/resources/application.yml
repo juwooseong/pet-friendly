@@ -73,10 +73,12 @@ public-data:
     enabled: false
     cron: "0 0 3 * * *"
     page-size: 100
-    # TSK-DATA-010: 배치 1회 실행 = 장소 목록(전국 약 97회 호출) + 반려동물 정책(detailPetTour2, 장소당 1회 호출).
-    # 정책은 아직 조회하지 않은 장소부터 아래 건수까지만 처리하고, 다음 실행에서 이어 간다(일일 트래픽 한도 대응).
-    sync-place-list: true          # false면 목록은 건너뛰고 정책 조회만 이어서 진행
-    pet-policy-max-calls: 800      # 목록 호출과 합쳐 data.go.kr 일일 한도 안으로 설정
+    # 배치 1회 실행 = 장소 동기화(petTourSyncList2, 마지막 동기화 날짜부터 바뀐 장소만 - 보통 하루 1~2회 호출, TSK-DATA-012)
+    #              + 반려동물 정책(detailPetTour2, 장소당 1회 호출, TSK-DATA-010).
+    # 정책은 아직 조회하지 않았거나 정보가 바뀐 장소부터 아래 건수까지만 처리하고, 다음 실행에서 이어 간다(일일 트래픽 한도 대응).
+    sync-place-list: true          # false면 장소 동기화는 건너뛰고 정책 조회만 이어서 진행
+    sync-since: ""                 # 동기화 진행 날짜가 없을 때(첫 실행) 기준일 yyyyMMdd. 비우면 첫 실행은 전체(약 101회)
+    pet-policy-max-calls: 800      # 장소 동기화 호출과 합쳐 data.go.kr 일일 한도 안으로 설정
     pet-policy-call-delay-ms: 100
     # 지금 한 번 실행: --public-data.batch.run-on-startup=true (TourDataBatchRunner)
     # 실행 후 종료까지: --spring.main.web-application-type=none --public-data.batch.exit-after-run=true
