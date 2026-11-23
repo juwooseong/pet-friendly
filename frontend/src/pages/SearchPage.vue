@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { storeToRefs } from 'pinia';
 import { formatRating } from '@/utils/rating';
 import { TOUR_API_SOURCE, imageFitClass } from '@/utils/publicData';
 import { useRouter } from 'vue-router';
-import apiClient from '@/api/apiClient';
 import { useAuthStore } from '@/stores/authStore';
 import { usePetStore } from '@/stores/petStore';
-import type { ApiResponse, PageResponse } from '@/types/api';
-import type { PlaceCategory, PlaceSearchItem, PlaceSearchParams } from '@/types/place';
-import type { Pet, SizeCategory } from '@/types/user';
+import { usePlaceStore } from '@/stores/placeStore';
+import type { PlaceSearchItem } from '@/types/place';
 import BaseCard from '@/components/common/BaseCard.vue';
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue';
 import ErrorMessage from '@/components/common/ErrorMessage.vue';
@@ -17,21 +16,31 @@ import EmptyState from '@/components/common/EmptyState.vue';
 const router = useRouter();
 const authStore = useAuthStore();
 const petStore = usePetStore();
-
-const PAGE_SIZE = 12;
+/** 검색 조건·결과는 스토어에 두어 상세에서 돌아와도 유지된다 (TSK-FE-015 15-3) */
+const placeStore = usePlaceStore();
+const {
+  keyword,
+  category,
+  sizeCategory,
+  sizeVerifiedOnly,
+  radiusKm,
+  distanceSortEnabled,
+  userCoords,
+  sizeDefaultPet: representativePet,
+  places,
+  currentPage,
+  totalPages,
+  totalElements,
+  hasNext,
+  loading,
+  errorMessage,
+} = storeToRefs(placeStore);
 
 /** 이미지 로드에 실패한 장소 ID - 깨진 이미지 대신 기본 아이콘을 보여준다 */
 const failedImageIds = ref<Set<string>>(new Set());
 const markImageFailed = (placeId: string) => {
   failedImageIds.value = new Set(failedImageIds.value).add(placeId);
 };
-const DEFAULT_RADIUS_KM = 3;
-
-const keyword = ref('');
-const category = ref<PlaceCategory | ''>('');
-const sizeCategory = ref<SizeCategory | ''>('');
-/** 크기 필터 사용 시 허용이 확인된 장소만 볼지 여부(기본: 정보 없는 장소도 뒤에 포함) */
-const sizeVerifiedOnly = ref(false);
 
 /**
  * 크기 필터 결과에서 이 장소의 크기 조건이 확인되지 않았는지(allowedSizes 없음).
@@ -39,20 +48,7 @@ const sizeVerifiedOnly = ref(false);
  */
 const isSizeUnverified = (place: PlaceSearchItem) =>
   !!sizeCategory.value && (!place.allowedSizes || place.allowedSizes.length === 0);
-const radiusKm = ref(DEFAULT_RADIUS_KM);
-const distanceSortEnabled = ref(false);
-const userCoords = ref<{ latitude: number; longitude: number } | null>(null);
 const geolocationError = ref('');
-
-const loading = ref(false);
-const errorMessage = ref('');
-const places = ref<PlaceSearchItem[]>([]);
-const currentPage = ref(0);
-const totalPages = ref(0);
-const totalElements = ref(0);
-const hasNext = ref(false);
-
-const representativePet = ref<Pet | null>(null);
 
 const pageNumbers = computed(() => {
   if (totalPages.value <= 1) return [];
@@ -126,39 +122,7 @@ const toggleDistanceSort = async () => {
   await searchPlaces(0);
 };
 
-const searchPlaces = async (page = 0) => {
-  loading.value = true;
-  errorMessage.value = '';
-  try {
-    const params: PlaceSearchParams = { page, size: PAGE_SIZE };
-    if (keyword.value) params.keyword = keyword.value;
-    if (category.value) params.category = category.value;
-    if (sizeCategory.value) {
-      params.sizeCategory = sizeCategory.value;
-      if (sizeVerifiedOnly.value) params.sizeVerifiedOnly = true;
-    }
-    if (distanceSortEnabled.value && userCoords.value) {
-      params.latitude = userCoords.value.latitude;
-      params.longitude = userCoords.value.longitude;
-      params.radiusKm = radiusKm.value;
-    }
-
-    const response = await apiClient.get<ApiResponse<PageResponse<PlaceSearchItem>>>('/places/search', { params });
-    if (response.data && response.data.success) {
-      const pageData = response.data.data;
-      places.value = pageData.content || [];
-      currentPage.value = pageData.page;
-      totalPages.value = pageData.totalPages;
-      totalElements.value = pageData.totalElements;
-      hasNext.value = pageData.hasNext;
-    }
-  } catch (err) {
-    console.error('Search error:', err);
-    errorMessage.value = '장소 검색 중 오류가 발생했습니다.';
-  } finally {
-    loading.value = false;
-  }
-};
+const searchPlaces = (page = 0) => placeStore.search(page);
 
 const goToPage = async (page: number) => {
   if (page < 0 || page >= totalPages.value || page === currentPage.value) return;
@@ -167,7 +131,17 @@ const goToPage = async (page: number) => {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
+/**
+ * 브라우저 뒤로/앞으로 가기로 이 화면에 돌아왔는지.
+ * Vue Router는 기록 항목마다 다음 항목(forward)을 저장하는데, 메뉴·링크로 새로 들어오면 비어 있다.
+ */
+const isHistoryReturn = () => !!window.history.state?.forward;
+
 onMounted(async () => {
+  // 상세 등에서 뒤로 돌아왔으면 이전 검색 상태를 그대로 보여 준다
+  if (placeStore.searched && isHistoryReturn()) return;
+
+  placeStore.$reset();
   await fetchRepresentativePet();
   await searchPlaces(0);
 });

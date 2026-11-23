@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { useAuthStore } from './authStore';
 import { usePetStore } from './petStore';
+import { usePlaceStore } from './placeStore';
 
 describe('authStore - requiresPasswordChange', () => {
   beforeEach(() => {
@@ -71,11 +72,13 @@ describe('authStore - requiresPasswordChange', () => {
     const store = useAuthStore();
     const petStore = usePetStore();
     petStore.$patch({ pets: [{ id: 'p1' } as any], loaded: true });
+    usePlaceStore().$patch({ sizeCategory: 'LARGE' });
 
     store.logout();
 
     expect(petStore.pets).toEqual([]);
     expect(petStore.loaded).toBe(false);
+    expect(usePlaceStore().sizeCategory).toBe('');
   });
 
   it('비밀번호 값 자체를 담는 상태 필드가 존재하지 않는다 (id/email/nickname/token/requiresPasswordChange만 보유)', () => {

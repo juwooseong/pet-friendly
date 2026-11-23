@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import type { User } from '@/types/user';
 import { usePetStore } from './petStore';
+import { usePlaceStore } from './placeStore';
 
 function loadStoredUser(): User | null {
   const raw = localStorage.getItem('user');
@@ -67,6 +68,7 @@ export const useAuthStore = defineStore('auth', {
       localStorage.removeItem('requiresPasswordChange');
       // 개인 데이터가 든 스토어를 비운다 - 다른 계정으로 로그인했을 때 이전 사용자의 데이터가 보이지 않게 (TSK-FE-015)
       usePetStore().$reset();
+      usePlaceStore().$reset(); // 대표 반려동물 기준 크기 필터가 들어 있음
       // 예전 버전이 남긴 선택 반려동물 값 (이제 서버의 대표 반려동물을 쓴다)
       localStorage.removeItem('petspot_active_pet_id');
     },

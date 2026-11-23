@@ -85,6 +85,8 @@ const routes: Array<RouteRecordRaw> = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
+  // 뒤로/앞으로 가기는 이전 스크롤 위치로(장소 탐색은 결과가 스토어에 남아 있어 바로 복원됨), 새 화면은 맨 위에서 시작
+  scrollBehavior: (_to, _from, savedPosition) => savedPosition ?? { top: 0 },
 });
 
 /** 강제 비밀번호 변경 상태에서도 접근을 허용하는 라우트 이름 목록 (로그인/로그아웃은 라우트 이동 없이도 항상 가능) */
