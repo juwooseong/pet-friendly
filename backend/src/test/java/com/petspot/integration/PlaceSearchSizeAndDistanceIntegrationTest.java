@@ -72,6 +72,25 @@ class PlaceSearchSizeAndDistanceIntegrationTest {
         }
     }
 
+    @Test
+    @DisplayName("홈 대시보드 인기·최근 장소에서 쇼핑은 평점이 높거나 더 최근이어도 다른 장소 뒤에 온다 (TSK-FE-022)")
+    void dashboardPlaces_ShoppingLast() {
+        // given: 쇼핑이 나중에 등록되고 평점도 더 높다
+        Place park = placeRepository.save(Place.builder().name("대시보드-공원").category("PARK").address("테스트")
+                .location(point(ISOLATED_LAT, ISOLATED_LON)).latitude(ISOLATED_LAT).longitude(ISOLATED_LON)
+                .rating(java.math.BigDecimal.valueOf(1.0)).build());
+        Place shop = placeRepository.save(Place.builder().name("대시보드-쇼핑").category("SHOPPING").address("테스트")
+                .location(point(ISOLATED_LAT, ISOLATED_LON)).latitude(ISOLATED_LAT).longitude(ISOLATED_LON)
+                .rating(java.math.BigDecimal.valueOf(5.0)).build());
+        placeRepository.flush();
+
+        Pageable all = PageRequest.of(0, 100000);
+        for (List<Place> result : List.of(placeRepository.findPopularPlaces(all), placeRepository.findRecentPlaces(all))) {
+            List<java.util.UUID> ids = result.stream().map(Place::getId).toList();
+            assertThat(ids.indexOf(park.getId())).isNotNegative().isLessThan(ids.indexOf(shop.getId()));
+        }
+    }
+
     private Point point(double lat, double lon) {
         return GEOMETRY_FACTORY.createPoint(new Coordinate(lon, lat));
     }

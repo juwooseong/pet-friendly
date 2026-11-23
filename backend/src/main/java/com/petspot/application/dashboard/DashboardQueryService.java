@@ -56,9 +56,10 @@ public class DashboardQueryService {
         Optional<Pet> representativePetOpt = petRepository.findRepresentativePet(userId);
         long favoriteCount = favoriteRepository.countByUserId(userId);
 
-        // 2. 인기 장소 및 최신 장소 Top 10 조회 (최대 10건 제한)
-        List<Place> popularPlaces = placeRepository.findTop10ByOrderByRatingDescReviewCountDesc();
-        List<Place> recentPlaces = placeRepository.findTop10ByOrderByCreatedAtDesc();
+        // 2. 인기 장소 및 최신 장소 Top 10 조회 (최대 10건 제한, 쇼핑은 뒤로)
+        org.springframework.data.domain.Pageable top10 = org.springframework.data.domain.PageRequest.of(0, 10);
+        List<Place> popularPlaces = placeRepository.findPopularPlaces(top10);
+        List<Place> recentPlaces = placeRepository.findRecentPlaces(top10);
 
         // 3. 추천 장소 (Sprint 2에서는 인기 장소 기반 제공, Sprint 4에서 AI 추천 알고리즘으로 확장)
         List<Place> recommendedPlaces = popularPlaces;
