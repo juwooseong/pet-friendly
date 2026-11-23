@@ -193,7 +193,7 @@ describe('PlaceDetailPage', () => {
       await flushPromises();
 
       expect(wrapper.find('img').exists()).toBe(false);
-      expect(wrapper.find('.ri-image-line').exists()).toBe(true);
+      expect(wrapper.find('[data-testid="place-image-placeholder"]').exists()).toBe(true);
     });
 
     it('이미지 로드 실패 시 fallback 아이콘으로 대체된다', async () => {
@@ -206,7 +206,7 @@ describe('PlaceDetailPage', () => {
       await flushPromises();
 
       expect(wrapper.find('img').exists()).toBe(false);
-      expect(wrapper.find('.ri-image-line').exists()).toBe(true);
+      expect(wrapper.find('[data-testid="place-image-placeholder"]').exists()).toBe(true);
     });
   });
 

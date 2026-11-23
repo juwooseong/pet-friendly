@@ -58,4 +58,16 @@ public interface PlaceRepository extends JpaRepository<Place, UUID>, PlaceReposi
             order by case when p.category = 'SHOPPING' then 1 else 0 end, p.createdAt desc
             """)
     java.util.List<Place> findPendingPetPolicySync(org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * 대표 사진이 없고 아직 TourAPI 상세(사진 목록 포함)를 받지 않은 공공데이터 장소 (TSK-DATA-013).
+     * 배치가 상세를 미리 받아 첫 사진을 대표 사진으로 채운다. 쇼핑이 아닌 장소부터, 같은 그룹 안에서는 최근 등록 순.
+     */
+    @org.springframework.data.jpa.repository.Query("""
+            select p from Place p
+            where p.publicDataId is not null and p.hiddenAt is null and p.detailSyncedAt is null
+              and (p.imageUrl is null or p.imageUrl = '')
+            order by case when p.category = 'SHOPPING' then 1 else 0 end, p.createdAt desc
+            """)
+    java.util.List<Place> findMissingImagePendingDetail(org.springframework.data.domain.Pageable pageable);
 }

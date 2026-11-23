@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { formatRating } from '@/utils/rating';
-import { imageFitClass } from '@/utils/publicData';
+import PlaceImage from '@/components/common/PlaceImage.vue';
 import apiClient, { extractErrorMessage } from '@/api/apiClient';
 import BaseCard from '@/components/common/BaseCard.vue';
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue';
@@ -13,7 +13,8 @@ interface PlaceItem {
   category: string;
   categoryName: string;
   address: string;
-  imageUrl?: string;
+  imageUrl?: string | null;
+  thumbnailUrl?: string | null;
   /** 대표 이미지 공공누리 유형 (Type3/Type4는 변경금지라 자르지 않고 표시) */
   imageCopyrightType?: string | null;
   rating?: number;
@@ -95,15 +96,14 @@ onMounted(() => {
       <div v-else-if="places.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <BaseCard v-for="place in places" :key="place.id" hoverable @click="$router.push(`/place/${place.id}`)">
           <div class="h-40 bg-stone-100 rounded-xl overflow-hidden mb-3 relative">
-            <img
-              v-if="place.imageUrl"
-              :src="place.imageUrl"
+            <PlaceImage
+              :image-url="place.imageUrl"
+              :thumbnail-url="place.thumbnailUrl"
+              :prefer-thumbnail="false"
               :alt="place.name"
-              :class="['w-full h-full', imageFitClass(place.imageCopyrightType)]"
+              :category="place.category"
+              :copyright-type="place.imageCopyrightType"
             />
-            <div v-else class="w-full h-full flex items-center justify-center text-stone-300">
-              <i class="ri-image-line text-3xl"></i>
-            </div>
             <span class="absolute top-2 left-2 bg-white/90 backdrop-blur-sm text-stone-700 text-xs font-bold px-2.5 py-1 rounded-lg">
               {{ place.categoryName || place.category }}
             </span>

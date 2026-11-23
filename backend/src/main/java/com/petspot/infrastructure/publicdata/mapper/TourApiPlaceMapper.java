@@ -62,7 +62,10 @@ public class TourApiPlaceMapper {
                 .latitude(latitude)
                 .longitude(longitude)
                 .phone(dto.getTel())
-                .imageUrl(dto.getFirstImage() != null ? dto.getFirstImage() : dto.getFirstImageThumbnail())
+                // 빈 문자열("")로 오는 경우가 많다 - 없으면 null로 두고, 관광공사 http 주소는 https로 (TSK-DATA-013)
+                .imageUrl(TourApiImageUrls.normalize(dto.getFirstImage()) != null
+                        ? TourApiImageUrls.normalize(dto.getFirstImage())
+                        : TourApiImageUrls.normalize(dto.getFirstImageThumbnail()))
                 // 반려동물 정책(maxWeightLimitKg/allowedSizes/실내외 등)은 목록 응답(areaBasedList2)에 없다.
                 // 장소별 detailPetTour2 응답을 TourApiPetPolicyParser로 해석해 별도로 반영한다(ADR-009).
                 // 이 단계에서는 근거 없이 채우지 않고 null(미확인)로 둔다(ADR-007).
@@ -76,12 +79,15 @@ public class TourApiPlaceMapper {
      * 이 메서드를 통해서만 반영해야 신규 적재와 재적재 결과가 같아진다.
      */
     public void applyListInfo(Place place, TourApiPlaceItemDto dto) {
+        // 목록에 사진이 없으면 사진 관련 값은 넘기지 않는다 - 상세 사진에서 채운 대표 사진 정보를 유지 (TSK-DATA-013)
+        boolean hasListImage = TourApiImageUrls.normalize(dto.getFirstImage()) != null
+                || TourApiImageUrls.normalize(dto.getFirstImageThumbnail()) != null;
         place.applyTourApiListInfo(
                 mapCategory(dto.getContentTypeId()),
                 mapCategoryName(dto.getContentTypeId()),
                 blankToNull(dto.getContentTypeId()),
-                blankToNull(dto.getFirstImageThumbnail()),
-                blankToNull(dto.getImageCopyrightType()));
+                TourApiImageUrls.normalize(dto.getFirstImageThumbnail()),
+                hasListImage ? blankToNull(dto.getImageCopyrightType()) : null);
     }
 
     /**

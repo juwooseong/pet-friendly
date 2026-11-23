@@ -12,6 +12,7 @@ import type { Review } from '@/types/review';
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue';
 import ErrorMessage from '@/components/common/ErrorMessage.vue';
 import EmptyState from '@/components/common/EmptyState.vue';
+import PlaceImage from '@/components/common/PlaceImage.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -280,9 +281,8 @@ onMounted(async () => {
             data-testid="gallery-main-image"
             @error="imageLoadError = true"
           />
-          <div v-else class="w-full h-full flex items-center justify-center text-stone-300">
-            <i class="ri-image-line text-4xl"></i>
-          </div>
+          <!-- 사진이 없거나 깨지면 장소 유형 아이콘과 "사진 준비 중" (TSK-FE-025) -->
+          <PlaceImage v-else :alt="place.name" :category="place.category" icon-class="text-5xl" />
         </div>
         <div v-if="galleryImages.length > 1" class="flex gap-2 overflow-x-auto pb-1">
           <button
