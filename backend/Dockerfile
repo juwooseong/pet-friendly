@@ -16,8 +16,8 @@ RUN ./gradlew bootJar -x test --no-daemon
 # ---- 2단계: 실행 이미지 ----
 FROM eclipse-temurin:17-jre
 WORKDIR /app
-RUN useradd --system --uid 1001 petspot     # 리뷰 사진 볼륨(/app/uploads)을 처음 만들 때 이 폴더의 소유자를 물려받아 petspot 사용자가 쓸 수 있다
-    && mkdir -p /app/uploads && chown petspot /app/uploads
+# 리뷰 사진 볼륨(/app/uploads)은 처음 만들 때 이 폴더의 소유자를 물려받아 petspot 사용자가 쓸 수 있다
+RUN useradd --system --uid 1001 petspot     && mkdir -p /app/uploads && chown petspot /app/uploads
 COPY --from=build /app/build/libs/*.jar app.jar
 USER petspot
 
