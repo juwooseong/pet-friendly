@@ -192,7 +192,7 @@ describe('PlaceDetailPage', () => {
       const wrapper = mountPage();
       await flushPromises();
 
-      expect(wrapper.find('img').exists()).toBe(false);
+      expect(wrapper.find('img:not([aria-hidden])').exists()).toBe(false);
       expect(wrapper.find('[data-testid="place-image-placeholder"]').exists()).toBe(true);
     });
 
@@ -205,7 +205,7 @@ describe('PlaceDetailPage', () => {
       await wrapper.find('img').trigger('error');
       await flushPromises();
 
-      expect(wrapper.find('img').exists()).toBe(false);
+      expect(wrapper.find('img:not([aria-hidden])').exists()).toBe(false);
       expect(wrapper.find('[data-testid="place-image-placeholder"]').exists()).toBe(true);
     });
   });

@@ -316,15 +316,18 @@ describe('SearchPage', () => {
       expect(img.attributes('alt')).toBe('썸네일 테스트 장소');
     });
 
-    it('imageUrl이 없으면 기본 아이콘을 표시한다', async () => {
-      (apiClient.get as any).mockResolvedValue(mockSearchResponse({ content: [placeWith(null)] }));
+    it('imageUrl이 없으면 장소 유형에 맞는 캐릭터를 표시한다 (공원 → 콩이, 카페 → 나비)', async () => {
+      (apiClient.get as any).mockResolvedValue(
+        mockSearchResponse({ content: [placeWith(null), { ...placeWith(null), id: 'cafe-thumb', category: 'CAFE' }] })
+      );
 
       const wrapper = mountPage();
       await flushPromises();
 
-      const thumb = wrapper.find('[data-testid="place-thumbnail"]');
-      expect(thumb.find('img').exists()).toBe(false);
-      expect(thumb.find('[data-testid="place-image-placeholder"]').exists()).toBe(true);
+      const thumbs = wrapper.findAll('[data-testid="place-thumbnail"]');
+      expect(thumbs[0].find('img:not([aria-hidden])').exists()).toBe(false);
+      expect(thumbs[0].find('[data-testid="place-image-placeholder"]').attributes('data-pose')).toBe('kongi-camera');
+      expect(thumbs[1].find('[data-testid="place-image-placeholder"]').attributes('data-pose')).toBe('nabi-inspect');
     });
 
     it('이미지 로드에 실패하면 깨진 이미지 대신 기본 아이콘으로 바꾼다', async () => {
@@ -335,7 +338,7 @@ describe('SearchPage', () => {
       await wrapper.find('[data-testid="place-thumbnail"] img').trigger('error');
 
       const thumb = wrapper.find('[data-testid="place-thumbnail"]');
-      expect(thumb.find('img').exists()).toBe(false);
+      expect(thumb.find('img:not([aria-hidden])').exists()).toBe(false);
       expect(thumb.find('[data-testid="place-image-placeholder"]').exists()).toBe(true);
     });
   });

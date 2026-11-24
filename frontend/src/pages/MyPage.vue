@@ -115,7 +115,7 @@ onMounted(async () => {
 
     <LoadingSpinner v-if="loading" text="마이페이지 정보 불러오는 중..." />
 
-    <ErrorMessage v-else-if="errorMessage" :message="errorMessage" />
+    <ErrorMessage v-else-if="errorMessage" :message="errorMessage" illustrated />
 
     <template v-else-if="summary">
       <div class="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm space-y-4">
@@ -176,7 +176,7 @@ onMounted(async () => {
         </div>
         <EmptyState
           v-else
-          icon="ri-footprint-line"
+          character="kongi-curious"
           title="등록된 대표 반려동물이 없습니다."
           description="반려동물을 등록하면 자동으로 대표 반려동물로 지정됩니다."
         />

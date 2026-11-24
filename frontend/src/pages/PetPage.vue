@@ -209,11 +209,11 @@ onMounted(async () => {
 
     <LoadingSpinner v-if="loading" text="반려동물 정보 로딩 중..." />
 
-    <ErrorMessage v-else-if="errorMessage" :message="errorMessage" />
+    <ErrorMessage v-else-if="errorMessage" :message="errorMessage" illustrated />
 
     <EmptyState
       v-else-if="pets.length === 0"
-      icon="ri-footprint-line"
+      character="kongi-curious"
       title="등록된 반려동물이 없습니다."
       description="첫 반려동물을 등록하면 자동으로 대표 반려동물로 지정됩니다."
     />

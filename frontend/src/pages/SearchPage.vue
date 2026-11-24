@@ -240,7 +240,7 @@ onMounted(async () => {
 
     <LoadingSpinner v-if="loading" text="장소 목록을 검색 중입니다..." />
 
-    <ErrorMessage v-else-if="errorMessage" :message="errorMessage" />
+    <ErrorMessage v-else-if="errorMessage" :message="errorMessage" illustrated />
 
     <template v-else-if="places.length > 0">
       <p class="text-xs text-stone-500">총 {{ totalElements }}개의 장소가 검색되었습니다.</p>
@@ -258,9 +258,7 @@ onMounted(async () => {
               :image-url="place.imageUrl"
               :alt="place.name"
               :category="place.category"
-              :copyright-type="place.imageCopyrightType"
-              icon-class="text-2xl sm:text-3xl"
-            />
+              :copyright-type="place.imageCopyrightType"            />
           </div>
           <div class="min-w-0 flex-1">
           <span v-if="place.categoryName" class="text-[11px] font-bold text-amber-700">{{ place.categoryName }}</span>
@@ -331,6 +329,6 @@ onMounted(async () => {
       </p>
     </template>
 
-    <EmptyState v-else icon="ri-search-line" title="검색 결과가 없습니다." description="키워드나 필터 조건을 변경해 다시 검색해보세요." />
+    <EmptyState v-else character="kongi-curious" title="검색 결과가 없습니다." description="키워드나 필터 조건을 변경해 다시 검색해보세요." />
   </div>
 </template>
