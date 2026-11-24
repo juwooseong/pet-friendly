@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 /**
  * 전역 예외 처리기 (Global Exception Handler)
@@ -93,6 +94,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleNotReadable(HttpMessageNotReadableException ex) {
         log.warn("[CLIENT ERROR] HttpMessageNotReadableException: {}", ex.getMostSpecificCause().getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error("요청 본문의 형식이 올바르지 않습니다."));
+    }
+
+    /** 업로드 파일이 spring.servlet.multipart 한도를 넘은 경우 (리뷰 사진) */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
+        log.warn("[CLIENT ERROR] MaxUploadSizeExceededException: {}", ex.getMessage());
+        ErrorCode errorCode = ErrorCode.REVIEW_IMAGE_TOO_LARGE;
+        return ResponseEntity.status(errorCode.getStatus()).body(ApiResponse.error(errorCode.getMessage()));
     }
 
     @ExceptionHandler(PublicDataException.class)

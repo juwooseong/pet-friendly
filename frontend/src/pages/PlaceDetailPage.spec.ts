@@ -19,6 +19,12 @@ vi.mock('@/api/apiClient', () => ({
 
 import apiClient from '@/api/apiClient';
 
+// 사진 줄이기는 canvas가 필요해 jsdom에서는 건너뛴다
+vi.mock('@/utils/reviewImage', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/utils/reviewImage')>()),
+  shrinkReviewImage: vi.fn(async () => new Blob(['jpg'], { type: 'image/jpeg' })),
+}));
+
 function mountPage() {
   return mount(PlaceDetailPage, {
     global: {
@@ -415,7 +421,10 @@ describe('PlaceDetailPage', () => {
       expect(wrapper.text()).toContain('평점과 리뷰 내용을 모두 입력해주세요.');
     });
 
-    it('로그인 사용자가 리뷰 작성에 성공하면 목록과 장소 평점/리뷰 수가 즉시 갱신된다', async () => {
+    it('로그인 사용자가 사진 1장과 함께 리뷰 작성에 성공하면 목록과 장소 평점/리뷰 수가 즉시 갱신된다', async () => {
+      URL.createObjectURL = vi.fn(() => 'blob:preview');
+      URL.revokeObjectURL = vi.fn();
+      const photo = { imageUrl: '/api/v1/review-images/abc.jpg', thumbnailUrl: '/api/v1/review-images/abc_thumb.jpg' };
       loginAuthStore();
       let reviewsCallCount = 0;
       (apiClient.get as any).mockImplementation((url: string) => {
@@ -425,14 +434,16 @@ describe('PlaceDetailPage', () => {
         if (url === '/places/place-123/reviews') {
           reviewsCallCount += 1;
           if (reviewsCallCount === 1) return Promise.resolve(mockReviewsResponse([]));
-          return Promise.resolve(mockReviewsResponse([makeReview()]));
+          return Promise.resolve(mockReviewsResponse([makeReview(photo)]));
         }
         if (reviewsCallCount >= 1) {
           return Promise.resolve(mockDetailResponse({ rating: 5.0, reviewCount: 11 }));
         }
         return Promise.resolve(mockDetailResponse());
       });
-      (apiClient.post as any).mockResolvedValue({ data: { success: true, data: makeReview() } });
+      (apiClient.post as any).mockImplementation((url: string) =>
+        Promise.resolve({ data: { success: true, data: url === '/review-images' ? photo : makeReview() } })
+      );
 
       const wrapper = mountPage();
       await flushPromises();
@@ -440,15 +451,23 @@ describe('PlaceDetailPage', () => {
       const stars = wrapper.findAll('button').filter((b) => b.text() === '★');
       await stars[4].trigger('click');
       await wrapper.find('textarea').setValue('정말 좋았어요');
+      // 사진 1장 고르기 → 미리보기
+      const input = wrapper.find('[data-testid="review-image-input"]');
+      Object.defineProperty(input.element, 'files', { value: [new File(['x'], 'dog.png', { type: 'image/png' })] });
+      await input.trigger('change');
+      expect(wrapper.find('img[alt="첨부할 사진 미리보기"]').attributes('src')).toBe('blob:preview');
 
       const submitButton = wrapper.findAll('button').find((b) => b.text() === '리뷰 등록')!;
       await submitButton.trigger('click');
       await flushPromises();
 
+      // 사진을 먼저 올리고 받은 주소로 리뷰 등록
+      expect(apiClient.post).toHaveBeenCalledWith('/review-images', expect.any(FormData), expect.anything());
       expect(apiClient.post).toHaveBeenCalledWith('/reviews', {
         placeId: 'place-123',
         rating: 5,
         content: '정말 좋았어요',
+        imageUrl: photo.imageUrl,
       });
       expect(apiClient.get).toHaveBeenCalledWith('/places/place-123/reviews');
       expect(wrapper.text()).toContain('리뷰 11개');
@@ -456,6 +475,12 @@ describe('PlaceDetailPage', () => {
       // 작성 폼 대신 나비의 칭찬 (TSK-FE-029)
       expect(wrapper.find('[data-testid="review-thanks"]').exists()).toBe(true);
       expect(wrapper.find('textarea').exists()).toBe(false);
+      // 목록에는 썸네일만, 누르면 원본 크게 보기
+      const thumb = wrapper.find('[data-testid="review-thumbnail"]');
+      expect(thumb.find('img').attributes('src')).toBe(photo.thumbnailUrl);
+      await thumb.trigger('click');
+      expect(wrapper.find('[data-testid="photo-viewer-image"]').attributes('src')).toBe(photo.imageUrl);
+      wrapper.unmount();
     });
 
     it('이미 리뷰를 작성한 경우(409) 중복 작성 오류 메시지를 표시한다', async () => {

@@ -68,12 +68,25 @@ onMounted(async () => {
 
     <div v-else class="space-y-4">
       <BaseCard v-for="review in reviews" :key="review.id" hoverable @click="goToPlaceDetail(review.placeId)">
-        <div class="flex items-center justify-between">
-          <span class="font-bold text-stone-800">{{ review.placeName }}</span>
-          <span class="text-amber-500 text-sm font-bold">{{ '★'.repeat(review.rating) }}</span>
+        <div class="flex gap-3">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-2">
+              <span class="font-bold text-stone-800">{{ review.placeName }}</span>
+              <span class="text-amber-500 text-sm font-bold whitespace-nowrap">{{ '★'.repeat(review.rating) }}</span>
+            </div>
+            <p class="text-stone-600 text-sm mt-1 whitespace-pre-wrap">{{ review.content }}</p>
+            <p class="text-stone-400 text-xs mt-2">{{ formatReviewDate(review.createdAt) }}</p>
+          </div>
+          <!-- 리뷰 사진은 썸네일만 (카드를 누르면 장소 상세로 이동) -->
+          <img
+            v-if="review.imageUrl"
+            :src="review.thumbnailUrl ?? review.imageUrl"
+            alt="리뷰 사진"
+            loading="lazy"
+            class="shrink-0 w-16 h-16 rounded-xl object-cover border border-stone-100"
+            data-testid="review-thumbnail"
+          />
         </div>
-        <p class="text-stone-600 text-sm mt-1 whitespace-pre-wrap">{{ review.content }}</p>
-        <p class="text-stone-400 text-xs mt-2">{{ formatReviewDate(review.createdAt) }}</p>
       </BaseCard>
     </div>
   </div>

@@ -69,6 +69,10 @@ services:
       # 공공데이터 수집 배치 (매일 03:00 KST, TSK-DATA-012). 끄려면 .env에 false
       PUBLIC_DATA_BATCH_ENABLED: ${PUBLIC_DATA_BATCH_ENABLED:-true}
       JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--Xms256m -Xmx512m}
+      # 리뷰 사진 저장 폴더 (아래 review_uploads 볼륨 - 컨테이너를 다시 만들어도 사진이 남는다)
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      - review_uploads:/app/uploads
     ports:
       - "${API_PORT:-8081}:8080"
     depends_on:
@@ -94,3 +98,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  review_uploads:

@@ -60,7 +60,8 @@ public class ReviewService {
             throw new DuplicateReviewException();
         }
 
-        Review review = Review.create(user, place, request.getRating(), request.getContent(), request.getImageUrl());
+        validateImageUrl(request.getImageUrl());
+        Review review = Review.create(user, place, request.getRating(), request.getContent(), blankToNull(request.getImageUrl()));
         Review savedReview = reviewRepository.save(review);
 
         // Place 집계 정보 동기화
@@ -79,6 +80,7 @@ public class ReviewService {
 
         Review review = findActiveReviewAndValidateOwner(userId, reviewId);
 
+        validateImageUrl(request.getImageUrl());
         review.updateReview(request.getRating(), request.getContent(), request.getImageUrl());
 
         // Place 집계 정보 동기화
@@ -151,6 +153,19 @@ public class ReviewService {
 
         place.updateRatingAndReviewCount(avgRating, (int) count);
         log.debug("[PLACE RATING SYNCED] placeId: {}, newRating: {}, newCount: {}", placeId, avgRating, count);
+    }
+
+    /**
+     * 리뷰 사진은 이 서버에 올린 사진 주소만 받는다 (ReviewImageService). 다른 사이트 주소를 넣어 남의 이미지를 띄우는 것을 막는다.
+     */
+    private void validateImageUrl(String imageUrl) {
+        if (!ReviewImageService.isAllowedImageUrl(imageUrl)) {
+            throw new IllegalArgumentException("리뷰 사진 주소가 올바르지 않습니다. 사진을 다시 올려 주세요.");
+        }
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 
     /**

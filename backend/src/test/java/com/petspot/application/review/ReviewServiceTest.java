@@ -123,6 +123,27 @@ class ReviewServiceTest {
     }
 
     @Test
+    @DisplayName("리뷰 사진은 이 서버에 올린 사진 주소만 받는다 (다른 사이트 주소는 400)")
+    void createReview_ExternalImageUrl_ThrowsException() {
+        UUID userId = mockUser.getId();
+        UUID placeId = mockPlace.getId();
+        ReviewCreateRequestDto request = ReviewCreateRequestDto.builder()
+                .placeId(placeId)
+                .rating(5)
+                .content("사진 첨부")
+                .imageUrl("https://evil.example.com/a.jpg")
+                .build();
+
+        given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
+        given(placeRepository.findById(placeId)).willReturn(Optional.of(mockPlace));
+        given(reviewRepository.existsByUserIdAndPlaceId(userId, placeId)).willReturn(false);
+
+        assertThatThrownBy(() -> reviewService.createReview(userId, request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("리뷰 사진 주소");
+    }
+
+    @Test
     @DisplayName("리뷰 수정 성공 및 Place 평점 동기화 검증")
     void updateReview_Success() {
         // given

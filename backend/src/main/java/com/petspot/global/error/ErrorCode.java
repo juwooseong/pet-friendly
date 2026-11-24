@@ -38,6 +38,10 @@ public enum ErrorCode {
     REVIEW_NOT_FOUND("REVIEW_001", HttpStatus.NOT_FOUND, "리뷰를 찾을 수 없습니다."),
     DUPLICATE_REVIEW("REVIEW_002", HttpStatus.CONFLICT, "이미 이 장소에 리뷰를 작성하셨습니다."),
     REVIEW_ACCESS_DENIED("REVIEW_003", HttpStatus.FORBIDDEN, "해당 리뷰를 수정 또는 삭제할 권한이 없습니다."),
+    // 리뷰 사진 (리뷰 사진 1장 첨부)
+    INVALID_REVIEW_IMAGE("REVIEW_004", HttpStatus.BAD_REQUEST, "사진은 JPG·PNG 이미지만 올릴 수 있습니다."),
+    REVIEW_IMAGE_TOO_LARGE("REVIEW_005", HttpStatus.PAYLOAD_TOO_LARGE, "사진은 10MB 이하만 올릴 수 있습니다."),
+    REVIEW_IMAGE_NOT_FOUND("REVIEW_006", HttpStatus.NOT_FOUND, "사진을 찾을 수 없습니다."),
 
     // ===== 즐겨찾기 (FAVORITE) =====
     FAVORITE_NOT_FOUND("FAVORITE_001", HttpStatus.NOT_FOUND, "즐겨찾기 항목을 찾을 수 없습니다."),

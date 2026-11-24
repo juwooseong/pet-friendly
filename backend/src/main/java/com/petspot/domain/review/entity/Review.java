@@ -96,8 +96,9 @@ public class Review {
             validateContent(content);
             this.content = content;
         }
+        // null이면 사진 그대로, 빈 문자열이면 사진 삭제
         if (imageUrl != null) {
-            this.imageUrl = imageUrl;
+            this.imageUrl = imageUrl.isBlank() ? null : imageUrl;
         }
     }
 
