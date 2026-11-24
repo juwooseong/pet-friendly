@@ -234,6 +234,8 @@ describe('PlaceDetailPage', () => {
       await flushPromises();
 
       expect(wrapper.text()).toContain('등록된 반려동물 동반 수칙 정보가 없습니다.');
+      // 나비 말풍선: 정보가 없으면 확인 방법을 안내한다 (TSK-FE-029)
+      expect(wrapper.find('[data-testid="character-speech"]').text()).toContain('동반 조건이 아직 등록되지 않았어요');
     });
   });
 
@@ -449,6 +451,9 @@ describe('PlaceDetailPage', () => {
       expect(apiClient.get).toHaveBeenCalledWith('/places/place-123/reviews');
       expect(wrapper.text()).toContain('리뷰 11개');
       expect(wrapper.text()).toContain('너무 좋았어요!');
+      // 작성 폼 대신 나비의 칭찬 (TSK-FE-029)
+      expect(wrapper.find('[data-testid="review-thanks"]').exists()).toBe(true);
+      expect(wrapper.find('textarea').exists()).toBe(false);
     });
 
     it('이미 리뷰를 작성한 경우(409) 중복 작성 오류 메시지를 표시한다', async () => {

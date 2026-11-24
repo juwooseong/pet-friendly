@@ -12,6 +12,8 @@ import type { Review } from '@/types/review';
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue';
 import ErrorMessage from '@/components/common/ErrorMessage.vue';
 import EmptyState from '@/components/common/EmptyState.vue';
+import CharacterIllust from '@/components/common/CharacterIllust.vue';
+import CharacterSpeech from '@/components/common/CharacterSpeech.vue';
 import PlaceImage from '@/components/common/PlaceImage.vue';
 
 const route = useRoute();
@@ -56,6 +58,13 @@ const petAmenities = computed(() => {
     { label: '구매 가능', value: d.purchasableItems },
     { label: '대여 가능', value: d.rentalItems },
   ].filter((item): item is { label: string; value: string } => !!item.value);
+});
+
+/** 동반 조건 나비 말풍선 (TSK-FE-029) - 정보가 있어도 없어도 "확인부터 해요" */
+const policySpeech = computed(() => {
+  if (hasPetPolicyInfo.value) return '공식 정보도 바뀔 수 있어요. 가기 전에 한 번 더, 확인부터 해요.';
+  if (place.value?.phone) return '동반 조건이 아직 등록되지 않았어요. 가기 전에 전화로 확인부터 해요.';
+  return '동반 조건이 아직 등록되지 않았어요. 다녀오시면 리뷰로 알려 주세요.';
 });
 
 const hasPetPolicyInfo = computed(
@@ -195,6 +204,8 @@ const reviewsErrorMessage = ref('');
 const newRating = ref(0);
 const newContent = ref('');
 const reviewSubmitLoading = ref(false);
+/** 이번 방문에서 리뷰를 등록했는지 - 작성 폼 대신 나비의 칭찬을 보여 준다 (TSK-FE-029) */
+const reviewSubmitted = ref(false);
 const reviewSubmitErrorMessage = ref('');
 const reviewFormValidationMessage = ref('');
 
@@ -242,6 +253,7 @@ const submitReview = async () => {
     });
     newRating.value = 0;
     newContent.value = '';
+    reviewSubmitted.value = true;
     await Promise.all([fetchReviews(), fetchPlaceDetail()]);
   } catch (err) {
     reviewSubmitErrorMessage.value = extractErrorMessage(err, '리뷰 등록 중 오류가 발생했습니다.');
@@ -369,6 +381,7 @@ onMounted(async () => {
           <p v-if="policyDetail.etcText" class="text-xs text-stone-500 whitespace-pre-line">{{ policyDetail.etcText }}</p>
         </template>
         <p v-else class="text-sm text-stone-400">등록된 반려동물 동반 수칙 정보가 없습니다.</p>
+        <CharacterSpeech pose="nabi-inspect" speaker="나비" class="pt-1">{{ policySpeech }}</CharacterSpeech>
       </div>
 
       <div v-if="place.description" class="pt-4 border-t border-stone-100 space-y-2" data-testid="place-description">
@@ -444,7 +457,23 @@ onMounted(async () => {
     <div v-if="place" class="bg-white p-8 rounded-3xl border border-stone-100 shadow-sm space-y-6">
       <h2 class="text-xl font-extrabold text-stone-800">리뷰</h2>
 
-      <div v-if="authStore.isAuthenticated" class="space-y-3 p-4 rounded-2xl bg-stone-50 border border-stone-100">
+      <div
+        v-if="reviewSubmitted"
+        class="flex items-center gap-4 p-4 rounded-2xl bg-mint-50 border border-mint-200"
+        role="status"
+        data-testid="review-thanks"
+      >
+        <CharacterIllust pose="nabi-review" size="sm" class="shrink-0" />
+        <div class="text-sm">
+          <p class="font-bold text-stone-800">리뷰가 등록됐어요. 고마워요!</p>
+          <p class="text-stone-600 mt-0.5">다음에 올 친구들이 헛걸음하지 않게 도와주셨어요.</p>
+        </div>
+      </div>
+      <div v-else-if="authStore.isAuthenticated" class="space-y-3 p-4 rounded-2xl bg-stone-50 border border-stone-100">
+        <div class="flex items-center gap-3">
+          <CharacterIllust pose="nabi-memo" size="xs" class="shrink-0" />
+          <p class="text-xs text-stone-500">크기 제한, 실내 출입 같은 동반 조건도 함께 적어 주시면 다음 친구들에게 큰 도움이 돼요.</p>
+        </div>
         <div class="flex items-center gap-1">
           <button
             v-for="star in 5"
