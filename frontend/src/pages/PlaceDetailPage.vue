@@ -440,7 +440,7 @@ onMounted(async () => {
           <p v-if="policyDetail.etcText" class="text-xs text-stone-500 whitespace-pre-line">{{ policyDetail.etcText }}</p>
         </template>
         <p v-else class="text-sm text-stone-400">등록된 반려동물 동반 수칙 정보가 없습니다.</p>
-        <p class="flex items-center gap-1.5 pt-1 text-xs text-stone-500" data-testid="policy-tip">
+        <p class="flex items-center gap-1.5 pt-1 text-xs font-semibold text-mint-700" data-testid="policy-tip">
           <CharacterIllust pose="nabi-face" size="icon" class="shrink-0" />
           <span>{{ policySpeech }}</span>
         </p>
