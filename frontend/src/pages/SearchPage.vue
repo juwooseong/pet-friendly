@@ -270,7 +270,7 @@ onMounted(async () => {
             <span
               v-for="size in place.allowedSizes || []"
               :key="size"
-              class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-100"
+              class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-mint-50 text-mint-700 border border-mint-200"
             >
               {{ sizeLabel(size) }}
             </span>

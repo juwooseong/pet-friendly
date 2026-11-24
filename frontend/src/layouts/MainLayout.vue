@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useAuthStore } from '@/stores/authStore';
 import { useRoute, useRouter } from 'vue-router';
+import BrandLogo from '@/components/common/BrandLogo.vue';
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -26,15 +27,14 @@ const tabs = [
 
 <template>
   <!-- 휴대폰에서는 하단 탭 높이만큼 아래 여백을 둬 마지막 내용·푸터가 탭에 가리지 않게 한다 -->
-  <div class="min-h-screen bg-stone-50 text-stone-800 flex flex-col font-sans pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
+  <div class="min-h-screen bg-cream-50 text-stone-800 flex flex-col font-sans pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
     <!-- Header Navigation -->
     <header class="bg-white border-b border-stone-200 sticky top-0 z-40 shadow-sm">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <!-- Logo -->
         <!-- 헤더 항목은 줄바꿈하지 않는다 - 좁은 화면(320px)에서 "PetSpo/t", "로그/인"처럼 끊기던 문제 (TSK-FE-024) -->
-        <router-link to="/" class="flex items-center gap-1.5 sm:gap-2 py-2 shrink-0 whitespace-nowrap text-amber-500 font-extrabold text-xl sm:text-2xl">
-          <i class="ri-footprint-fill"></i>
-          <span>PetSpot</span>
+        <router-link to="/" class="flex items-center py-2 shrink-0">
+          <BrandLogo />
         </router-link>
 
         <!-- Main Navigation Links (넓은 화면) -->
@@ -86,7 +86,8 @@ const tabs = [
     <!-- Footer -->
     <footer class="bg-white border-t border-stone-200 py-6 text-center text-xs text-stone-500">
       <div class="max-w-7xl mx-auto px-4">
-        <p>© 2026 PetSpot. 모든 반려동물의 행복한 동반을 응원합니다.</p>
+        <p class="font-semibold text-stone-600">헛걸음 없는 반려동물 여행</p>
+        <p class="mt-1">© 2026 PetSpot</p>
       </div>
     </footer>
 
