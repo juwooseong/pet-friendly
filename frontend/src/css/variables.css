@@ -1,5 +1,24 @@
 @import "tailwindcss";
 
+/*
+ * 브랜드 색 (TSK-FE-026, docs/BRAND.md 4장). 메인은 Tailwind amber를 그대로 쓰고,
+ * 민트(포인트)와 크림(바탕)을 추가한다 → bg-mint-500, text-mint-700, bg-cream-50 등.
+ * 민트는 포인트에만 쓰고, 흰 바탕의 작은 민트 글자는 명암이 부족하므로 mint-700을 쓴다.
+ */
+@theme {
+  --color-mint-50: #eefbf5;
+  --color-mint-100: #d3f5e6;
+  --color-mint-200: #a9ebd0;
+  --color-mint-300: #79ddb6;
+  --color-mint-400: #4fcb9c;
+  --color-mint-500: #2fb585;
+  --color-mint-600: #22966d;
+  --color-mint-700: #1d7758;
+
+  --color-cream-50: #fffbf5;
+  --color-cream-100: #fff4e2;
+}
+
 /* PetSpot Design System Tokens */
 :root {
   --primary-50: #fffbe0;

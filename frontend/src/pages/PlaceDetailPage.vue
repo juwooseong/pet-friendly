@@ -337,7 +337,7 @@ onMounted(async () => {
 
       <div class="pt-4 border-t border-stone-100 space-y-2">
         <h3 class="text-sm font-bold text-stone-700 flex items-center gap-1.5">
-          <i class="ri-shield-check-line text-amber-500"></i>
+          <i class="ri-shield-check-line text-mint-600"></i>
           <span>반려동물 동반 수칙</span>
         </h3>
         <template v-if="hasPetPolicyInfo">
@@ -345,13 +345,13 @@ onMounted(async () => {
             <span
               v-for="size in place.allowedSizes"
               :key="size"
-              class="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-100"
+              class="text-xs font-bold px-2.5 py-1 rounded-full bg-mint-50 text-mint-700 border border-mint-200"
             >
               {{ sizeLabel(size) }}
             </span>
           </div>
           <p v-if="place.maxWeightLimitKg != null" class="text-sm text-stone-600 flex items-center gap-2">
-            <i class="ri-scales-3-line text-amber-500"></i>
+            <i class="ri-scales-3-line text-mint-600"></i>
             <span>최대 체중 {{ place.maxWeightLimitKg }}kg까지 동반 가능</span>
           </p>
           <div v-if="petRequirementBadges.length > 0" class="flex flex-wrap gap-1.5" data-testid="pet-requirements">

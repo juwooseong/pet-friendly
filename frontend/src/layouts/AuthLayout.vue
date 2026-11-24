@@ -1,17 +1,17 @@
 <script setup lang="ts">
+import BrandLogo from '@/components/common/BrandLogo.vue';
 </script>
 
 <template>
-  <div class="min-h-screen bg-amber-50/50 flex flex-col justify-center items-center p-4">
+  <div class="min-h-screen bg-linear-to-b from-cream-100 via-cream-50 to-mint-50 flex flex-col justify-center items-center p-4">
     <div class="mb-6 text-center">
-      <router-link to="/" class="inline-flex items-center gap-2 text-amber-500 font-extrabold text-3xl">
-        <i class="ri-footprint-fill"></i>
-        <span>PetSpot</span>
+      <router-link to="/" class="inline-flex">
+        <BrandLogo size="lg" />
       </router-link>
-      <p class="text-xs text-stone-500 mt-1">댕냥이 동반 안심 지도 스마트 서비스</p>
+      <p class="text-xs text-stone-500 mt-1">헛걸음 없는 반려동물 여행</p>
     </div>
 
-    <div class="w-full max-w-md bg-white rounded-2xl shadow-xl border border-stone-100 p-6 sm:p-8">
+    <div class="w-full max-w-md bg-white rounded-3xl shadow-[0_12px_32px_rgba(120,72,20,0.10)] border border-stone-100 p-6 sm:p-8">
       <slot></slot>
     </div>
 
