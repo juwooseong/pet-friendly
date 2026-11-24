@@ -3,6 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- 홈 대표 그림(LCP) 미리 받기 - HomePage.vue의 picture와 같은 media 조건 (TSK-FE-028) -->
+    <link rel="preload" as="image" href="/images/duo-together-640.webp" media="(max-width: 767px)" fetchpriority="high" />
+    <link rel="preload" as="image" href="/images/duo-together.webp" media="(min-width: 768px)" fetchpriority="high" />
     <title>PetSpot (펫스팟) - Vue 3 + Spring Boot 3</title>
   </head>
   <body>

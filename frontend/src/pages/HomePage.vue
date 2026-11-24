@@ -6,6 +6,39 @@ import apiClient, { extractErrorMessage } from '@/api/apiClient';
 import BaseCard from '@/components/common/BaseCard.vue';
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue';
 import ErrorMessage from '@/components/common/ErrorMessage.vue';
+import CharacterIllust from '@/components/common/CharacterIllust.vue';
+import { CHARACTER_IMAGES, DUO_TOGETHER_MOBILE_SRC } from '@/assets/characters';
+
+const hero = CHARACTER_IMAGES['duo-together'];
+
+/** 장소 유형 바로가기 - 검색 화면을 해당 유형으로 바로 연다 */
+const SHORTCUTS = [
+  { category: 'CAFE', label: '카페', icon: 'ri-cup-line' },
+  { category: 'HOTEL', label: '숙소', icon: 'ri-hotel-bed-line' },
+  { category: 'PARK', label: '공원', icon: 'ri-tree-line' },
+  { category: 'HOSPITAL', label: '동물병원', icon: 'ri-hospital-line' },
+  { category: 'CULTURE', label: '문화시설', icon: 'ri-ancient-gate-line' },
+  { category: 'COURSE', label: '여행코스', icon: 'ri-route-line' },
+] as const;
+
+/** 짧은 스토리는 처음 방문자에게만 보인다. 저장소를 못 쓰는 환경이면 매번 보여 준다. */
+const STORY_KEY = 'petspot.homeStoryDismissed';
+const readStoryDismissed = () => {
+  try {
+    return localStorage.getItem(STORY_KEY) === '1';
+  } catch {
+    return false;
+  }
+};
+const showStory = ref(!readStoryDismissed());
+const dismissStory = () => {
+  showStory.value = false;
+  try {
+    localStorage.setItem(STORY_KEY, '1');
+  } catch {
+    /* 저장 실패 시 이번 방문에서만 숨긴다 */
+  }
+};
 
 interface PlaceItem {
   id: string;
@@ -50,32 +83,79 @@ onMounted(() => {
 
 <template>
   <div class="space-y-8">
-    <!-- Hero Banner -->
-    <div class="bg-gradient-to-r from-amber-500 to-amber-600 rounded-3xl p-6 sm:p-8 text-white shadow-lg flex flex-col md:flex-row items-center justify-between gap-6">
-      <div class="space-y-3 max-w-xl">
-        <span class="inline-block bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full">
-          🐾 댕냥이 전용 안심 지도
+    <!-- 첫 화면 (TSK-FE-028): 밝은 바탕 - 진한 배경에서는 그림 털 가장자리에 흰 테두리가 보인다 -->
+    <section class="bg-linear-to-br from-cream-100 via-cream-50 to-mint-50 border border-amber-100 rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-8">
+      <div class="space-y-3 max-w-xl w-full">
+        <span class="inline-block bg-mint-50 text-mint-700 border border-mint-200 text-xs font-semibold px-3 py-1 rounded-full">
+          🐾 콩이와 나비가 먼저 다녀왔어요
         </span>
-        <h1 class="text-2xl sm:text-4xl font-extrabold leading-tight">
-          우리 아이와 함께 갈 수 있는<br />동반 장소를 찾아보세요!
+        <h1 class="text-3xl sm:text-4xl font-extrabold leading-tight text-stone-800">
+          헛걸음 없는<br />반려동물 여행
         </h1>
-        <p class="text-amber-100 text-sm">
-          한국관광공사 공공데이터로 전국의 반려동물 동반 장소와 우리 아이 크기에 맞는 동반 조건을 알려드려요.
+        <p class="text-stone-600 text-sm">
+          우리 아이 크기로 함께 갈 수 있는 곳만 골라 보세요. 한국관광공사 공공데이터로 전국 동반 장소와 동반 조건을 알려 드려요.
         </p>
         <div class="pt-2">
           <router-link
             to="/search"
-            class="inline-flex items-center gap-2 bg-white text-amber-600 font-bold px-5 py-2.5 rounded-xl shadow hover:bg-amber-50 transition"
+            class="inline-flex items-center gap-2 bg-amber-500 text-white font-bold px-5 py-2.5 rounded-xl shadow hover:bg-amber-600 transition"
           >
             <i class="ri-search-line"></i>
             <span>지금 장소 찾아보기</span>
           </router-link>
         </div>
       </div>
-      <div class="text-6xl text-white/90 hidden md:block">
-        🐶🐱
+      <!-- 첫 화면에서 가장 큰 요소(LCP). index.html이 미리 받고, 휴대폰은 640px 파일만 쓴다 -->
+      <picture class="w-full max-w-sm md:max-w-[420px] shrink-0">
+        <source media="(max-width: 767px)" :srcset="DUO_TOGETHER_MOBILE_SRC" />
+        <img
+          :src="hero.src"
+          :width="hero.width"
+          :height="hero.height"
+          alt=""
+          aria-hidden="true"
+          fetchpriority="high"
+          class="w-full h-auto"
+          data-testid="home-hero-image"
+        />
+      </picture>
+    </section>
+
+    <!-- 짧은 스토리: 처음 방문자에게만, 닫으면 다시 보이지 않는다 -->
+    <section
+      v-if="showStory"
+      class="relative bg-white border border-amber-100 rounded-2xl p-5 pr-12 flex gap-4 items-start"
+      data-testid="home-story"
+    >
+      <CharacterIllust pose="nabi-face" size="sm" class="shrink-0 hidden sm:block" />
+      <div class="space-y-1.5 text-sm text-stone-600">
+        <h2 class="font-bold text-stone-800">콩이의 첫 번째 지도</h2>
+        <p>신나게 달려간 카페 앞에서 "반려동물 출입 금지" 팻말을 만난 콩이.</p>
+        <p>나비가 돋보기를 들고 "확인부터 해요"라며 동반 조건을 하나씩 짚었어요.</p>
+        <p>둘이 발자국을 찍어 만든 지도, 그게 PetSpot이에요.</p>
       </div>
-    </div>
+      <button
+        type="button"
+        class="absolute top-2 right-2 w-10 h-10 flex items-center justify-center rounded-full text-stone-400 hover:text-stone-600 hover:bg-stone-100"
+        aria-label="스토리 닫기"
+        @click="dismissStory"
+      >
+        <i class="ri-close-line text-lg"></i>
+      </button>
+    </section>
+
+    <!-- 장소 유형 바로가기 -->
+    <nav aria-label="장소 유형 바로가기" class="grid grid-cols-3 sm:grid-cols-6 gap-3">
+      <router-link
+        v-for="item in SHORTCUTS"
+        :key="item.category"
+        :to="{ path: '/search', query: { category: item.category } }"
+        class="flex flex-col items-center gap-1.5 bg-white border border-stone-100 rounded-2xl py-3 text-sm font-medium text-stone-700 hover:border-mint-200 hover:bg-mint-50 transition"
+      >
+        <i :class="[item.icon, 'text-2xl text-mint-600']" aria-hidden="true"></i>
+        <span>{{ item.label }}</span>
+      </router-link>
+    </nav>
 
     <!-- 추천 동반 장소 -->
     <div class="space-y-4">
