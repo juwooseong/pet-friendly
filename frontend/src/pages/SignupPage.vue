@@ -186,7 +186,7 @@ const handleSignup = async () => {
 <template>
   <div class="space-y-6">
     <div class="text-center">
-      <h2 class="text-2xl font-bold text-stone-800">PetSpot 회원가입 🐶</h2>
+      <h2 class="text-2xl font-bold text-stone-800">PetSpot 회원가입</h2>
       <p class="text-xs text-stone-500 mt-1">반려동물과 함께할 안심 장소를 찾아보세요.</p>
     </div>
 

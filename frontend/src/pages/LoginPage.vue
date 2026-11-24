@@ -53,7 +53,7 @@ const handleLogin = async () => {
 <template>
   <div class="space-y-6">
     <div class="text-center">
-      <h2 class="text-2xl font-bold text-stone-800">반가워요! 🐾</h2>
+      <h2 class="text-2xl font-bold text-stone-800">반가워요!</h2>
       <p class="text-xs text-stone-500 mt-1">PetSpot 계정으로 로그인해주세요.</p>
     </div>
 

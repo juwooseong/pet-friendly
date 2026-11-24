@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import BrandLogo from '@/components/common/BrandLogo.vue';
+import CharacterIllust from '@/components/common/CharacterIllust.vue';
+import { useRoute } from 'vue-router';
+
+const route = useRoute();
 </script>
 
 <template>
@@ -11,8 +15,20 @@ import BrandLogo from '@/components/common/BrandLogo.vue';
       <p class="text-xs text-stone-500 mt-1">헛걸음 없는 반려동물 여행</p>
     </div>
 
-    <div class="w-full max-w-md bg-white rounded-3xl shadow-[0_12px_32px_rgba(120,72,20,0.10)] border border-stone-100 p-6 sm:p-8">
-      <slot></slot>
+    <div class="relative w-full max-w-md mt-10">
+      <!-- 카드 위로 고개를 내민 콩이와 나비 (TSK-FE-029) - 장식 -->
+      <!-- 404는 지도 든 콩이가 따로 나오므로 얼굴은 뺀다 -->
+      <div
+        v-if="route.name !== 'NotFound'"
+        class="absolute -top-10 inset-x-0 flex justify-center gap-6 pointer-events-none"
+        data-testid="auth-characters"
+      >
+        <CharacterIllust pose="kongi-face" size="xs" loading="eager" />
+        <CharacterIllust pose="nabi-face" size="xs" loading="eager" />
+      </div>
+      <div class="relative bg-white rounded-3xl shadow-[0_12px_32px_rgba(120,72,20,0.10)] border border-stone-100 p-6 sm:p-8">
+        <slot></slot>
+      </div>
     </div>
 
     <div class="mt-6 text-xs text-stone-400">
