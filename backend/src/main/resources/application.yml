@@ -35,6 +35,12 @@ spring:
       host: localhost
       port: 6379
 
+  # 리뷰 사진 업로드 한도 (화면에서 줄여 올리므로 보통 1MB 미만). nginx client_max_body_size도 함께 맞춘다.
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 11MB
+
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
@@ -53,6 +59,8 @@ spring:
 app:
   # 비밀번호 재설정 메일 링크에 넣을 사이트 주소 (TSK-SEC-003). 로컬 개발은 Vite 개발 서버.
   frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
+  # 리뷰 사진 저장 폴더 (하위 reviews/). Docker에서는 볼륨(/app/uploads)에 저장한다.
+  upload-dir: ${UPLOAD_DIR:./uploads}
 
 jwt:
   secret: petspot_super_secret_jwt_key_that_is_at_least_32_bytes_long_for_security

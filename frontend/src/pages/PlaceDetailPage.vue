@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { formatRating } from '@/utils/rating';
 import { TOUR_API_SOURCE, imageFitClass, isHttpUrl, isNoDerivativeLicense, kakaoDirectionsUrl, koglLicenseLabel } from '@/utils/publicData';
 import { useRoute, useRouter } from 'vue-router';
@@ -8,7 +8,8 @@ import { useAuthStore } from '@/stores/authStore';
 import type { ApiResponse } from '@/types/api';
 import type { PlaceGalleryImage, PlaceSearchItem } from '@/types/place';
 import { useFavoriteStore } from '@/stores/favoriteStore';
-import type { Review } from '@/types/review';
+import type { Review, ReviewImageUpload } from '@/types/review';
+import { reviewImageProblem, shrinkReviewImage } from '@/utils/reviewImage';
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue';
 import ErrorMessage from '@/components/common/ErrorMessage.vue';
 import EmptyState from '@/components/common/EmptyState.vue';
@@ -224,6 +225,35 @@ const reviewSubmitted = ref(false);
 const reviewSubmitErrorMessage = ref('');
 const reviewFormValidationMessage = ref('');
 
+/** 리뷰 사진 1장 (선택). 고르면 미리보기만 보여 주고, 실제 업로드는 리뷰 등록 때 한다(등록 안 하면 서버에 남지 않음) */
+const newImageFile = ref<File | null>(null);
+const newImagePreview = ref('');
+const reviewImageInput = ref<HTMLInputElement | null>(null);
+const clearNewImage = () => {
+  if (newImagePreview.value) URL.revokeObjectURL(newImagePreview.value);
+  newImageFile.value = null;
+  newImagePreview.value = '';
+  if (reviewImageInput.value) reviewImageInput.value.value = '';
+};
+const onReviewImageChange = (event: Event) => {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+  const problem = reviewImageProblem(file);
+  if (problem) {
+    clearNewImage();
+    reviewFormValidationMessage.value = problem;
+    return;
+  }
+  reviewFormValidationMessage.value = '';
+  if (newImagePreview.value) URL.revokeObjectURL(newImagePreview.value);
+  newImageFile.value = file;
+  newImagePreview.value = URL.createObjectURL(file);
+};
+onBeforeUnmount(clearNewImage);
+
+/** 리뷰 목록 사진 크게 보기 - 목록에는 썸네일만, 누르면 원본 */
+const reviewPhoto = ref<Review | null>(null);
+
 const formatReviewDate = (createdAt: string): string => {
   const date = new Date(createdAt);
   if (Number.isNaN(date.getTime())) return createdAt;
@@ -261,13 +291,24 @@ const submitReview = async () => {
 
   reviewSubmitLoading.value = true;
   try {
+    let imageUrl: string | undefined;
+    if (newImageFile.value) {
+      const form = new FormData();
+      form.append('file', await shrinkReviewImage(newImageFile.value), 'review.jpg');
+      const uploaded = await apiClient.post<ApiResponse<ReviewImageUpload>>('/review-images', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      imageUrl = uploaded.data.data?.imageUrl;
+    }
     await apiClient.post('/reviews', {
       placeId,
       rating: newRating.value,
       content: newContent.value.trim(),
+      imageUrl,
     });
     newRating.value = 0;
     newContent.value = '';
+    clearNewImage();
     reviewSubmitted.value = true;
     await Promise.all([fetchReviews(), fetchPlaceDetail()]);
   } catch (err) {
@@ -561,6 +602,32 @@ onMounted(async () => {
           placeholder="이 장소에 대한 리뷰를 남겨주세요."
           class="w-full rounded-xl border border-stone-200 p-3 text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-amber-300"
         ></textarea>
+        <!-- 사진 1장 (선택) -->
+        <div class="flex items-center gap-3" data-testid="review-image-field">
+          <input
+            ref="reviewImageInput"
+            id="review-image"
+            type="file"
+            accept="image/*"
+            class="sr-only"
+            data-testid="review-image-input"
+            @change="onReviewImageChange"
+          />
+          <template v-if="newImagePreview">
+            <img :src="newImagePreview" alt="첨부할 사진 미리보기" class="w-16 h-16 rounded-xl object-cover border border-stone-200" />
+            <button type="button" class="text-xs font-semibold text-stone-500 hover:text-stone-700 underline" @click="clearNewImage">
+              사진 빼기
+            </button>
+          </template>
+          <label
+            v-else
+            for="review-image"
+            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-dashed border-stone-300 bg-white text-xs font-semibold text-stone-600 cursor-pointer hover:border-mint-300 hover:bg-mint-50 transition focus-within:ring-2 focus-within:ring-amber-300"
+          >
+            <i class="ri-camera-line text-base text-mint-600" aria-hidden="true"></i>
+            사진 1장 추가 (선택)
+          </label>
+        </div>
         <ErrorMessage v-if="reviewFormValidationMessage" :message="reviewFormValidationMessage" />
         <ErrorMessage v-if="reviewSubmitErrorMessage" :message="reviewSubmitErrorMessage" />
         <button
@@ -569,7 +636,7 @@ onMounted(async () => {
           :disabled="reviewSubmitLoading"
           class="px-4 py-2 rounded-xl text-sm font-bold bg-amber-500 text-white hover:bg-amber-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          리뷰 등록
+          {{ reviewSubmitLoading ? '등록 중...' : '리뷰 등록' }}
         </button>
       </div>
       <div v-else class="p-4 rounded-2xl bg-stone-50 border border-stone-100 text-sm text-stone-600 flex items-center justify-between gap-3">
@@ -598,16 +665,36 @@ onMounted(async () => {
         <div
           v-for="review in reviews"
           :key="review.id"
-          class="p-4 rounded-2xl border border-stone-100 space-y-1.5"
+          class="p-4 rounded-2xl border border-stone-100 flex gap-3"
         >
-          <div class="flex items-center justify-between">
-            <span class="font-bold text-stone-700 text-sm">{{ review.userNickname }}</span>
-            <span class="text-amber-500 text-sm font-bold">{{ '★'.repeat(review.rating) }}</span>
+          <div class="flex-1 min-w-0 space-y-1.5">
+            <div class="flex items-center justify-between gap-2">
+              <span class="font-bold text-stone-700 text-sm">{{ review.userNickname }}</span>
+              <span class="text-amber-500 text-sm font-bold whitespace-nowrap">{{ '★'.repeat(review.rating) }}</span>
+            </div>
+            <p class="text-stone-600 text-sm whitespace-pre-wrap">{{ review.content }}</p>
+            <p class="text-stone-400 text-xs">{{ formatReviewDate(review.createdAt) }}</p>
           </div>
-          <p class="text-stone-600 text-sm whitespace-pre-wrap">{{ review.content }}</p>
-          <p class="text-stone-400 text-xs">{{ formatReviewDate(review.createdAt) }}</p>
+          <!-- 목록에는 작은 썸네일만, 누르면 원본 크게 보기 -->
+          <button
+            v-if="review.imageUrl"
+            type="button"
+            :aria-label="`${review.userNickname}님 리뷰 사진 크게 보기`"
+            class="shrink-0 w-16 h-16 rounded-xl overflow-hidden border border-stone-100 cursor-zoom-in"
+            data-testid="review-thumbnail"
+            @click="reviewPhoto = review"
+          >
+            <img :src="review.thumbnailUrl ?? review.imageUrl" alt="" loading="lazy" class="w-full h-full object-cover" />
+          </button>
         </div>
       </div>
+      <PhotoViewer
+        v-if="reviewPhoto?.imageUrl"
+        :images="[{ url: reviewPhoto.imageUrl, thumbnailUrl: reviewPhoto.thumbnailUrl ?? reviewPhoto.imageUrl }]"
+        :index="0"
+        :alt="`${reviewPhoto.userNickname}님 리뷰 사진`"
+        @close="reviewPhoto = null"
+      />
     </div>
   </div>
 </template>

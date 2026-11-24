@@ -33,6 +33,6 @@ public class ReviewUpdateRequestDto {
     private String content;
 
     @Size(max = 1000, message = "이미지 URL은 최대 1000자까지 입력 가능합니다.")
-    @Schema(description = "리뷰 이미지 URL (최대 1000자, 선택)", example = "https://cdn.petspot.example/reviews/r-001.jpg")
+    @Schema(description = "리뷰 사진 주소 (선택). POST /api/v1/review-images로 올려 받은 imageUrl만 가능, 빈 문자열이면 사진 삭제, 생략하면 그대로", example = "/api/v1/review-images/3f2a1c4e8b7d4e219a6f1c2b3d4e5f60.jpg")
     private String imageUrl;
 }

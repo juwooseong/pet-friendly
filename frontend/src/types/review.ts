@@ -8,7 +8,10 @@ export interface Review {
   userAvatarUrl: string | null;
   rating: number;
   content: string;
+  /** 리뷰 사진 원본 (크게 보기용, 없으면 null) */
   imageUrl: string | null;
+  /** 리뷰 목록용 정사각형 썸네일 (없으면 null) */
+  thumbnailUrl: string | null;
   createdAt: string;
 }
 
@@ -18,4 +21,10 @@ export interface ReviewCreateRequest {
   rating: number;
   content: string;
   imageUrl?: string;
+}
+
+/** `POST /review-images` 응답 - imageUrl을 리뷰 등록 요청에 넣는다 */
+export interface ReviewImageUpload {
+  imageUrl: string;
+  thumbnailUrl: string;
 }

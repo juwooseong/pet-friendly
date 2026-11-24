@@ -2,6 +2,7 @@ package com.petspot.api.review.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import com.petspot.application.review.ReviewImageService;
 import com.petspot.domain.review.entity.Review;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -38,6 +39,8 @@ public class ReviewResponseDto {
     private String content;
     @Schema(description = "리뷰 이미지 URL (없으면 null)", example = "https://cdn.petspot.example/reviews/r-001.jpg", nullable = true)
     private String imageUrl;
+    @Schema(description = "리뷰 목록용 정사각형 썸네일 주소 (사진 없으면 null)", example = "/api/v1/review-images/3f2a1c4e8b7d4e219a6f1c2b3d4e5f60_thumb.jpg", nullable = true)
+    private String thumbnailUrl;
     @Schema(description = "작성 일시", example = "2026-11-19T14:30:00+09:00")
     private ZonedDateTime createdAt;
 
@@ -52,6 +55,7 @@ public class ReviewResponseDto {
                 .rating(review.getRating())
                 .content(review.getContent())
                 .imageUrl(review.getImageUrl())
+                .thumbnailUrl(ReviewImageService.thumbnailUrlOf(review.getImageUrl()))
                 .createdAt(review.getCreatedAt())
                 .build();
     }
