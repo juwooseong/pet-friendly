@@ -22,7 +22,7 @@ import apiClient from '@/api/apiClient';
 function mountPage() {
   return mount(PlaceDetailPage, {
     global: {
-      stubs: { RouterLink: true },
+      stubs: { RouterLink: true, teleport: true },
     },
   });
 }
@@ -202,7 +202,7 @@ describe('PlaceDetailPage', () => {
       const wrapper = mountPage();
       await flushPromises();
 
-      await wrapper.find('img').trigger('error');
+      await wrapper.find('[data-testid="gallery-main-image"]').trigger('error');
       await flushPromises();
 
       expect(wrapper.find('img:not([aria-hidden])').exists()).toBe(false);
@@ -283,7 +283,7 @@ describe('PlaceDetailPage', () => {
       const wrapper = mountPage();
       await flushPromises();
 
-      await wrapper.find('button').trigger('click');
+      await wrapper.find('[data-testid="favorite-button"]').trigger('click');
       await flushPromises();
 
       expect(apiClient.post).toHaveBeenCalledWith('/favorites/place-123');
@@ -301,7 +301,7 @@ describe('PlaceDetailPage', () => {
       await flushPromises();
       expect(wrapper.text()).toContain('즐겨찾기됨');
 
-      await wrapper.find('button').trigger('click');
+      await wrapper.find('[data-testid="favorite-button"]').trigger('click');
       await flushPromises();
 
       expect(apiClient.delete).toHaveBeenCalledWith('/favorites/place-123');
@@ -316,7 +316,7 @@ describe('PlaceDetailPage', () => {
 
       expect(apiClient.get).not.toHaveBeenCalledWith('/favorites/place-123');
 
-      await wrapper.find('button').trigger('click');
+      await wrapper.find('[data-testid="favorite-button"]').trigger('click');
       await flushPromises();
 
       expect(apiClient.post).not.toHaveBeenCalled();
@@ -334,7 +334,7 @@ describe('PlaceDetailPage', () => {
       const wrapper = mountPage();
       await flushPromises();
 
-      await wrapper.find('button').trigger('click');
+      await wrapper.find('[data-testid="favorite-button"]').trigger('click');
       await flushPromises();
 
       expect(wrapper.text()).not.toContain('즐겨찾기됨');
@@ -354,17 +354,17 @@ describe('PlaceDetailPage', () => {
       const wrapper = mountPage();
       await flushPromises();
 
-      const button = wrapper.find('button');
+      const button = wrapper.find('[data-testid="favorite-button"]');
       await button.trigger('click');
       await button.trigger('click');
       await button.trigger('click');
 
       expect(apiClient.post).toHaveBeenCalledTimes(1);
-      expect(wrapper.find('button').attributes('disabled')).toBeDefined();
+      expect(wrapper.find('[data-testid="favorite-button"]').attributes('disabled')).toBeDefined();
 
       resolvePost({ data: { success: true, data: {} } });
       await flushPromises();
-      expect(wrapper.find('button').attributes('disabled')).toBeUndefined();
+      expect(wrapper.find('[data-testid="favorite-button"]').attributes('disabled')).toBeUndefined();
     });
   });
 
@@ -577,6 +577,23 @@ describe('PlaceDetailPage', () => {
 
       expect(gallery.find('img').attributes('src')).toBe('https://tong.visitkorea.or.kr/2.jpg');
       expect(wrapper.find('[data-testid="image-source"]').text()).toContain('공공누리 제3유형(출처표시·변경금지)');
+
+      // 큰 사진을 누르면 크게 보기 팝업 (TSK-FE-032): 보던 사진부터, ←로 넘기면 상세 화면도 같이 바뀌고 Esc로 닫힌다
+      await gallery.find('button[aria-label="사진 크게 보기"]').trigger('click');
+      const viewer = () => wrapper.find('[data-testid="photo-viewer"]');
+      expect(viewer().find('img').attributes('src')).toBe('https://tong.visitkorea.or.kr/2.jpg');
+      expect(viewer().text()).toContain('2 / 2');
+      expect(viewer().find('[data-testid="photo-viewer-caption"]').text()).toContain('제3유형');
+
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }));
+      await flushPromises();
+      expect(viewer().find('img').attributes('src')).toBe('https://tong.visitkorea.or.kr/1.jpg');
+      expect(wrapper.find('[data-testid="gallery-main-image"]').attributes('src')).toBe('https://tong.visitkorea.or.kr/1.jpg');
+
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      await flushPromises();
+      expect(viewer().exists()).toBe(false);
+      wrapper.unmount();
     });
 
     it('직접 등록한 장소(publicDataId 없음)에는 한국관광공사 출처를 표시하지 않는다', async () => {
@@ -650,18 +667,20 @@ describe('PlaceDetailPage', () => {
       expect(amenities).not.toContain('구매 가능');
     });
 
-    it('제3유형 사진은 자르지 않고(object-contain), 제1유형 사진은 틀에 맞게 자른다 (TSK-FE-021)', async () => {
+    it('큰 사진은 자르지 않고, 남는 칸은 제1유형만 같은 사진을 흐리게 깔고 제3유형(변경금지)은 비워 둔다 (TSK-FE-021, FE-032)', async () => {
       (apiClient.get as any).mockResolvedValue(publicPlace()); // 1번 Type1, 2번 Type3
 
       const wrapper = mountPage();
       await flushPromises();
 
       const main = () => wrapper.find('[data-testid="gallery-main-image"]');
-      expect(main().classes()).toContain('object-cover');
+      const backdrop = () => wrapper.find('[data-testid="gallery-backdrop"]');
+      expect(main().classes()).toContain('object-contain');
+      expect(backdrop().exists()).toBe(true);
 
       await wrapper.find('button[aria-label="사진 2"]').trigger('click');
       expect(main().classes()).toContain('object-contain');
-      expect(main().classes()).not.toContain('object-cover');
+      expect(backdrop().exists()).toBe(false);
       expect(wrapper.find('button[aria-label="사진 2"] img').classes()).toContain('object-contain');
     });
 
