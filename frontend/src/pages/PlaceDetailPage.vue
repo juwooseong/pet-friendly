@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { formatRating } from '@/utils/rating';
-import { TOUR_API_SOURCE, imageFitClass, isHttpUrl, kakaoDirectionsUrl, koglLicenseLabel } from '@/utils/publicData';
+import { TOUR_API_SOURCE, imageFitClass, isHttpUrl, isNoDerivativeLicense, kakaoDirectionsUrl, koglLicenseLabel } from '@/utils/publicData';
 import { useRoute, useRouter } from 'vue-router';
 import apiClient, { extractErrorMessage } from '@/api/apiClient';
 import { useAuthStore } from '@/stores/authStore';
@@ -15,6 +15,7 @@ import EmptyState from '@/components/common/EmptyState.vue';
 import CharacterIllust from '@/components/common/CharacterIllust.vue';
 import CharacterSpeech from '@/components/common/CharacterSpeech.vue';
 import PlaceImage from '@/components/common/PlaceImage.vue';
+import PhotoViewer from '@/components/common/PhotoViewer.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -99,6 +100,14 @@ const selectImage = (index: number) => {
   selectedImageIndex.value = index;
   imageLoadError.value = false;
 };
+/** 사진 크게 보기 팝업 (TSK-FE-032) */
+const viewerOpen = ref(false);
+/** 공공데이터 사진 출처 문구 (상세 화면·크게 보기 팝업 공용). 직접 등록한 장소는 빈 문자열 */
+const imageSourceText = computed(() => {
+  if (!place.value || !isPublicDataPlace.value) return '';
+  const type = currentImage.value?.copyrightType ?? place.value.imageCopyrightType;
+  return `사진·정보 출처: ${TOUR_API_SOURCE} · ${koglLicenseLabel(type)}`;
+});
 
 /** 한국관광공사(TourAPI) 데이터인 장소에만 출처를 표시한다. 사용자가 직접 등록한 장소는 publicDataId가 없다 */
 const isPublicDataPlace = computed(() => !!place.value?.publicDataId);
@@ -291,18 +300,54 @@ onMounted(async () => {
 
     <div v-else-if="place" class="bg-white p-8 rounded-3xl border border-stone-100 shadow-sm space-y-4">
       <div class="space-y-2" data-testid="place-gallery">
-        <div class="h-56 bg-stone-100 rounded-2xl overflow-hidden">
-          <img
+        <!--
+          높이 고정(h-56) 대신 비율 고정 (TSK-FE-032): 휴대폰 4:3, 넓은 화면 16:9, 너무 커지지 않게 최대 높이.
+          누르면 사진 크게 보기 팝업.
+        -->
+        <div class="relative w-full aspect-4/3 sm:aspect-video max-h-[28rem] bg-cream-50 rounded-2xl overflow-hidden">
+          <button
             v-if="currentImage && !imageLoadError"
-            :src="currentImage.url"
-            :alt="place.name"
-            :class="['w-full h-full', imageFitClass(currentImage.copyrightType)]"
-            data-testid="gallery-main-image"
-            @error="imageLoadError = true"
-          />
+            type="button"
+            aria-label="사진 크게 보기"
+            class="group block w-full h-full cursor-zoom-in"
+            @click="viewerOpen = true"
+          >
+            <!-- 사진은 자르지 않는다. 남는 칸은 변경 가능한 사진이면 같은 사진을 흐리게 깔고, 변경금지면 크림색 그대로 둔다 -->
+            <img
+              v-if="!isNoDerivativeLicense(currentImage.copyrightType)"
+              :src="currentImage.url"
+              alt=""
+              aria-hidden="true"
+              class="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60"
+              data-testid="gallery-backdrop"
+            />
+            <img
+              :src="currentImage.url"
+              :alt="place.name"
+              class="relative w-full h-full object-contain"
+              data-testid="gallery-main-image"
+              @error="imageLoadError = true"
+            />
+            <span
+              class="absolute right-3 bottom-3 inline-flex items-center gap-1 rounded-full bg-black/55 px-2.5 py-1 text-xs font-semibold text-white transition group-hover:bg-black/70"
+              aria-hidden="true"
+            >
+              <i class="ri-zoom-in-line"></i>
+              {{ galleryImages.length > 1 ? `${selectedImageIndex + 1} / ${galleryImages.length}` : '크게 보기' }}
+            </span>
+          </button>
           <!-- 사진이 없거나 깨지면 장소 유형 아이콘과 "사진 준비 중" (TSK-FE-025) -->
           <PlaceImage v-else :alt="place.name" :category="place.category" icon-class="text-5xl" />
         </div>
+        <PhotoViewer
+          v-if="viewerOpen && galleryImages.length > 0"
+          :images="galleryImages"
+          :index="selectedImageIndex"
+          :alt="place.name"
+          :caption="imageSourceText"
+          @update:index="selectImage"
+          @close="viewerOpen = false"
+        />
         <div v-if="galleryImages.length > 1" class="flex gap-2 overflow-x-auto pb-1">
           <button
             v-for="(image, index) in galleryImages"
@@ -317,7 +362,7 @@ onMounted(async () => {
           </button>
         </div>
         <p v-if="isPublicDataPlace" class="text-[11px] text-stone-400" data-testid="image-source">
-          사진·정보 출처: {{ TOUR_API_SOURCE }} · {{ koglLicenseLabel(currentImage?.copyrightType ?? place.imageCopyrightType) }}
+          {{ imageSourceText }}
         </p>
       </div>
 
@@ -333,6 +378,7 @@ onMounted(async () => {
         <div class="flex flex-row-reverse items-center justify-between gap-2 shrink-0 sm:flex-col sm:items-end sm:justify-start">
           <button
             type="button"
+            data-testid="favorite-button"
             @click="toggleFavorite"
             :disabled="favoriteActionLoading"
             class="flex items-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-xl text-sm font-bold border whitespace-nowrap transition disabled:opacity-50 disabled:cursor-not-allowed"
