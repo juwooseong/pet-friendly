@@ -167,7 +167,7 @@ onMounted(async () => {
           class="px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
         >
           <option value="">전체 카테고리</option>
-          <option value="CAFE">카페</option>
+          <option value="CAFE">음식점·카페</option>
           <option value="HOTEL">숙소/펜션</option>
           <option value="PARK">공원/놀이터</option>
           <option value="HOSPITAL">동물병원</option>
