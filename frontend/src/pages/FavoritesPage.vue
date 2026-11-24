@@ -69,11 +69,11 @@ onMounted(async () => {
 
     <LoadingSpinner v-if="loading" text="즐겨찾기 목록 불러오는 중..." />
 
-    <ErrorMessage v-else-if="errorMessage" :message="errorMessage" />
+    <ErrorMessage v-else-if="errorMessage" :message="errorMessage" illustrated />
 
     <EmptyState
       v-else-if="favorites.length === 0"
-      icon="ri-heart-line"
+      character="nabi-memo"
       title="등록된 즐겨찾기가 없습니다."
       description="마음에 드는 장소를 즐겨찾기에 추가해보세요!"
     />

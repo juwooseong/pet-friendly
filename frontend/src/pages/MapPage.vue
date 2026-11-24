@@ -245,7 +245,7 @@ onUnmounted(() => {
 
     <LoadingSpinner v-if="sdkLoading" text="지도를 불러오는 중..." />
 
-    <ErrorMessage v-else-if="sdkError" :message="sdkError" />
+    <ErrorMessage v-else-if="sdkError" :message="sdkError" illustrated />
 
     <template v-else>
       <ErrorMessage v-if="geolocationError" :message="geolocationError" />
@@ -268,7 +268,7 @@ onUnmounted(() => {
 
       <EmptyState
         v-if="!placesLoading && !placesError && places.length === 0"
-        icon="ri-map-pin-line"
+        character="kongi-curious"
         title="주변에 등록된 장소가 없습니다."
         description="지도를 이동하거나 축소하면 다른 지역의 장소를 볼 수 있어요."
       />

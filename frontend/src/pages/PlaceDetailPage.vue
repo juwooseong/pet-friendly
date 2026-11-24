@@ -263,12 +263,12 @@ onMounted(async () => {
 
     <EmptyState
       v-else-if="notFound"
-      icon="ri-map-pin-line"
+      character="kongi-lost"
       title="장소 정보를 찾을 수 없습니다."
       description="삭제되었거나 잘못된 주소일 수 있습니다."
     />
 
-    <ErrorMessage v-else-if="errorMessage" :message="errorMessage" />
+    <ErrorMessage v-else-if="errorMessage" :message="errorMessage" illustrated />
 
     <div v-else-if="place" class="bg-white p-8 rounded-3xl border border-stone-100 shadow-sm space-y-4">
       <div class="space-y-2" data-testid="place-gallery">
@@ -492,7 +492,7 @@ onMounted(async () => {
 
       <EmptyState
         v-else-if="reviews.length === 0"
-        icon="ri-chat-3-line"
+        character="nabi-review"
         title="아직 작성된 리뷰가 없습니다."
         description="가장 먼저 리뷰를 남겨보세요!"
       />

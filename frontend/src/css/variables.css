@@ -17,6 +17,15 @@
 
   --color-cream-50: #fffbf5;
   --color-cream-100: #fff4e2;
+
+  /* 로딩 중 콩이가 킁킁거리는 움직임 (TSK-FE-027). motion-safe: 와 함께 써서 동작 줄이기 설정이면 멈춘다 */
+  --animate-sniff: sniff 1.4s ease-in-out infinite;
+  @keyframes sniff {
+    0%, 100% { transform: translateX(0) rotate(0deg); }
+    25% { transform: translateX(-3px) rotate(-2deg); }
+    50% { transform: translateX(0) rotate(0deg); }
+    75% { transform: translateX(3px) rotate(2deg); }
+  }
 }
 
 /* PetSpot Design System Tokens */

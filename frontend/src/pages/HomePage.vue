@@ -91,7 +91,7 @@ onMounted(() => {
 
       <LoadingSpinner v-if="loading" text="추천 장소를 불러오는 중입니다..." />
 
-      <ErrorMessage v-else-if="errorMessage" :message="errorMessage" />
+      <ErrorMessage v-else-if="errorMessage" :message="errorMessage" illustrated />
 
       <div v-else-if="places.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <BaseCard v-for="place in places" :key="place.id" hoverable @click="$router.push(`/place/${place.id}`)">

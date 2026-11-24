@@ -57,11 +57,11 @@ onMounted(async () => {
 
     <LoadingSpinner v-if="loading" text="리뷰 목록 불러오는 중..." />
 
-    <ErrorMessage v-else-if="errorMessage" :message="errorMessage" />
+    <ErrorMessage v-else-if="errorMessage" :message="errorMessage" illustrated />
 
     <EmptyState
       v-else-if="reviews.length === 0"
-      icon="ri-chat-3-line"
+      character="nabi-review"
       title="아직 작성한 리뷰가 없습니다."
       description="장소 상세 페이지에서 리뷰를 남겨보세요!"
     />
