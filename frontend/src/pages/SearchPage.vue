@@ -4,7 +4,7 @@ import { storeToRefs } from 'pinia';
 import { formatRating } from '@/utils/rating';
 import { TOUR_API_SOURCE } from '@/utils/publicData';
 import PlaceImage from '@/components/common/PlaceImage.vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import { usePetStore } from '@/stores/petStore';
 import { usePlaceStore } from '@/stores/placeStore';
@@ -15,6 +15,10 @@ import ErrorMessage from '@/components/common/ErrorMessage.vue';
 import EmptyState from '@/components/common/EmptyState.vue';
 
 const router = useRouter();
+const route = useRoute();
+
+/** 홈 장소 유형 바로가기(`/search?category=CAFE`)로 들어올 수 있는 값 (TSK-FE-028) */
+const CATEGORY_VALUES = ['CAFE', 'HOTEL', 'PARK', 'HOSPITAL', 'SHOPPING', 'CULTURE', 'FESTIVAL', 'COURSE', 'SALON'];
 const authStore = useAuthStore();
 const petStore = usePetStore();
 /** 검색 조건·결과는 스토어에 두어 상세에서 돌아와도 유지된다 (TSK-FE-015 15-3) */
@@ -137,6 +141,10 @@ onMounted(async () => {
   if (placeStore.searched && isHistoryReturn()) return;
 
   placeStore.$reset();
+  const queryCategory = route.query.category;
+  if (typeof queryCategory === 'string' && CATEGORY_VALUES.includes(queryCategory)) {
+    category.value = queryCategory as typeof category.value;
+  }
   await fetchRepresentativePet();
   await searchPlaces(0);
 });

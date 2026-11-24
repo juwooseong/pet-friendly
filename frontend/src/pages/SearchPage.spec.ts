@@ -5,9 +5,11 @@ import SearchPage from './SearchPage.vue';
 import { useAuthStore } from '@/stores/authStore';
 
 const pushMock = vi.fn();
+const routeMock = { query: {} as Record<string, string> };
 
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push: pushMock }),
+  useRoute: () => routeMock,
 }));
 
 vi.mock('@/api/apiClient', () => ({
@@ -66,7 +68,21 @@ describe('SearchPage', () => {
     localStorage.clear();
     setActivePinia(createPinia());
     pushMock.mockClear();
+    routeMock.query = {};
     (apiClient.get as any).mockReset();
+  });
+
+  it('홈 바로가기 주소의 category 값으로 첫 검색을 한다 (TSK-FE-028)', async () => {
+    routeMock.query = { category: 'CAFE' };
+    (apiClient.get as any).mockResolvedValue(mockSearchResponse());
+
+    mountPage();
+    await flushPromises();
+
+    expect(apiClient.get).toHaveBeenCalledWith(
+      '/places/search',
+      expect.objectContaining({ params: expect.objectContaining({ category: 'CAFE' }) })
+    );
   });
 
   it('마운트 시 기본 조건(page=0)으로 장소를 검색해 목록을 표시한다', async () => {
