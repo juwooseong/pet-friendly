@@ -26,6 +26,31 @@
     50% { transform: translateX(0) rotate(0deg); }
     75% { transform: translateX(3px) rotate(2deg); }
   }
+
+  /*
+   * 작은 움직임 (TSK-FE-030). 모두 한 번만 재생되고, motion-safe: 와 함께 써서 동작 줄이기 설정이면 끈다.
+   * heart-pop: 즐겨찾기에 담을 때 하트가 통 튀는 움직임
+   * hop: 리뷰 등록 칭찬 카드의 나비가 두 번 콩콩 뛰는 움직임
+   * sparkle: 칭찬 카드 위로 별이 떠올랐다 사라지는 움직임 (끝나면 안 보이게 forwards)
+   */
+  --animate-heart-pop: heart-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  @keyframes heart-pop {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.45); }
+    70% { transform: scale(0.9); }
+    100% { transform: scale(1); }
+  }
+  --animate-hop: hop 0.5s ease-out 2;
+  @keyframes hop {
+    0%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-8px); }
+  }
+  --animate-sparkle: sparkle 1.2s ease-out forwards;
+  @keyframes sparkle {
+    0% { opacity: 0; transform: translateY(6px) scale(0.6); }
+    30% { opacity: 1; transform: translateY(-4px) scale(1.1); }
+    100% { opacity: 0; transform: translateY(-18px) scale(0.8); }
+  }
 }
 
 /* PetSpot Design System Tokens */
