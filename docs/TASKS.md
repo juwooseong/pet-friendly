@@ -353,7 +353,12 @@
   - 장소 상세 즐겨찾기: 담을 때만 하트가 튄다(해제·첫 화면은 그대로). `heartPopKey`를 늘려 아이콘을 새로 그려 다시 담을 때도 재생.
   - 리뷰 칭찬 카드: 나비가 두 번 뛰고 별 3개가 차례로 떠올랐다 사라진다. 동작 줄이기 설정이면 별은 아예 그리지 않는다.
   - 확인: Playwright로 가짜 로그인 + API 가로채기, 움직임 허용 시 `heart-pop`·`hop`·`sparkle` 재생, 동작 줄이기 시 모두 `none`·별 숨김. 테스트는 기존 즐겨찾기 추가 테스트에 하트 클래스 확인 1줄.
-- [ ] `TSK-FE-031` [P3] 브랜드 아이콘 — 파비콘, 홈 화면 추가 아이콘, 공유 미리보기(OG) 이미지(얼굴 아이콘 사용).
+- [x] `TSK-FE-031` [P3] 브랜드 아이콘 — 파비콘, 홈 화면 추가 아이콘, 공유 미리보기(OG) 이미지(얼굴 아이콘 사용). **(2026-11-24 완료)**
+  - 파비콘: 로고의 민트 핀+발자국 `favicon.svg`, 대체용 `favicon-32.png`. 작은 크기에서 얼굴은 알아보기 어려워 핀을 썼다.
+  - 홈 화면 추가 아이콘: 크림→민트 바탕 + 콩이 얼굴 — `apple-touch-icon.png`(180), `icon-192.png`, `icon-512.png`, 안드로이드 모양 자르기용 `icon-maskable-512.png`(얼굴을 안전 영역 안으로 작게). `manifest.webmanifest`(이름, 테마색 mint-500, 바탕 cream-50).
+  - 공유 미리보기 `images/og-image.png`(1200x630): 로고 + "헛걸음 없는 반려동물 여행" + 콩이·나비 얼굴 배지 + "둘이 함께" 그림. og/twitter 메타 태그, 페이지 제목·설명도 브랜드 문구로 교체.
+  - og:image는 절대 주소여야 해서 `VITE_SITE_URL`(.env.production `http://localtest.me`, .env.development `http://localhost:3000`)을 index.html에 붙인다. 실제 도메인으로 배포하면 이 값을 바꿀 것.
+  - 아이콘은 `frontend/scripts/make-brand-icons.mjs`로 만든다(Playwright Chromium으로 그려 PNG 저장). 캐릭터 그림이나 로고를 바꾸면 다시 실행.
 - 백로그: 나비 평가단 배지(리뷰 수 기준, 백엔드 필요), 계절 이벤트 캐릭터.
 - [x] `TSK-FE-021` [P2] 공공누리 제3유형(변경금지) 이미지 표시 방식 검토 (2026-11-19 신규, ADR-012) — **완료 (2026-11-23)**
   - **결정·구현**: 변경금지 유형(제3·4유형)은 자르지 않고 원본 비율로 표시(`object-contain`), 그 외는 기존처럼 자르기(`utils/publicData.ts`의 `imageFitClass`). 적용 화면: 장소 탐색 카드, 장소 상세 큰 사진·썸네일(사진별 유형), 홈, 즐겨찾기. 홈(`DashboardPlaceDto`)·즐겨찾기(`FavoriteResponseDto`) 응답에 `imageCopyrightType` 추가. ADR-012 보완 기록.
