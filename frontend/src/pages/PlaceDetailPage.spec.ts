@@ -235,7 +235,7 @@ describe('PlaceDetailPage', () => {
 
       expect(wrapper.text()).toContain('등록된 반려동물 동반 수칙 정보가 없습니다.');
       // 나비 말풍선: 정보가 없으면 확인 방법을 안내한다 (TSK-FE-029)
-      expect(wrapper.find('[data-testid="character-speech"]').text()).toContain('동반 조건이 아직 등록되지 않았어요');
+      expect(wrapper.find('[data-testid="policy-tip"]').text()).toContain('동반 조건이 아직 등록되지 않았어요');
     });
   });
 

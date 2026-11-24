@@ -13,7 +13,6 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue';
 import ErrorMessage from '@/components/common/ErrorMessage.vue';
 import EmptyState from '@/components/common/EmptyState.vue';
 import CharacterIllust from '@/components/common/CharacterIllust.vue';
-import CharacterSpeech from '@/components/common/CharacterSpeech.vue';
 import PlaceImage from '@/components/common/PlaceImage.vue';
 import PhotoViewer from '@/components/common/PhotoViewer.vue';
 
@@ -61,7 +60,7 @@ const petAmenities = computed(() => {
   ].filter((item): item is { label: string; value: string } => !!item.value);
 });
 
-/** 동반 조건 나비 말풍선 (TSK-FE-029) - 정보가 있어도 없어도 "확인부터 해요" */
+/** 동반 조건 아래 나비 한 줄 안내 (TSK-FE-029, FE-033: 말풍선 → 얼굴 아이콘 + 짧은 글) - 정보가 있어도 없어도 "확인부터 해요" */
 const policySpeech = computed(() => {
   if (hasPetPolicyInfo.value) return '공식 정보도 바뀔 수 있어요. 가기 전에 한 번 더, 확인부터 해요.';
   if (place.value?.phone) return '동반 조건이 아직 등록되지 않았어요. 가기 전에 전화로 확인부터 해요.';
@@ -441,7 +440,10 @@ onMounted(async () => {
           <p v-if="policyDetail.etcText" class="text-xs text-stone-500 whitespace-pre-line">{{ policyDetail.etcText }}</p>
         </template>
         <p v-else class="text-sm text-stone-400">등록된 반려동물 동반 수칙 정보가 없습니다.</p>
-        <CharacterSpeech pose="nabi-inspect" speaker="나비" class="pt-1">{{ policySpeech }}</CharacterSpeech>
+        <p class="flex items-center gap-1.5 pt-1 text-xs text-stone-500" data-testid="policy-tip">
+          <CharacterIllust pose="nabi-face" size="icon" class="shrink-0" />
+          <span>{{ policySpeech }}</span>
+        </p>
       </div>
 
       <div v-if="place.description" class="pt-4 border-t border-stone-100 space-y-2" data-testid="place-description">

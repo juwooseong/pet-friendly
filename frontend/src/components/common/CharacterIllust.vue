@@ -9,8 +9,8 @@ import { CHARACTER_IMAGES, type CharacterPose } from '@/assets/characters';
 const props = withDefaults(
   defineProps<{
     pose: CharacterPose;
-    /** 높이 기준 크기 (xs 48px · sm 72px · md 112px · lg 160px) */
-    size?: 'xs' | 'sm' | 'md' | 'lg';
+    /** 높이 기준 크기 (icon 24px · xs 48px · sm 72px · md 112px · lg 160px). icon은 글 앞에 붙이는 얼굴용 */
+    size?: 'icon' | 'xs' | 'sm' | 'md' | 'lg';
     loading?: 'lazy' | 'eager';
   }>(),
   { size: 'md', loading: 'lazy' }
@@ -19,6 +19,7 @@ const props = withDefaults(
 const image = computed(() => CHARACTER_IMAGES[props.pose]);
 
 const SIZE_CLASSES = {
+  icon: 'h-6',
   xs: 'h-12',
   sm: 'h-[72px]',
   md: 'h-28',
