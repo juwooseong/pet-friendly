@@ -33,7 +33,7 @@ describe('HomePage (TSK-FE-028)', () => {
   it('장소 유형 바로가기는 검색 화면을 해당 유형으로 연다', async () => {
     const wrapper = mountPage();
     await flushPromises();
-    const cafe = wrapper.findAll('nav[aria-label="장소 유형 바로가기"] a').find((a) => a.text() === '카페');
+    const cafe = wrapper.findAll('nav[aria-label="장소 유형 바로가기"] a').find((a) => a.text() === '음식점·카페');
     expect(JSON.parse(cafe!.attributes('data-to')!)).toEqual({ path: '/search', query: { category: 'CAFE' } });
   });
 });

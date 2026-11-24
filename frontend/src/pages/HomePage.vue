@@ -13,7 +13,7 @@ const hero = CHARACTER_IMAGES['duo-together'];
 
 /** 장소 유형 바로가기 - 검색 화면을 해당 유형으로 바로 연다 */
 const SHORTCUTS = [
-  { category: 'CAFE', label: '카페', icon: 'ri-cup-line' },
+  { category: 'CAFE', label: '음식점·카페', icon: 'ri-restaurant-line' },
   { category: 'HOTEL', label: '숙소', icon: 'ri-hotel-bed-line' },
   { category: 'PARK', label: '공원', icon: 'ri-tree-line' },
   { category: 'HOSPITAL', label: '동물병원', icon: 'ri-hospital-line' },
@@ -153,7 +153,7 @@ onMounted(() => {
         class="flex flex-col items-center gap-1.5 bg-white border border-stone-100 rounded-2xl py-3 text-sm font-medium text-stone-700 hover:border-mint-200 hover:bg-mint-50 transition"
       >
         <i :class="[item.icon, 'text-2xl text-mint-600']" aria-hidden="true"></i>
-        <span>{{ item.label }}</span>
+        <span class="whitespace-nowrap">{{ item.label }}</span>
       </router-link>
     </nav>
 
