@@ -288,6 +288,8 @@ describe('PlaceDetailPage', () => {
 
       expect(apiClient.post).toHaveBeenCalledWith('/favorites/place-123');
       expect(wrapper.text()).toContain('즐겨찾기됨');
+      // 담을 때 하트가 튄다 (TSK-FE-030)
+      expect(wrapper.find('[data-testid="favorite-heart"]').classes()).toContain('motion-safe:animate-heart-pop');
     });
 
     it('즐겨찾기 삭제 성공 시 DELETE /favorites/{placeId} 호출 후 상태가 즉시 갱신된다', async () => {

@@ -170,6 +170,12 @@ const fetchFavoriteStatus = async () => {
   }
 };
 
+/**
+ * 즐겨찾기에 담을 때마다 늘려 하트 아이콘을 새로 그려 튀는 움직임을 다시 재생한다 (TSK-FE-030).
+ * 0이면 처음 화면이라 움직이지 않는다. 해제할 때는 움직이지 않는다.
+ */
+const heartPopKey = ref(0);
+
 const toggleFavorite = async () => {
   if (!authStore.isAuthenticated) {
     router.push({ name: 'Login', query: { redirect: route.fullPath } });
@@ -185,6 +191,7 @@ const toggleFavorite = async () => {
       await favoriteStore.removeFavorite(placeId);
     } else {
       await favoriteStore.addFavorite(placeId);
+      heartPopKey.value += 1;
     }
   } catch (err) {
     // 요청 실패 시 화면 상태는 요청 이전 값을 그대로 유지한다 (낙관적 갱신을 하지 않으므로 별도 롤백 불필요).
@@ -335,7 +342,14 @@ onMounted(async () => {
                 : 'bg-stone-50 border-stone-200 text-stone-500 hover:bg-stone-100'
             "
           >
-            <i :class="isFavorited ? 'ri-heart-fill' : 'ri-heart-line'"></i>
+            <i
+              :key="heartPopKey"
+              :class="[
+                isFavorited ? 'ri-heart-fill' : 'ri-heart-line',
+                isFavorited && heartPopKey > 0 ? 'inline-block motion-safe:animate-heart-pop' : '',
+              ]"
+              data-testid="favorite-heart"
+            ></i>
             <span>{{ isFavorited ? '즐겨찾기됨' : '즐겨찾기' }}</span>
           </button>
           <div class="text-amber-500 font-extrabold text-xl sm:text-2xl sm:text-right flex items-baseline gap-2 sm:block">
@@ -459,11 +473,17 @@ onMounted(async () => {
 
       <div
         v-if="reviewSubmitted"
-        class="flex items-center gap-4 p-4 rounded-2xl bg-mint-50 border border-mint-200"
+        class="relative flex items-center gap-4 p-4 rounded-2xl bg-mint-50 border border-mint-200"
         role="status"
         data-testid="review-thanks"
       >
-        <CharacterIllust pose="nabi-review" size="sm" class="shrink-0" />
+        <!-- 축하 별 (TSK-FE-030): 한 번 떠올랐다 사라진다. 동작 줄이기 설정이면 아예 보이지 않는다 -->
+        <span aria-hidden="true" class="pointer-events-none absolute left-6 top-1 hidden motion-safe:block">
+          <span class="absolute left-0 top-0 text-amber-400 text-sm opacity-0 motion-safe:animate-sparkle">★</span>
+          <span class="absolute left-10 top-2 text-amber-300 text-xs opacity-0 motion-safe:animate-sparkle [animation-delay:0.2s]">★</span>
+          <span class="absolute left-5 -top-2 text-mint-400 text-xs opacity-0 motion-safe:animate-sparkle [animation-delay:0.4s]">★</span>
+        </span>
+        <CharacterIllust pose="nabi-review" size="sm" class="shrink-0 motion-safe:animate-hop" />
         <div class="text-sm">
           <p class="font-bold text-stone-800">리뷰가 등록됐어요. 고마워요!</p>
           <p class="text-stone-600 mt-0.5">다음에 올 친구들이 헛걸음하지 않게 도와주셨어요.</p>
