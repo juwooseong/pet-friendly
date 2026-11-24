@@ -20,7 +20,7 @@
 | **Sprint 0** | Infrastructure | 개발 환경 구축, DB/PostGIS 초기화 & 프로젝트 스캐폴딩 | **[COMPLETED]** |
 | **Sprint 1** | Backend Core | 공공데이터 수집 파이프라인, PostGIS 반경/필터 검색 API | **[COMPLETED]** |
 | **Sprint 2** | Backend Complete | **User/Pet/Favorite/Review Core API, My Page API, Dashboard API, Integration Test & Swagger** | **[COMPLETED]** (2026-11-19) |
-| **Sprint 3** | Frontend MVP | **Vue 3 + Vite Frontend 9개 화면 구축 및 백엔드 API 실서비스 100% 완전 연동** | **[IN_PROGRESS]** |
+| **Sprint 3** | Frontend MVP | **Vue 3 + Vite Frontend 9개 화면 구축 및 백엔드 API 실서비스 100% 완전 연동** | **[COMPLETED]** (2026-11-24) |
 | **Sprint 4** | Advanced AI & Infra | OpenAI AI 추천, Redis Caching, Elasticsearch, AWS CI/CD 및 모니터링 | [PLANNED] |
 
 ---
@@ -75,7 +75,8 @@
 
 ---
 
-## Sprint 3. Frontend MVP Development (Vue 3 프론트엔드 실서비스 구축) [IN_PROGRESS]
+## Sprint 3. Frontend MVP Development (Vue 3 프론트엔드 실서비스 구축) [COMPLETED] (2026-11-24)
+> 9개 화면·계정 복구·지도 재검색·스토어 정리(2026-11-23)에 이어 디자인 개편·캐릭터(`TSK-DES-001`~`TSK-FE-031`, 2026-11-24)까지 완료. 남은 데이터 작업 `TSK-DATA-011`(쇼핑 정책 조회)은 매일 자동 배치로 진행 중이라 화면 작업과 무관.
 
 ### Feature 3.1 Frontend Architecture & Design Specification [COMPLETED]
 - [x] `TSK-FE-001` [P0] Frontend System Architecture & Layout Specification Document

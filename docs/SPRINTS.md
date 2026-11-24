@@ -6,6 +6,7 @@
 
 ## 📝 Change Log (변경 이력)
 
+- **2026-11-24**: **Sprint 3 완료 — 디자인 개편·캐릭터 (`TSK-DES-001`~`TSK-FE-031`, ADR-015)** — 브랜드 가이드(`docs/BRAND.md`)와 캐릭터 콩이(웰시코기)·나비(치즈 고양이), 민트 포인트 색·새 로고. 빈 화면·로딩·오류·사진 없는 장소에 캐릭터 그림, 홈 첫 화면 개편(휴대폰 LCP 3.7초 → 1.8초), 로그인·404·장소 상세 동반 조건 말풍선·리뷰 칭찬, 즐겨찾기 하트·칭찬 움직임(동작 줄이기 설정이면 끔), 파비콘·앱 아이콘·공유 미리보기 이미지. 남은 `TSK-DATA-011`(쇼핑 정책 조회 7,073곳)은 매일 03:00 자동 배치로 진행 중.
 - **2026-11-23**: **`TSK-QA-004` 소문자 드라이브 경로 테스트 실패 해결** — `npm test`가 실제 경로 표기(`D:\`)로 바꿔 Vitest를 실행. 소문자 경로에서 재현 후 수정 확인(프런트 154/154 통과).
 - **2026-11-23**: **`TSK-FE-015` 완료 (15-5 규칙 문서)** — `docs/RULES.md` 1.2에 스토어 구성과 데이터 조회 위치 규칙(공유 데이터는 스토어, 한 화면 전용·일회성 요청은 화면에서 직접) 정리. 문서만 변경.
 - **2026-11-23**: **`TSK-FE-015` 15-4 즐겨찾기 스토어** — 즐겨찾기 화면과 장소 상세가 같은 즐겨찾기 상태를 공유(상세에서 바꾼 결과가 바로 반영, 이미 아는 장소는 상태 재요청 생략). 영향 범위 테스트만 실행(type-check, 스토어·상세·즐겨찾기 52건).
@@ -57,7 +58,7 @@
 | **Sprint 0** | Infrastructure | 개발 환경 구축, DB/PostGIS 초기화 & 프로젝트 스캐폴딩 | **[COMPLETED]** |
 | **Sprint 1** | Backend Core | 공공데이터 수집 파이프라인, PostGIS 위치 검색 API & 기초 모델 | **[COMPLETED]** |
 | **Sprint 2** | Backend Complete | **Review Service/API, My Page API, Dashboard API, E2E Integration Test & Swagger** | **[COMPLETED]** (2026-11-19) |
-| **Sprint 3** | Frontend MVP | **Vue 3 + Vite Frontend 9개 화면 구현 & Spring Boot 백엔드 API 실서비스 완전 연동** | **[IN_PROGRESS]** |
+| **Sprint 3** | Frontend MVP | **Vue 3 + Vite Frontend 9개 화면 구현 & Spring Boot 백엔드 API 실서비스 완전 연동** | **[COMPLETED]** (2026-11-24) |
 | **Sprint 4** | Advanced AI & Infra | OpenAI AI 추천, Redis Caching, Elasticsearch, AWS & Docker CI/CD | [PLANNED] |
 
 ---
@@ -86,17 +87,17 @@
 
 ---
 
-## 🚀 Sprint 3: Frontend MVP (Vue 3 프론트엔드 실서비스 구축) [IN_PROGRESS]
+## 🚀 Sprint 3: Frontend MVP (Vue 3 프론트엔드 실서비스 구축) [COMPLETED] (2026-11-24)
 
 - **Sprint Goal**: Vue 3 + Vite + TailwindCSS 기반 프론트엔드 구축 및 Spring Boot 백엔드 API와의 100% 완전한 연동을 통해 실사용 가능한 MVP 서비스 완성.
 - **기술 스택**: Vue 3 (Composition API), Vite, Pinia, Vue Router 4, Axios, TailwindCSS, Spring Boot API 연동, JWT Auth, 반응형 UI.
-- **진행 현황 (2026-08-27 기준)**: 상세 Task 체크리스트는 `docs/TASKS.md`의 Sprint 3 섹션 참조.
+- **진행 현황 (2026-11-24 완료)**: 9개 화면과 확장 스코프, 디자인 개편·캐릭터까지 완료. 상세 Task 체크리스트는 `docs/TASKS.md`의 Sprint 3 섹션 참조.
 - **스코프 확장**: 원래 9개 화면 계획에 더해 계정 복구(아이디/비밀번호 찾기, 임시 비밀번호 강제 변경) 기능이 Sprint 3 범위로 추가되어 완료됨.
 
 ### Frontend 설계 문서 수립 항목
 - [x] Frontend Architecture Spec / Common Layout / UI 컴포넌트 7종
 - [x] Vue Router 4 Routing Specification (`/map` 라우트 포함 전체 등록 완료, 2026-08-27)
-- [x] Pinia Global Store 기본 구조 (`authStore`, `petStore`, `placeStore`) — `favoriteStore` 및 store 경유 데이터 페칭은 미완
+- [x] Pinia Global Store 기본 구조 (`authStore`, `petStore`, `placeStore`) + `favoriteStore`, 스토어 경유 데이터 조회 (`TSK-FE-015`, 2026-11-23 완료)
 - [x] Axios Interceptor & Auth Token Manager (401 처리, 에러 메시지 추출)
 - [ ] Component Tree Taxonomy / API Endpoint Mapping Table 문서화
 
